@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}등록 — 宅建 오답노트{% endblock %}
+{% block body %}
+
+<div class="panel">
+  <h2>틀린 번호 등록</h2>
+  <p class="mut">연도를 풀고 나서 틀린 문제 번호만 입력. 같은 연도를 다시 풀었을 때도 여기에 입력하면 횟수가 누적됩니다.</p>
+  <form method="post" action="{{ url_for('register_wrong') }}">
+    <label>연도</label>
+    <select name="year">
+      {% for y in all_years %}<option value="{{ y }}">{{ y }} ({{ year_counts[y] }}문제 등록됨)</option>{% endfor %}
+    </select>
+    <label>푼 날짜</label>
+    <input type="date" name="date" value="{{ today }}">
+    <label>틀린 번호 (쉼표 구분)</label>
+    <input type="text" name="numbers" class="wide" placeholder="예: 1,2,3,7,14" inputmode="numeric">
+    <p><button class="btn" type="submit">등록</button></p>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>새 연도 PDF 추가</h2>
+  <p class="mut">텍스트형 과거문제 PDF만 지원 (마지막 페이지에 정답표가 있는 형식). 스캔본은 파싱 불가.
+  파싱 후 細目은 빈칸이므로 목록 화면(誤答 ≥ 0 필터)에서 노란 줄을 채워 주세요.</p>
+  <form method="post" action="{{ url_for('register_upload') }}" enctype="multipart/form-data">
+    <label>연도 라벨</label>
+    <input type="text" name="year" placeholder="예: R6" style="width:90px">
+    <label>PDF 파일</label>
+    <input type="file" name="pdf" accept="application/pdf">
+    <label class="chk" style="margin-top:8px"><input type="checkbox" name="overwrite" value="1">
+      같은 연도가 이미 있으면 문제 텍스트를 덮어쓰기 (誤答 기록은 보존)</label>
+    <p><button class="btn" type="submit">업로드 &amp; 파싱</button></p>
+  </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}다시 풀기 — 宅建 오답노트{% endblock %}
+{% block body %}
+
+<div class="actions no-print">
+  <a class="btn gray" href="{{ url_for('index') }}?{{ request.query_string.decode() }}">← 목록으로</a>
+  <span id="mode-label" class="mut"></span>
+  <span class="spacer"></span>
+  <span class="progress" id="progress"></span>
+</div>
+
+<div id="app"></div>
+
+{% if count == 0 %}
+<div class="card">조건에 맞는 문제가 없습니다. <a href="{{ url_for('index') }}">필터를 바꿔 보세요.</a></div>
+{% endif %}
+
+<script>
+const QS = {{ questions_json|safe }};
+const TAGS = {{ error_tags|tojson }};
+const MODE = new URLSearchParams(location.search).get("mode") === "exam" ? "exam" : "instant";
+let idx = 0;
+const picked = {};        // idx -> 선택한 번호(1-4)
+const instantDone = {};   // idx -> {correct: bool}  (즉시 채점용)
+
+const $app = document.getElementById("app");
+document.getElementById("mode-label").textContent =
+  MODE === "exam" ? "시험 모드 — 다 풀고 마지막에 채점" : "즉시 채점 모드";
+
+function esc(s) {
+  return (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+function progress() {
+  const answered = Object.keys(picked).length;
+  document.getElementById("progress").textContent =
+    MODE === "exam" ? `${answered} / ${QS.length} 응답` : `${idx + 1} / ${QS.length}`;
+}
+
+function cardHead(q) {
+  return `<div class="qh"><span class="tag">${q.year} 問${q.number}</span>
+    <span class="topic">${esc(q.subtopic)}</span>
+    <span class="mut">${esc(q.category)}</span>
+    <span class="wcnt">지금까지 誤答 ${q.wrong}회</span></div>
+    <div class="stem">${esc(q.stem)}</div>
+    ${q.subs.map(s => `<div class="sub">${esc(s)}</div>`).join("")}`;
+}
+
+function tagOf(reason) { return TAGS.find(t => (reason || "").startsWith(t)) || ""; }
+function memoOf(reason) {
+  const t = tagOf(reason);
+  return (reason || "").slice(t.length).replace(/^[\s　]+/, "");
+}
+
+function reasonBox(q, i) {
+  const t0 = tagOf(q.error_reason), m0 = memoOf(q.error_reason);
+  return `<div class="reason-box no-print" id="rb${i}">
+    <div class="mut">왜 틀렸나 (태그 + 한 줄 메모)</div>
+    <div class="tags">${TAGS.map(t =>
+      `<button type="button" class="${t === t0 ? "sel" : ""}" data-tag="${t}">${t}</button>`).join("")}</div>
+    <input type="text" placeholder="메모 (예: 語尾를 잘못 읽음)" value="${esc(m0)}">
+    <button type="button" class="btn gray save">저장</button>
+    <span class="saved mut"></span>
+  </div>`;
+}
+
+function bindReason(q, i) {
+  const box = document.getElementById(`rb${i}`);
+  if (!box) return;
+  box.querySelectorAll(".tags button").forEach(b => b.addEventListener("click", () => {
+    const was = b.classList.contains("sel");
+    box.querySelectorAll(".tags button").forEach(x => x.classList.remove("sel"));
+    if (!was) b.classList.add("sel");
+  }));
+  box.querySelector(".save").addEventListener("click", async () => {
+    const tag = box.querySelector(".tags .sel")?.dataset.tag || "";
+    const memo = box.querySelector("input").value.trim();
+    const r = await fetch("/api/reason", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({year: q.year, number: q.number, tag, memo})
+    });
+    if (r.ok) {
+      const j = await r.json();
+      q.error_reason = j.reason;
+      box.querySelector(".saved").textContent = "저장됨 ✓";
+      setTimeout(() => box.querySelector(".saved").textContent = "", 1500);
+    }
+  });
+}
+
+/* ---------- 즉시 채점 모드 ---------- */
+function renderInstant() {
+  if (idx >= QS.length) return renderInstantSummary();
+  const q = QS[idx];
+  progress();
+  $app.innerHTML = `<div class="card">${cardHead(q)}
+    <div id="choices">${q.choices.map((c, k) =>
+      `<button type="button" class="choice" data-n="${k + 1}"><span class="cn">${k + 1}</span>${esc(c)}</button>`).join("")}</div>
+    <div id="after"></div>
+  </div>`;
+  document.querySelectorAll(".choice").forEach(b => b.addEventListener("click", async () => {
+    const n = +b.dataset.n, correct = n === q.answer;
+    picked[idx] = n;
+    instantDone[idx] = {correct};
+    document.querySelectorAll(".choice").forEach(x => {
+      x.disabled = true;
+      if (+x.dataset.n === q.answer) x.classList.add("correct");
+      else if (+x.dataset.n === n) x.classList.add("picked-wrong");
+    });
+    await fetch("/api/answer", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({year: q.year, number: q.number, correct})
+    });
+    document.getElementById("after").innerHTML =
+      `<div class="verdict ${correct ? "ok" : "ng"}">${correct ? "정답 ○" : `오답 ✕ — 정답은 ${q.answer}`}</div>
+       ${correct ? "" : reasonBox(q, idx)}
+       <button type="button" class="btn" id="next">다음 문제 →</button>`;
+    bindReason(q, idx);
+    document.getElementById("next").addEventListener("click", () => { idx++; renderInstant(); });
+    document.getElementById("next").focus();
+  }));
+}
+
+function renderInstantSummary() {
+  const total = QS.length;
+  const ok = Object.values(instantDone).filter(r => r.correct).length;
+  const wrong = QS.filter((q, i) => instantDone[i] && !instantDone[i].correct);
+  $app.innerHTML = `<div class="summary">
+    <div class="big">${ok} / ${total} 정답</div>
+    ${wrong.length ? `<p>틀린 문제: ${wrong.map(q => `${q.year} 問${q.number}`).join(", ")}</p>` : "<p>전부 정답! 🎉</p>"}
+    <div class="no-print" style="margin-top:10px">
+      <a class="btn" href="">한번 더</a>
+      <a class="btn gray" href="/">목록으로</a>
+    </div>
+  </div>`;
+  document.getElementById("progress").textContent = "완료";
+}
+
+/* ---------- 시험 모드 (나중에 채점) ---------- */
+function renderExam() {
+  const q = QS[idx];
+  progress();
+  $app.innerHTML = `<div class="card">${cardHead(q)}
+    <div id="choices">${q.choices.map((c, k) =>
+      `<button type="button" class="choice ${picked[idx] === k + 1 ? "selected" : ""}" data-n="${k + 1}">
+        <span class="cn">${k + 1}</span>${esc(c)}</button>`).join("")}</div>
+    <div class="examnav no-print">
+      <button type="button" class="btn gray" id="prev" ${idx === 0 ? "disabled" : ""}>← 이전</button>
+      <button type="button" class="btn" id="next" ${idx === QS.length - 1 ? "disabled" : ""}>다음 →</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn red" id="grade">채점하기</button>
+    </div>
+    <div class="sheet no-print">${QS.map((_, i) =>
+      `<button type="button" class="cell ${i === idx ? "cur" : ""} ${picked[i] ? "done" : ""}" data-i="${i}">${i + 1}</button>`).join("")}</div>
+  </div>`;
+  document.querySelectorAll(".choice").forEach(b => b.addEventListener("click", () => {
+    picked[idx] = +b.dataset.n;
+    if (idx < QS.length - 1) { idx++; renderExam(); } else renderExam();
+  }));
+  document.getElementById("prev").addEventListener("click", () => { idx--; renderExam(); });
+  document.getElementById("next").addEventListener("click", () => { idx++; renderExam(); });
+  document.querySelectorAll(".sheet .cell").forEach(b =>
+    b.addEventListener("click", () => { idx = +b.dataset.i; renderExam(); }));
+  document.getElementById("grade").addEventListener("click", grade);
+}
+
+async function grade() {
+  const blank = QS.length - Object.keys(picked).length;
+  if (blank > 0 && !confirm(`${blank}문제가 무응답입니다. 무응답은 오답 처리됩니다. 채점할까요?`)) return;
+  const results = QS.map((q, i) => ({
+    year: q.year, number: q.number,
+    chosen: picked[i] || null,
+    correct: picked[i] === q.answer
+  }));
+  await fetch("/api/grade_batch", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({results})
+  });
+  renderExamResult(results);
+}
+
+function renderExamResult(results) {
+  const ok = results.filter(r => r.correct).length;
+  document.getElementById("progress").textContent = "채점 완료";
+  $app.innerHTML = `<div class="summary">
+    <div class="big">${ok} / ${QS.length} 정답</div>
+    <div class="no-print" style="margin-top:8px">
+      <button type="button" class="btn gray" onclick="window.print()">이 결과 인쇄</button>
+      <a class="btn gray" href="/">목록으로</a>
+    </div>
+  </div>` + QS.map((q, i) => {
+    const r = results[i];
+    return `<div class="card">${cardHead(q)}
+      ${q.choices.map((c, k) => {
+        const n = k + 1;
+        let cls = "";
+        if (n === q.answer) cls = "correct";
+        else if (n === r.chosen && !r.correct) cls = "picked-wrong";
+        return `<div class="choice ${cls}" style="cursor:default"><span class="cn">${n}</span>${esc(c)}</div>`;
+      }).join("")}
+      <div class="verdict ${r.correct ? "ok" : "ng"}">
+        ${r.correct ? "정답 ○" : `오답 ✕ — 내 답 ${r.chosen ?? "무응답"} / 정답 ${q.answer}`}</div>
+      ${r.correct ? "" : reasonBox(q, i)}
+    </div>`;
+  }).join("");
+  results.forEach((r, i) => { if (!r.correct) bindReason(QS[i], i); });
+  window.scrollTo(0, 0);
+}
+
+if (QS.length > 0) (MODE === "exam" ? renderExam : renderInstant)();
+</script>
+{% endblock %}

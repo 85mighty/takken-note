@@ -3,6 +3,7 @@ python3 make_pdf.py takken_db.json out.pdf [--year R7] [--category 権利関係]
 """
 import json, sys, argparse, html
 from collections import Counter, defaultdict
+from datetime import date
 from weasyprint import HTML
 
 ap = argparse.ArgumentParser()
@@ -99,7 +100,7 @@ h3 { font-size: 13pt; margin: 6mm 0 2mm 0; }
 
 doc = f"""<html><head><meta charset='utf-8'><style>{css}</style></head><body>
 <h1>{esc(title)}</h1>
-<div class='meta'>対象：{len(sel)}問（誤答{a.min_wrong}回以上）　作成：2026-09-19</div>
+<div class='meta'>対象：{len(sel)}問（誤答{a.min_wrong}回以上）　作成：{date.today().isoformat()}</div>
 <h3>分野別 正答数</h3>
 <table><tr><th>年度</th>{''.join(f'<th>{c}</th>' for c in cats)}<th>合計</th></tr>{sum_rows}</table>
 <h3>細目別 誤答数</h3>

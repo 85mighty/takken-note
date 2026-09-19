@@ -104,7 +104,25 @@ def parse_answers(pages):
                 for q, d in zip(nums, digits):
                     q = int(q.translate(str.maketrans("０１２３４５６７８９", "0123456789")))
                     ans[q] = int(d)
+    if not ans:
+        ans = parse_answers_grid(pages)
     return ans
+
+
+def parse_answers_grid(pages):
+    """フォールバック: 問Nヘッダなしの数字グリッド正解表 (R6形式)。
+    最終3ページから 1-4 の数字だけの行を集め、行優先で問1..問Nに割り当てる。
+    """
+    for txt in reversed(pages[-3:]):
+        t = txt.replace("１", "1").replace("２", "2").replace("３", "3").replace("４", "4")
+        digits = ""
+        for ln in t.split("\n"):
+            s = re.sub(r"\s+", "", ln)
+            if s and re.fullmatch(r"[1-4]+", s):
+                digits += s
+        if len(digits) >= 40:  # 50問の正解表とみなす
+            return {i + 1: int(d) for i, d in enumerate(digits)}
+    return {}
 
 def main():
     pdf_path, year, out = sys.argv[1], sys.argv[2], sys.argv[3]

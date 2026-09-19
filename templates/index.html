@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}오답 목록 — 宅建 오답노트{% endblock %}
+{% block body %}
+
+<div class="shortcuts">
+  <span class="mut">바로가기:</span>
+  <a class="chip" href="{{ url_for('index', min_wrong=1) }}">전체 오답</a>
+  {% for y in all_years %}
+  <a class="chip" href="{{ url_for('index', year=y, min_wrong=1) }}">{{ y }} 오답</a>
+  {% endfor %}
+  {% for c in all_cats %}
+  <a class="chip" href="{{ url_for('index', category=c, min_wrong=1) }}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+<form class="filter" method="get" action="{{ url_for('index') }}">
+  <fieldset>
+    <legend>연도</legend>
+    {% for y in all_years %}
+    <label class="chk"><input type="checkbox" name="year" value="{{ y }}"
+      {% if y in f.years %}checked{% endif %}> {{ y }}</label>
+    {% endfor %}
+  </fieldset>
+  <fieldset>
+    <legend>분야</legend>
+    {% for c in all_cats %}
+    <label class="chk"><input type="checkbox" name="category" value="{{ c }}"
+      {% if c in f.cats %}checked{% endif %}> {{ c }}</label>
+    {% endfor %}
+  </fieldset>
+  <fieldset>
+    <legend>細目 (부분일치)</legend>
+    <input type="text" name="subtopic" value="{{ f.subtopic }}" list="subtopics">
+    <datalist id="subtopics">
+      {% for s in all_subtopics %}<option value="{{ s }}">{% endfor %}
+    </datalist>
+  </fieldset>
+  <fieldset>
+    <legend>誤答 ≥ N회 (0=전체)</legend>
+    <input type="number" name="min_wrong" min="0" max="20" value="{{ f.min_wrong }}">
+  </fieldset>
+  <fieldset>
+    <legend>오답 이유 태그</legend>
+    <select name="error_tag">
+      <option value="">전체</option>
+      {% for t in error_tags %}
+      <option value="{{ t }}" {% if f.error_tag == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </fieldset>
+  <button class="btn" type="submit">필터 적용</button>
+</form>
+
+<div class="actions">
+  <strong>{{ questions|length }}문제</strong>
+  {% if no_subtopic %}<span class="warn">細目 미입력 {{ no_subtopic }}건 (노란 줄 — 표에서 바로 입력)</span>{% endif %}
+  <span class="spacer"></span>
+  <a class="btn" href="{{ url_for('review') }}?{{ qs_query }}&mode=instant">바로 풀기 (즉시 채점)</a>
+  <a class="btn red" href="{{ url_for('review') }}?{{ qs_query }}&mode=exam">시험 모드 (나중에 채점)</a>
+  <a class="btn gray" href="{{ url_for('pdf') }}?{{ qs_query }}">PDF 출력</a>
+</div>
+
+<div class="scrollx">
+<table class="list">
+  <tr><th>문제</th><th>분야</th><th>細目</th><th>문제문</th><th>誤答</th><th>이유</th></tr>
+  {% for q in questions %}
+  <tr {% if not q.subtopic %}class="nosub"{% endif %}>
+    <td class="num">{{ q.year }} 問{{ q.number }}</td>
+    <td>{{ q.category }}</td>
+    <td><input class="sub-edit" value="{{ q.subtopic }}" placeholder="細目 입력"
+        data-year="{{ q.year }}" data-number="{{ q.number }}" list="subtopics"></td>
+    <td class="stem1">{{ q.stem[:52] }}{% if q.stem|length > 52 %}…{% endif %}</td>
+    <td class="cnt">{{ wrong_count(q) }}</td>
+    <td class="reason-mini">{{ q.error_reason }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+
+<script>
+document.querySelectorAll(".sub-edit").forEach(inp => {
+  inp.addEventListener("change", async () => {
+    const r = await fetch("/api/subtopic", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({year: inp.dataset.year, number: inp.dataset.number, subtopic: inp.value})
+    });
+    if (r.ok) {
+      inp.closest("tr").classList.toggle("nosub", !inp.value.trim());
+      inp.style.background = "#e8f5e9";
+      setTimeout(() => inp.style.background = "", 700);
+    }
+  });
+});
+</script>
+{% endblock %}

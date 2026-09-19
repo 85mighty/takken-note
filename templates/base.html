@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}宅建 오답노트{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav>
+  <span class="brand">宅建 오답노트</span>
+  <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="on"{% endif %}>오답 목록</a>
+  <a href="{{ url_for('stats') }}" {% if request.endpoint == 'stats' %}class="on"{% endif %}>통계</a>
+  <a href="{{ url_for('register') }}" {% if request.endpoint == 'register' %}class="on"{% endif %}>등록</a>
+  <span class="dday">시험일 2026-10-18</span>
+</nav>
+<main>
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+{% endwith %}
+{% block body %}{% endblock %}
+</main>
+</body>
+</html>
