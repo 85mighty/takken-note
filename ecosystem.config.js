@@ -10,12 +10,16 @@ try {
   password = fs.readFileSync(path.join(__dirname, ".takken_password"), "utf8").trim();
 } catch (e) {}
 
+// deploy.sh가 만든 .venv가 있으면 그쪽 파이썬 사용 (PEP 668 환경 대응)
+const venvPython = path.join(__dirname, ".venv", "bin", "python3");
+const interpreter = fs.existsSync(venvPython) ? venvPython : "python3";
+
 module.exports = {
   apps: [
     {
       name: "takken-note",
       script: "app.py",
-      interpreter: "python3",
+      interpreter: interpreter,
       cwd: __dirname,
       env: {
         HOST: "0.0.0.0",          // 외부(아이폰)에서 접속하려면 0.0.0.0

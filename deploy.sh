@@ -17,8 +17,14 @@ if [ ! -s .takken_password ]; then
   echo "   설정:  echo '원하는비밀번호' > .takken_password   후 ./deploy.sh 재실행"
 fi
 
-# 3) 의존성
-pip3 install -q -r requirements.txt
+# 3) 의존성 — 프로젝트 전용 venv (PEP 668 externally-managed 환경 대응)
+if [ ! -d .venv ]; then
+  python3 -m venv .venv || {
+    echo "venv 생성 실패 → 먼저:  apt-get install -y python3-venv  후 ./deploy.sh 재실행"
+    exit 1
+  }
+fi
+.venv/bin/pip install -q -r requirements.txt
 
 # 3) 일본어 폰트 (PDF용) — 없으면 안내만
 if ! fc-list 2>/dev/null | grep -qi "Noto Sans CJK"; then
