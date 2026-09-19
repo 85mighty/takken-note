@@ -28,6 +28,16 @@ echo '원하는비밀번호' > .takken_password      # 로그인 비밀번호 (g
 이후 업데이트·재기동은 `./deploy.sh` 한 번이면 됩니다
 (VPS에 쌓인 오답 기록을 자동 커밋 → pull → pm2 재기동).
 
+### 자동 배포 (선택)
+
+VPS가 5분마다 GitHub을 확인해서 새 커밋이 있으면 스스로 배포하게 하려면 (1회 설정):
+
+```bash
+( crontab -l 2>/dev/null | grep -v autodeploy ; echo "*/5 * * * * $HOME/takken-note/autodeploy.sh" ) | crontab -
+```
+
+배포 이력은 `autodeploy.log`에 남습니다. 해제: `crontab -e`에서 해당 줄 삭제.
+
 - 접속: `http://<VPS-IP>:8788` — 아이폰/아이패드 Safari에서 「홈 화면에 추가」 하면 앱처럼 사용
 - 비밀번호는 `.takken_password` 파일 (git 무시 대상 — `ecosystem.config.js`가 읽음). 설정하면 로그인(90일 유지)이 걸립니다. **외부에 열 때 필수**. `ecosystem.config.js` 자체는 수정하지 말 것 (수정하면 업데이트 pull이 막힘)
 - 방화벽에서 8788 포트 허용 필요 (예: `sudo ufw allow 8788`)

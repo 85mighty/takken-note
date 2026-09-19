@@ -3,3 +3,4 @@ __pycache__/
 .secret_key
 .takken_password
 .venv/
+autodeploy.log
