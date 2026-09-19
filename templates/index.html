@@ -91,7 +91,23 @@
 </table>
 </div>
 
+<div class="reset-row">
+  <button type="button" class="btn outline-red" id="reset-wrong">틀린 횟수 초기화</button>
+  <span class="mut">현재 목록에 보이는 문제들의 틀린 횟수를 전부 0으로 되돌립니다 (문제·이유 메모는 유지)</span>
+</div>
+
 <script>
+const KEYS = {{ keys_json|safe }};
+document.getElementById("reset-wrong").addEventListener("click", async () => {
+  if (!KEYS.length) { alert("대상 문제가 없습니다"); return; }
+  if (!confirm(`현재 목록의 ${KEYS.length}문제 틀린 횟수를 전부 0으로 초기화합니다.\n되돌릴 수 없습니다. 진행할까요?`)) return;
+  const r = await fetch("/api/reset_wrong", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({items: KEYS})
+  });
+  if (r.ok) location.reload();
+});
+
 const tbl = document.querySelector("table.list");
 const btnAns = document.getElementById("toggle-ans");
 function setHideAns(h) {

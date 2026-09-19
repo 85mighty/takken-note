@@ -126,6 +126,10 @@ h2 { font-size: 18px; border-left: 5px solid var(--blue); padding-left: 8px; mar
 .panel input[type=text], .panel input[type=date], .panel select { padding: 5px 8px; font-size: 15px; }
 .panel input.wide { width: 320px; max-width: 100%; }
 
+.reset-row { margin-top: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.btn.outline-red { background: #fff; color: var(--red); border: 1.5px solid var(--red); }
+.btn.outline-red:hover { background: #ffebee; }
+
 /* 바로가기 칩 */
 .shortcuts { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .chip {

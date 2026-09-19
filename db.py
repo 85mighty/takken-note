@@ -172,6 +172,21 @@ def add_year(records, overwrite=False):
     return year, len(records)
 
 
+def reset_wrong(keys):
+    """[(year, number)] 목록의 wrong_dates를 비움 (틀린 횟수 초기화). 반환: 초기화된 문제 수."""
+    with _lock:
+        db = load()
+        n = 0
+        for year, number in keys:
+            q = find(db, year, int(number))
+            if q is not None and q["wrong_dates"]:
+                q["wrong_dates"] = []
+                n += 1
+        if n:
+            save(db)
+        return n
+
+
 def upsert_questions(records):
     """개별 문제 단위 추가/갱신 (부분 연도 지원 — 스캔본에서 옮긴 오답 문제 등).
 

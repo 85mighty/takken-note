@@ -116,8 +116,9 @@ def index():
                              error_tag=f["error_tag"])
     qs.sort(key=lambda q: (q["year"], q["number"]))
     no_subtopic = sum(1 for q in qs if not q.get("subtopic"))
+    keys_json = json.dumps([{"year": q["year"], "number": q["number"]} for q in qs])
     return render_template("index.html", questions=qs, f=f,
-                           no_subtopic=no_subtopic,
+                           no_subtopic=no_subtopic, keys_json=keys_json,
                            wrong_count=db.wrong_count, qs_query=filters_qs(f))
 
 
@@ -146,6 +147,15 @@ def api_answer():
     correct = bool(j["correct"])
     db.record_answer(j["year"], int(j["number"]), correct)
     return jsonify(ok=True)
+
+
+@app.route("/api/reset_wrong", methods=["POST"])
+def api_reset_wrong():
+    """지정한 문제들의 틀린 횟수(wrong_dates) 초기화."""
+    j = request.get_json(force=True)
+    keys = [(i["year"], int(i["number"])) for i in j.get("items", [])]
+    n = db.reset_wrong(keys)
+    return jsonify(ok=True, reset=n)
 
 
 @app.route("/api/import_year", methods=["POST"])
