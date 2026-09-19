@@ -9,16 +9,65 @@ import sys
 import tempfile
 from datetime import date
 
+from datetime import timedelta
+
 from flask import (Flask, abort, flash, jsonify, redirect, render_template,
-                   request, send_file, url_for)
+                   request, send_file, session, url_for)
 
 import db
 import parse_takken
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
-app.secret_key = "takken-note-local"  # 로컬 1인용 — flash 메시지 전용
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=90)
+
+
+def _secret_key():
+    """세션 서명 키: .secret_key 파일에 보관 (없으면 생성, gitignore 대상)."""
+    p = os.path.join(BASE, ".secret_key")
+    try:
+        with open(p, "rb") as f:
+            return f.read()
+    except FileNotFoundError:
+        key = os.urandom(32)
+        with open(p, "wb") as f:
+            f.write(key)
+        os.chmod(p, 0o600)
+        return key
+
+
+app.secret_key = _secret_key()
+
+# VPS 등 외부 공개 시: 환경변수 TAKKEN_PASSWORD를 설정하면 비밀번호 로그인 필수.
+# 미설정이면 로그인 없음 (localhost 개인용).
+PASSWORD = os.environ.get("TAKKEN_PASSWORD") or None
+
+
+@app.before_request
+def require_login():
+    if not PASSWORD or request.endpoint in ("login", "static"):
+        return
+    if session.get("authed"):
+        return
+    if request.path.startswith("/api/"):
+        return jsonify(ok=False, error="로그인 필요"), 401
+    nxt = request.full_path if request.query_string else request.path
+    return redirect(url_for("login", next=nxt))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        if PASSWORD and request.form.get("password") == PASSWORD:
+            session.permanent = True
+            session["authed"] = True
+            nxt = request.args.get("next") or ""
+            if not (nxt.startswith("/") and not nxt.startswith("//")):
+                nxt = url_for("index")
+            return redirect(nxt)
+        flash("비밀번호가 틀립니다", "err")
+    return render_template("login.html")
 
 
 def read_filters():
@@ -237,4 +286,8 @@ def pdf():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8788, debug=False)
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", "8788"))
+    if host != "127.0.0.1" and not PASSWORD:
+        print("경고: 외부에 열면서(TAKKEN_PASSWORD 미설정) 비밀번호가 없습니다.", file=sys.stderr)
+    app.run(host=host, port=port, debug=False)

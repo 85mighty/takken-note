@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}로그인 — 宅建 오답노트{% endblock %}
+{% block body %}
+<div class="panel" style="max-width:360px; margin:48px auto;">
+  <h2>로그인</h2>
+  <form method="post">
+    <label>비밀번호</label>
+    <input type="password" name="password" class="wide" autofocus autocomplete="current-password">
+    <p><button class="btn" type="submit">들어가기</button></p>
+  </form>
+</div>
+{% endblock %}

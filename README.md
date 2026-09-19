@@ -12,11 +12,26 @@ python3 app.py
 
 PDF 출력에는 일본어 폰트가 필요: `apt-get install fonts-noto-cjk` (Noto Sans CJK JP).
 
-PM2로 상시 실행할 경우:
+## VPS 배포 (PM2)
+
+최초 1회:
 
 ```bash
-pm2 start "python3 app.py" --name takken-note --cwd /path/to/takken-note
+git clone https://github.com/85mighty/takken-note.git
+cd takken-note
+git checkout claude/epic-mccarthy-gvvh3q   # (main에 머지했으면 생략)
+sudo apt-get install -y fonts-noto-cjk      # PDF 일본어 폰트
+nano ecosystem.config.js                    # TAKKEN_PASSWORD를 원하는 비밀번호로 변경
+./deploy.sh
 ```
+
+이후 업데이트·재기동은 `./deploy.sh` 한 번이면 됩니다
+(VPS에 쌓인 오답 기록을 자동 커밋 → pull → pm2 재기동).
+
+- 접속: `http://<VPS-IP>:8788` — 아이폰/아이패드 Safari에서 「홈 화면에 추가」 하면 앱처럼 사용
+- `TAKKEN_PASSWORD`를 설정하면 로그인(90일 유지)이 걸립니다. **외부에 열 때 필수**
+- 방화벽에서 8788 포트 허용 필요 (예: `sudo ufw allow 8788`)
+- 환경변수: `HOST`(기본 127.0.0.1, 외부 공개는 0.0.0.0), `PORT`(기본 8788)
 
 ## 화면
 
