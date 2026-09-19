@@ -4,6 +4,7 @@
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -243,6 +244,21 @@ def register_upload():
     if not records:
         flash("문제를 하나도 추출하지 못함 — 스캔본(이미지) PDF이거나 형식이 다른 PDF. OCR은 지원 안 함.", "err")
         return redirect(url_for("register"))
+    # 정답 일괄 입력 (PDF에 정답표가 없거나 교재 정답을 쓸 때). 問1부터 순서대로,
+    # 쉼표 구분. "1・4" 같은 복수정답은 첫 숫자, "-"는 정답 없음으로 처리.
+    raw_ans = (request.form.get("answers") or "").strip()
+    if raw_ans:
+        toks = [t for t in re.split(r"[,、\s]+", raw_ans) if t]
+        manual = {}
+        for i, t in enumerate(toks, start=1):
+            m = re.search(r"[1-4]", t)
+            manual[i] = int(m.group()) if m else None
+        if len(toks) != len(records):
+            flash(f"주의: 정답 입력 {len(toks)}개 ≠ 문제 {len(records)}개 — 번호 순서대로 앞에서부터 적용됨", "err")
+        for r in records:
+            v = manual.get(r["number"])
+            if v is not None:
+                r["answer"] = v
     bad = [r["number"] for r in records if len(r["choices"]) != 4 or r["answer"] is None]
     try:
         db.add_year(records, overwrite=overwrite)
