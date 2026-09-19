@@ -23,7 +23,7 @@
    ],
    "answer": 2,
    "category": "権利関係",
-   "subtopic": "",
+   "subtopic": "債務不履行・解除",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -42,7 +42,7 @@
    ],
    "answer": 1,
    "category": "権利関係",
-   "subtopic": "",
+   "subtopic": "委任",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -61,7 +61,7 @@
    ],
    "answer": 2,
    "category": "権利関係",
-   "subtopic": "",
+   "subtopic": "相続",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -80,7 +80,7 @@
    ],
    "answer": 3,
    "category": "権利関係",
-   "subtopic": "",
+   "subtopic": "売買・贈与（手付・担保責任）",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -99,7 +99,7 @@
    ],
    "answer": 3,
    "category": "権利関係",
-   "subtopic": "",
+   "subtopic": "借地借家法（借家）",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -118,7 +118,7 @@
    ],
    "answer": 1,
    "category": "権利関係",
-   "subtopic": "",
+   "subtopic": "不動産登記法",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -137,7 +137,7 @@
    ],
    "answer": 4,
    "category": "法令上の制限",
-   "subtopic": "",
+   "subtopic": "都市計画法（地域地区）",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -156,7 +156,7 @@
    ],
    "answer": 2,
    "category": "法令上の制限",
-   "subtopic": "",
+   "subtopic": "都市計画法（開発許可）",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -175,7 +175,7 @@
    ],
    "answer": 4,
    "category": "税その他",
-   "subtopic": "",
+   "subtopic": "不動産取得税",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -199,7 +199,7 @@
    ],
    "answer": 2,
    "category": "宅建業法",
-   "subtopic": "",
+   "subtopic": "業務規制（広告・媒介契約・保全措置）",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -223,7 +223,7 @@
    ],
    "answer": 3,
    "category": "宅建業法",
-   "subtopic": "",
+   "subtopic": "業務規制（広告・媒介契約・保全措置）",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -242,7 +242,7 @@
    ],
    "answer": 4,
    "category": "宅建業法",
-   "subtopic": "",
+   "subtopic": "報酬",
    "wrong_dates": [
     "2026-09-19"
    ],
@@ -261,7 +261,7 @@
    ],
    "answer": 1,
    "category": "宅建業法",
-   "subtopic": "",
+   "subtopic": "37条書面",
    "wrong_dates": [
     "2026-09-19"
    ],
