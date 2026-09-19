@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import date
+from urllib.parse import urlencode
 
 from datetime import timedelta
 
@@ -84,6 +85,17 @@ def read_filters():
             "min_wrong": min_wrong, "error_tag": error_tag}
 
 
+def filters_qs(f):
+    """필터 dict → 깨끗한 쿼리스트링 (mode 등 잡파라미터 누적 방지)."""
+    params = [("year", y) for y in f["years"]] + [("category", c) for c in f["cats"]]
+    if f["subtopic"]:
+        params.append(("subtopic", f["subtopic"]))
+    params.append(("min_wrong", str(f["min_wrong"])))
+    if f["error_tag"]:
+        params.append(("error_tag", f["error_tag"]))
+    return urlencode(params)
+
+
 @app.context_processor
 def inject_common():
     d = db.load()
@@ -105,7 +117,7 @@ def index():
     no_subtopic = sum(1 for q in qs if not q.get("subtopic"))
     return render_template("index.html", questions=qs, f=f,
                            no_subtopic=no_subtopic,
-                           wrong_count=db.wrong_count, qs_query=request.query_string.decode())
+                           wrong_count=db.wrong_count, qs_query=filters_qs(f))
 
 
 # ---- C. 다시 풀기 모드 ----

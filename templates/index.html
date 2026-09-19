@@ -58,11 +58,12 @@
   <a class="btn" href="{{ url_for('review') }}?{{ qs_query }}&mode=instant">바로 풀기 (즉시 채점)</a>
   <a class="btn red" href="{{ url_for('review') }}?{{ qs_query }}&mode=exam">시험 모드 (나중에 채점)</a>
   <a class="btn gray" href="{{ url_for('pdf') }}?{{ qs_query }}">PDF 출력</a>
+  <button type="button" class="btn gray" id="toggle-ans">正解を隠す</button>
 </div>
 
 <div class="scrollx">
 <table class="list">
-  <tr><th>문제</th><th>분야</th><th>細目</th><th>문제문</th><th>誤答</th><th>이유</th></tr>
+  <tr><th>문제</th><th>분야</th><th>細目</th><th>문제문</th><th>틀린<br>횟수</th><th>이유</th></tr>
   {% for q in questions %}
   <tr {% if not q.subtopic %}class="nosub"{% endif %}>
     <td class="num tog" data-t="d{{ loop.index }}" title="클릭하면 문제 전체 보기">{{ q.year }} 問{{ q.number }} <span class="arrow">▸</span></td>
@@ -80,6 +81,7 @@
       {% for c in q.choices %}
       <div class="dch {% if loop.index == q.answer %}ok{% endif %}"><b>{{ loop.index }}</b>　{{ c }}</div>
       {% endfor %}
+      <button type="button" class="reveal">正解を見る</button>
       <div class="dans">정답 <b>{{ q.answer }}</b>
         {% if q.wrong_dates %}<span class="mut">｜틀린 날: {{ q.wrong_dates|join(', ') }}</span>{% endif %}
         {% if q.error_reason %}<span class="mut">｜이유: {{ q.error_reason }}</span>{% endif %}</div>
@@ -90,6 +92,21 @@
 </div>
 
 <script>
+const tbl = document.querySelector("table.list");
+const btnAns = document.getElementById("toggle-ans");
+function setHideAns(h) {
+  tbl.classList.toggle("hide-ans", h);
+  btnAns.textContent = h ? "正解を表示" : "正解を隠す";
+  if (h) tbl.querySelectorAll("tr.detail.revealed").forEach(r => r.classList.remove("revealed"));
+  try { localStorage.setItem("hideAns", h ? "1" : "0"); } catch (e) {}
+}
+btnAns.addEventListener("click", () => setHideAns(!tbl.classList.contains("hide-ans")));
+let hideInit = false;
+try { hideInit = localStorage.getItem("hideAns") === "1"; } catch (e) {}
+setHideAns(hideInit);
+document.querySelectorAll(".reveal").forEach(b =>
+  b.addEventListener("click", () => b.closest("tr").classList.add("revealed")));
+
 document.querySelectorAll(".tog").forEach(td => {
   td.addEventListener("click", () => {
     const d = document.getElementById(td.dataset.t);

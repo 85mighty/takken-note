@@ -63,6 +63,17 @@ tr.detail .dch.ok { color: #2e7d32; }
 tr.detail .dch.ok b { color: #2e7d32; }
 tr.detail .dans { border-top: 1px dashed #aab; margin-top: 8px; padding-top: 6px; color: var(--red); }
 
+/* 正解を隠す 모드: 정답 줄·초록 강조 숨김, 문제별 「正解を見る」 버튼 표시 */
+tr.detail .reveal {
+  display: none; margin-top: 8px; padding: 5px 14px; border-radius: 6px;
+  border: 1.5px solid var(--line); background: #fff; cursor: pointer; font-size: 13.5px; color: var(--blue);
+}
+tr.detail .reveal:hover { border-color: var(--blue); }
+table.list.hide-ans tr.detail:not(.revealed) .dans { display: none; }
+table.list.hide-ans tr.detail:not(.revealed) .dch.ok { color: inherit; font-weight: normal; }
+table.list.hide-ans tr.detail:not(.revealed) .dch.ok b { color: var(--blue); }
+table.list.hide-ans tr.detail:not(.revealed) .reveal { display: inline-block; }
+
 /* 통계 */
 table.stat { border-collapse: collapse; background: #fff; margin-bottom: 22px; }
 table.stat th, table.stat td { border: 1px solid var(--line); padding: 5px 12px; text-align: center; }
