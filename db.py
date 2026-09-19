@@ -172,6 +172,37 @@ def add_year(records, overwrite=False):
     return year, len(records)
 
 
+def upsert_questions(records):
+    """개별 문제 단위 추가/갱신 (부분 연도 지원 — 스캔본에서 옮긴 오답 문제 등).
+
+    같은 (year, number)가 있으면 문제 텍스트만 갱신하고 오답기록·細目·이유는 보존.
+    반환: (추가 수, 갱신 수)
+    """
+    with _lock:
+        db = load()
+        by_key = {(q["year"], q["number"]): q for q in db["questions"]}
+        added = updated = 0
+        for r in records:
+            r.setdefault("subtopic", "")
+            r.setdefault("subs", [])
+            key = (r["year"], int(r["number"]))
+            old = by_key.get(key)
+            if old:
+                r["wrong_dates"] = old["wrong_dates"]
+                r["error_reason"] = old["error_reason"]
+                if old.get("subtopic") and not r["subtopic"]:
+                    r["subtopic"] = old["subtopic"]
+                updated += 1
+            else:
+                r["wrong_dates"] = []
+                r["error_reason"] = ""
+                added += 1
+            by_key[key] = r
+        db["questions"] = sorted(by_key.values(), key=lambda q: (q["year"], q["number"]))
+        save(db)
+        return added, updated
+
+
 # ---- 통계 ----
 
 def stats_year_category(db):

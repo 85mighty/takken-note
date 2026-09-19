@@ -148,6 +148,29 @@ def api_answer():
     return jsonify(ok=True)
 
 
+@app.route("/api/import_year", methods=["POST"])
+def api_import_year():
+    """문제 JSON 직접 가져오기 (스캔본을 수동/비전으로 옮긴 경우 등).
+
+    body: {"records": [{year, number, category?, subtopic?, stem, subs?, choices, answer}, ...]}
+    부분 추가 가능. 같은 (연도, 번호)는 텍스트만 갱신하고 오답기록은 보존.
+    """
+    j = request.get_json(force=True)
+    records = j.get("records", [])
+    if not records:
+        return jsonify(ok=False, error="records 비어 있음"), 400
+    for r in records:
+        for k in ("year", "number", "stem", "choices", "answer"):
+            if k not in r:
+                return jsonify(ok=False, error=f"필드 누락: {k} (問{r.get('number', '?')})"), 400
+        if len(r["choices"]) != 4:
+            return jsonify(ok=False, error=f"選択肢가 4개가 아님: 問{r['number']}"), 400
+        r["number"] = int(r["number"])
+        r.setdefault("category", parse_takken.category(r["number"]))
+    added, updated = db.upsert_questions(records)
+    return jsonify(ok=True, added=added, updated=updated)
+
+
 @app.route("/api/grade_batch", methods=["POST"])
 def api_grade_batch():
     """시험 모드: 전부 풀고 나서 한 번에 채점. 오답만 wrong_dates에 기록."""
