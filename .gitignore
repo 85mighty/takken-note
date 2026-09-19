@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 .secret_key
 .takken_password
+.venv/
