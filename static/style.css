@@ -51,6 +51,17 @@ table.list input.sub-edit { width: 100%; border: 1px dashed #aab; padding: 2px 6
 table.list input.sub-edit:focus { background: #fffde7; outline: 1px solid var(--blue); }
 .stem1 { color: #333; }
 .reason-mini { color: #777; font-size: 12.5px; }
+td.tog { cursor: pointer; }
+td.tog:hover { background: #eef5ff; }
+td.num .arrow { color: #99a; font-size: 11px; }
+tr.detail td { background: #f8fafd; font-size: 14.5px; line-height: 1.75; }
+tr.detail .stem { white-space: pre-wrap; margin-bottom: 6px; }
+tr.detail .sub { padding-left: 1.5em; text-indent: -1.5em; margin: 3px 0 3px 1em; }
+tr.detail .dch { padding-left: 1.8em; text-indent: -1.8em; margin: 4px 0; }
+tr.detail .dch b { color: var(--blue); }
+tr.detail .dch.ok { color: #2e7d32; }
+tr.detail .dch.ok b { color: #2e7d32; }
+tr.detail .dans { border-top: 1px dashed #aab; margin-top: 8px; padding-top: 6px; color: var(--red); }
 
 /* 통계 */
 table.stat { border-collapse: collapse; background: #fff; margin-bottom: 22px; }

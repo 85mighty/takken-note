@@ -65,19 +65,38 @@
   <tr><th>문제</th><th>분야</th><th>細目</th><th>문제문</th><th>誤答</th><th>이유</th></tr>
   {% for q in questions %}
   <tr {% if not q.subtopic %}class="nosub"{% endif %}>
-    <td class="num">{{ q.year }} 問{{ q.number }}</td>
+    <td class="num tog" data-t="d{{ loop.index }}" title="클릭하면 문제 전체 보기">{{ q.year }} 問{{ q.number }} <span class="arrow">▸</span></td>
     <td>{{ q.category }}</td>
     <td><input class="sub-edit" value="{{ q.subtopic }}" placeholder="細目 입력"
         data-year="{{ q.year }}" data-number="{{ q.number }}" list="subtopics"></td>
-    <td class="stem1">{{ q.stem[:52] }}{% if q.stem|length > 52 %}…{% endif %}</td>
+    <td class="stem1 tog" data-t="d{{ loop.index }}" title="클릭하면 문제 전체 보기">{{ q.stem[:52] }}{% if q.stem|length > 52 %}…{% endif %}</td>
     <td class="cnt">{{ wrong_count(q) }}</td>
     <td class="reason-mini">{{ q.error_reason }}</td>
+  </tr>
+  <tr class="detail" id="d{{ loop.index }}" hidden>
+    <td colspan="6">
+      <div class="stem">{{ q.stem }}</div>
+      {% for s in q.subs %}<div class="sub">{{ s }}</div>{% endfor %}
+      {% for c in q.choices %}
+      <div class="dch {% if loop.index == q.answer %}ok{% endif %}"><b>{{ loop.index }}</b>　{{ c }}</div>
+      {% endfor %}
+      <div class="dans">정답 <b>{{ q.answer }}</b>
+        {% if q.wrong_dates %}<span class="mut">｜틀린 날: {{ q.wrong_dates|join(', ') }}</span>{% endif %}
+        {% if q.error_reason %}<span class="mut">｜이유: {{ q.error_reason }}</span>{% endif %}</div>
+    </td>
   </tr>
   {% endfor %}
 </table>
 </div>
 
 <script>
+document.querySelectorAll(".tog").forEach(td => {
+  td.addEventListener("click", () => {
+    const d = document.getElementById(td.dataset.t);
+    d.hidden = !d.hidden;
+    td.closest("tr").querySelectorAll(".arrow").forEach(a => a.textContent = d.hidden ? "▸" : "▾");
+  });
+});
 document.querySelectorAll(".sub-edit").forEach(inp => {
   inp.addEventListener("change", async () => {
     const r = await fetch("/api/subtopic", {
