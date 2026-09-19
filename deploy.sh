@@ -9,9 +9,15 @@ if ! git diff --quiet -- takken_db.json; then
   git add takken_db.json
   git commit -m "VPS 오답 기록 $(date +%F_%H%M)"
 fi
-git pull --rebase
+git pull --rebase --autostash
 
-# 2) 의존성
+# 2) 비밀번호 파일 확인
+if [ ! -s .takken_password ]; then
+  echo "※ 경고: .takken_password 파일이 없습니다 → 로그인 없이 전체 공개 상태로 뜹니다."
+  echo "   설정:  echo '원하는비밀번호' > .takken_password   후 ./deploy.sh 재실행"
+fi
+
+# 3) 의존성
 pip3 install -q -r requirements.txt
 
 # 3) 일본어 폰트 (PDF용) — 없으면 안내만
