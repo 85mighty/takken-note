@@ -98,7 +98,7 @@ function renderInstant() {
   const allDone = Object.keys(instantDone).length === QS.length;
   $app.innerHTML = `<div class="card">${cardHead(q)}
     <div id="choices">${q.choices.map((c, k) =>
-      `<button type="button" class="choice" data-n="${k + 1}"><span class="cn">${k + 1}</span>${esc(c)}</button>`).join("")}</div>
+      `<button type="button" class="choice ${!done && picked[idx] === k + 1 ? "selected" : ""}" data-n="${k + 1}"><span class="cn">${k + 1}</span>${esc(c)}</button>`).join("")}</div>
     <div id="after"></div>
     <div class="examnav no-print">
       <button type="button" class="btn gray" id="iprev" ${idx === 0 ? "disabled" : ""}>← 이전</button>
@@ -116,22 +116,31 @@ function renderInstant() {
     showInstantResult(q, picked[idx], false);
     return;
   }
-  document.querySelectorAll(".choice").forEach(b => b.addEventListener("click", async () => {
-    const n = +b.dataset.n, correct = n === q.answer;
-    picked[idx] = n;
+  // 선택은 자유롭게 바꿀 수 있고, 「정답 확인」을 눌러야 채점된다
+  document.getElementById("after").innerHTML =
+    `<button type="button" class="btn red" id="icheck" ${picked[idx] ? "" : "disabled"}>정답 확인</button>`;
+  document.querySelectorAll(".choice").forEach(b => b.addEventListener("click", () => {
+    picked[idx] = +b.dataset.n;
+    document.querySelectorAll(".choice").forEach(x =>
+      x.classList.toggle("selected", +x.dataset.n === picked[idx]));
+    document.getElementById("icheck").disabled = false;
+  }));
+  document.getElementById("icheck").addEventListener("click", async () => {
+    const n = picked[idx], correct = n === q.answer;
     instantDone[idx] = {correct};
     showInstantResult(q, n, true);
     await fetch("/api/answer", {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({year: q.year, number: q.number, correct})
     });
-  }));
+  });
 }
 
 function showInstantResult(q, chosen, fresh) {
   const correct = chosen === q.answer;
   document.querySelectorAll(".choice").forEach(x => {
     x.disabled = true;
+    x.classList.remove("selected");
     if (+x.dataset.n === q.answer) x.classList.add("correct");
     else if (+x.dataset.n === chosen) x.classList.add("picked-wrong");
   });
