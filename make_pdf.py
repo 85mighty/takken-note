@@ -66,7 +66,7 @@ for c in cats:
   <div class='stem'>{esc(q['stem'])}</div>
   {subs}
   <div class='choices'>{chs}</div>
-  <div class='ans'>正解　<b>{q['answer']}</b>
+  <div class='ans'>正解　<b>{"・".join(map(str, q['answer'])) if isinstance(q['answer'], list) else q['answer']}</b>
     <span class='reason'>誤答理由：{esc(q.get('error_reason') or '＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿')}</span></div>
 </div>"""
 

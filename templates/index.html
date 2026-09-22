@@ -78,11 +78,12 @@
     <td colspan="6">
       <div class="stem">{{ q.stem }}</div>
       {% for s in q.subs %}<div class="sub">{{ s }}</div>{% endfor %}
+      {% set anss = q.answer if q.answer is not number else [q.answer] %}
       {% for c in q.choices %}
-      <div class="dch {% if loop.index == q.answer %}ok{% endif %}"><b>{{ loop.index }}</b>　{{ c }}</div>
+      <div class="dch {% if loop.index in anss %}ok{% endif %}"><b>{{ loop.index }}</b>　{{ c }}</div>
       {% endfor %}
       <button type="button" class="reveal">正解を見る</button>
-      <div class="dans">정답 <b>{{ q.answer }}</b>
+      <div class="dans">정답 <b>{{ anss|join('・') }}</b>
         {% if q.wrong_dates %}<span class="mut">｜틀린 날: {{ q.wrong_dates|join(', ') }}</span>{% endif %}
         {% if q.error_reason %}<span class="mut">｜이유: {{ q.error_reason }}</span>{% endif %}</div>
     </td>

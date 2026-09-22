@@ -32,6 +32,10 @@ function esc(s) {
   return (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 }
 
+// 복수정답 지원: answer가 배열이면 그중 하나를 고르면 정답
+function corrOf(q) { return Array.isArray(q.answer) ? q.answer : [q.answer]; }
+function ansText(q) { return corrOf(q).join("・"); }
+
 function progress() {
   const answered = Object.keys(picked).length;
   document.getElementById("progress").textContent =
@@ -126,7 +130,7 @@ function renderInstant() {
     document.getElementById("icheck").disabled = false;
   }));
   document.getElementById("icheck").addEventListener("click", async () => {
-    const n = picked[idx], correct = n === q.answer;
+    const n = picked[idx], correct = corrOf(q).includes(n);
     instantDone[idx] = {correct};
     showInstantResult(q, n, true);
     await fetch("/api/answer", {
@@ -137,16 +141,16 @@ function renderInstant() {
 }
 
 function showInstantResult(q, chosen, fresh) {
-  const correct = chosen === q.answer;
+  const correct = corrOf(q).includes(chosen);
   document.querySelectorAll(".choice").forEach(x => {
     x.disabled = true;
     x.classList.remove("selected");
-    if (+x.dataset.n === q.answer) x.classList.add("correct");
+    if (corrOf(q).includes(+x.dataset.n)) x.classList.add("correct");
     else if (+x.dataset.n === chosen) x.classList.add("picked-wrong");
   });
   const last = idx >= QS.length - 1;
   document.getElementById("after").innerHTML =
-    `<div class="verdict ${correct ? "ok" : "ng"}">${correct ? "정답 ○" : `오답 ✕ — 정답은 ${q.answer}`}</div>
+    `<div class="verdict ${correct ? "ok" : "ng"}">${correct ? "정답 ○" : `오답 ✕ — 정답은 ${ansText(q)}`}</div>
      ${correct ? "" : reasonBox(q, idx)}
      <button type="button" class="btn" id="next">${last ? "결과 요약 →" : "다음 문제 →"}</button>`;
   bindReason(q, idx);
@@ -206,7 +210,7 @@ async function grade() {
   const results = QS.map((q, i) => ({
     year: q.year, number: q.number,
     chosen: picked[i] || null,
-    correct: picked[i] === q.answer
+    correct: corrOf(q).includes(picked[i])
   }));
   await fetch("/api/grade_batch", {
     method: "POST", headers: {"Content-Type": "application/json"},
@@ -230,12 +234,12 @@ function renderExamResult(results) {
       ${q.choices.map((c, k) => {
         const n = k + 1;
         let cls = "";
-        if (n === q.answer) cls = "correct";
+        if (corrOf(q).includes(n)) cls = "correct";
         else if (n === r.chosen && !r.correct) cls = "picked-wrong";
         return `<div class="choice ${cls}" style="cursor:default"><span class="cn">${n}</span>${esc(c)}</div>`;
       }).join("")}
       <div class="verdict ${r.correct ? "ok" : "ng"}">
-        ${r.correct ? "정답 ○" : `오답 ✕ — 내 답 ${r.chosen ?? "무응답"} / 정답 ${q.answer}`}</div>
+        ${r.correct ? "정답 ○" : `오답 ✕ — 내 답 ${r.chosen ?? "무응답"} / 정답 ${ansText(q)}`}</div>
       ${r.correct ? "" : reasonBox(q, i)}
     </div>`;
   }).join("");
