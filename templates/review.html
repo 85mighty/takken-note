@@ -5,6 +5,7 @@
 <div class="actions no-print">
   <a class="btn gray" href="{{ url_for('index') }}?{{ request.query_string.decode() }}">← 목록으로</a>
   <span id="mode-label" class="mut"></span>
+  <span id="resume-note" class="mut" hidden>중단 지점부터 이어서 — <a href="#" id="restart">처음부터 다시</a></span>
   <span class="spacer"></span>
   <span class="progress" id="progress"></span>
 </div>
@@ -35,6 +36,35 @@ function esc(s) {
 // 복수정답 지원: answer가 배열이면 그중 하나를 고르면 정답
 function corrOf(q) { return Array.isArray(q.answer) ? q.answer : [q.answer]; }
 function ansText(q) { return corrOf(q).join("・"); }
+
+// 진행 상태 저장/복원 — 중단했다가 다시 들어오면 같은 필터+모드에서 이어서 풀기
+const SKEY = "resume:" + MODE + ":" + location.pathname + location.search;
+function qsSig() { return QS.map(q => q.year + "#" + q.number).join(","); }
+function saveState() {
+  try {
+    localStorage.setItem(SKEY, JSON.stringify({sig: qsSig(), idx, picked, done: instantDone}));
+  } catch (e) {}
+}
+function clearState() { try { localStorage.removeItem(SKEY); } catch (e) {} }
+function restoreState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SKEY) || "null");
+    if (!s || s.sig !== qsSig()) return false;                  // 문제 구성이 바뀌면 무시
+    if (!s.picked || Object.keys(s.picked).length === 0) return false;
+    idx = Math.min(s.idx || 0, QS.length - 1);
+    Object.assign(picked, s.picked);
+    Object.assign(instantDone, s.done || {});
+    return true;
+  } catch (e) { return false; }
+}
+function resetProgress() {
+  clearState();
+  Object.keys(picked).forEach(k => delete picked[k]);
+  Object.keys(instantDone).forEach(k => delete instantDone[k]);
+  idx = 0;
+  document.getElementById("resume-note").hidden = true;
+  (MODE === "exam" ? renderExam : renderInstant)();
+}
 
 function progress() {
   const answered = Object.keys(picked).length;
@@ -96,6 +126,7 @@ function bindReason(q, i) {
 /* ---------- 즉시 채점 모드 ---------- */
 function renderInstant() {
   if (idx >= QS.length) return renderInstantSummary();
+  saveState();
   const q = QS[idx];
   progress();
   const done = instantDone[idx];
@@ -128,10 +159,12 @@ function renderInstant() {
     document.querySelectorAll(".choice").forEach(x =>
       x.classList.toggle("selected", +x.dataset.n === picked[idx]));
     document.getElementById("icheck").disabled = false;
+    saveState();
   }));
   document.getElementById("icheck").addEventListener("click", async () => {
     const n = picked[idx], correct = corrOf(q).includes(n);
     instantDone[idx] = {correct};
+    saveState();
     showInstantResult(q, n, true);
     await fetch("/api/answer", {
       method: "POST", headers: {"Content-Type": "application/json"},
@@ -162,6 +195,7 @@ function showInstantResult(q, chosen, fresh) {
 }
 
 function renderInstantSummary() {
+  clearState();
   const total = QS.length;
   const ok = Object.values(instantDone).filter(r => r.correct).length;
   const wrong = QS.filter((q, i) => instantDone[i] && !instantDone[i].correct);
@@ -178,6 +212,7 @@ function renderInstantSummary() {
 
 /* ---------- 시험 모드 (나중에 채점) ---------- */
 function renderExam() {
+  saveState();
   const q = QS[idx];
   progress();
   $app.innerHTML = `<div class="card">${cardHead(q)}
@@ -216,6 +251,7 @@ async function grade() {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({results})
   });
+  clearState();
   renderExamResult(results);
 }
 
@@ -247,6 +283,11 @@ function renderExamResult(results) {
   window.scrollTo(0, 0);
 }
 
-if (QS.length > 0) (MODE === "exam" ? renderExam : renderInstant)();
+document.getElementById("restart").addEventListener("click", e => { e.preventDefault(); resetProgress(); });
+
+if (QS.length > 0) {
+  if (restoreState()) document.getElementById("resume-note").hidden = false;
+  (MODE === "exam" ? renderExam : renderInstant)();
+}
 </script>
 {% endblock %}
