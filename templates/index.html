@@ -86,6 +86,7 @@
       <div class="dans">정답 <b>{{ anss|join('・') }}</b>
         {% if q.wrong_dates %}<span class="mut">｜틀린 날: {{ q.wrong_dates|join(', ') }}</span>{% endif %}
         {% if q.error_reason %}<span class="mut">｜이유: {{ q.error_reason }}</span>{% endif %}</div>
+      {% if q.explanation %}<div class="expl">解説：{{ q.explanation }}</div>{% endif %}
     </td>
   </tr>
   {% endfor %}

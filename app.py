@@ -135,7 +135,8 @@ def review():
     payload = [{"year": q["year"], "number": q["number"], "category": q["category"],
                 "subtopic": q.get("subtopic") or "", "stem": q["stem"],
                 "subs": q["subs"], "choices": q["choices"], "answer": q["answer"],
-                "wrong": db.wrong_count(q), "error_reason": q.get("error_reason") or ""}
+                "wrong": db.wrong_count(q), "error_reason": q.get("error_reason") or "",
+                "explanation": q.get("explanation") or ""}
                for q in qs]
     return render_template("review.html", questions_json=json.dumps(payload, ensure_ascii=False),
                            count=len(payload), f=f)

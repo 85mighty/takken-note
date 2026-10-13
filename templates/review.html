@@ -184,6 +184,7 @@ function showInstantResult(q, chosen, fresh) {
   const last = idx >= QS.length - 1;
   document.getElementById("after").innerHTML =
     `<div class="verdict ${correct ? "ok" : "ng"}">${correct ? "정답 ○" : `오답 ✕ — 정답은 ${ansText(q)}`}</div>
+     ${q.explanation ? `<div class="expl">解説：${esc(q.explanation)}</div>` : ""}
      ${correct ? "" : reasonBox(q, idx)}
      <button type="button" class="btn" id="next">${last ? "결과 요약 →" : "다음 문제 →"}</button>`;
   bindReason(q, idx);
@@ -276,6 +277,7 @@ function renderExamResult(results) {
       }).join("")}
       <div class="verdict ${r.correct ? "ok" : "ng"}">
         ${r.correct ? "정답 ○" : `오답 ✕ — 내 답 ${r.chosen ?? "무응답"} / 정답 ${ansText(q)}`}</div>
+      ${q.explanation ? `<div class="expl">解説：${esc(q.explanation)}</div>` : ""}
       ${r.correct ? "" : reasonBox(q, i)}
     </div>`;
   }).join("");

@@ -180,3 +180,6 @@ h2 { font-size: 18px; border-left: 5px solid var(--blue); padding-left: 8px; mar
   .card { padding: 14px; }
   nav .dday { display: none; }
 }
+
+.expl { background: #fff8e1; border-left: 4px solid #f0c040; padding: 6px 10px; margin: 8px 0; font-size: 14px; line-height: 1.6; }
+table.list.hide-ans tr.detail:not(.revealed) .expl { display: none; }
