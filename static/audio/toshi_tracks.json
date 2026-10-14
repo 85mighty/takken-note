@@ -1,87 +1,88 @@
 {
  "title": "都市計画法 暗記ノート",
+ "voice": "Roger - Laid-Back, Casual, Resonant",
  "tracks": [
   {
    "n": 1,
    "title": "第1章　都市計画区域・準都市計画区域",
    "file": "toshi_01.mp3",
-   "sec": 131
+   "sec": 114
   },
   {
    "n": 2,
    "title": "第2章　区域区分（線引き）",
    "file": "toshi_02.mp3",
-   "sec": 89
+   "sec": 71
   },
   {
    "n": 3,
    "title": "第3章　用途地域13種 ―― 定義と景色",
    "file": "toshi_03.mp3",
-   "sec": 208
+   "sec": 158
   },
   {
    "n": 4,
    "title": "第4章　用途地域で「都市計画に定める事項」",
    "file": "toshi_04.mp3",
-   "sec": 72
+   "sec": 59
   },
   {
    "n": 5,
    "title": "第5章　補助的地域地区①　用途を調整するグループ",
    "file": "toshi_05.mp3",
-   "sec": 101
+   "sec": 86
   },
   {
    "n": 6,
    "title": "第6章　補助的地域地区②　高さ・密度を調整するグループ",
    "file": "toshi_06.mp3",
-   "sec": 125
+   "sec": 113
   },
   {
    "n": 7,
    "title": "第7章　補助的地域地区③　防災・景観・環境を守るグループ",
    "file": "toshi_07.mp3",
-   "sec": 125
+   "sec": 114
   },
   {
    "n": 8,
    "title": "第8章　都市施設・市街地開発事業",
    "file": "toshi_08.mp3",
-   "sec": 121
+   "sec": 99
   },
   {
    "n": 9,
    "title": "第9章　地区計画",
    "file": "toshi_09.mp3",
-   "sec": 131
+   "sec": 115
   },
   {
    "n": 10,
    "title": "第10章　都市計画の決定手続",
    "file": "toshi_10.mp3",
-   "sec": 121
+   "sec": 103
   },
   {
    "n": 11,
    "title": "第11章　開発許可①　定義と「許可が要らない」例外",
    "file": "toshi_11.mp3",
-   "sec": 183
+   "sec": 144
   },
   {
    "n": 12,
    "title": "第12章　開発許可②　手続・基準・変更・承継",
    "file": "toshi_12.mp3",
-   "sec": 163
+   "sec": 129
   },
   {
    "n": 13,
    "title": "第13章　開発許可③　建築制限（公告の前と後／調整区域の43条）",
    "file": "toshi_13.mp3",
-   "sec": 145
+   "sec": 121
   }
  ],
  "all": {
   "file": "toshi_all.mp3",
-  "sec": 1716
+  "sec": 1426
  }
 }
