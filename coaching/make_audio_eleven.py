@@ -17,6 +17,10 @@ Open JTalk 版 (make_audio.py) と同じファイル名で static/audio/ に上�
   python3 coaching/make_audio_eleven.py --only 3 --force  # 第3章だけ作り直す
   その後:  git add static/audio && git commit -m "ElevenLabs 音声" && git push origin HEAD
 
+声を自分で選ぶ: elevenlabs.io → Voices → Library で 日本語/Male/Young を絞って試聴 → 「Add to My Voices」
+  → echo '声の名前' > .eleven_voice   (次回から deploy.sh でもその声を使う)
+モデル: echo 'eleven_v3' > .eleven_model で v3 (抑揚が自然。アルファ版なので読み間違いがあれば v2 に戻す)
+
 文字数: 全13章で約 7,300 文字 → Free プラン(月1万文字)でも1回は作れる。Starter($5/月, 3万文字)なら余裕。
 """
 import argparse
@@ -43,8 +47,16 @@ PAUSE_NL = "\n\n"                       # 既定: 改行で自然な間 (課金�
 
 # ElevenLabs が漢字を読み間違えたら、ここに「用語 → 読み(ひらがな)」を足して --force で作り直す。
 READINGS = {
-    # "線引き": "せんびき",
+    "線引き": "せんびき",
+    "建蔽率": "けんぺいりつ",
+    "第一種": "だいいっしゅ",
+    "第二種": "だいにしゅ",
+    "遅滞なく": "ちたいなく",
 }
+
+# 声の条件 (Voice Library から自動で追加するときのフィルタ)
+DEFAULT_GENDER = "male"
+DEFAULT_AGE = "young"
 
 
 KEY_NAMES = ("ELEVEN_API_KEY", "ELEVENLABS_API_KEY", "XI_API_KEY", "ELEVEN_LABS_API_KEY")
@@ -61,6 +73,11 @@ def find_api_key():
             if k:
                 return k
     return ""
+
+
+def cfg_file(name):
+    p = os.path.join(ROOT, name)
+    return open(p, encoding="utf-8").read().strip() if os.path.exists(p) else ""
 
 
 def api_key():
@@ -110,17 +127,24 @@ def voices(key):
     return call("/voices", key=key)["voices"]
 
 
-def pick_voice(key, want):
+def pick_voice(key, want, gender=DEFAULT_GENDER, age=DEFAULT_AGE):
     vs = voices(key)
     if want:
         for v in vs:
-            if want in (v["voice_id"], v["name"]):
+            if want in (v["voice_id"], v["name"]) or v["name"].lower().startswith(want.lower()):
                 return v
-        sys.exit(f"声 '{want}' が見つかりません。--list で確認してください。")
-    for v in vs:  # 日本語ラベルの声があればそれ
-        if (v.get("labels") or {}).get("language", "").lower().startswith("ja"):
+        sys.exit(f"声 '{want}' が見つかりません。elevenlabs.io の Voice Library で「Add to My Voices」してから、"
+                 "--list で名前を確認してください。")
+
+    def match(v):
+        lab = v.get("labels") or {}
+        return (lab.get("language", "").lower().startswith("ja")
+                and (not gender or lab.get("gender", "") == gender)
+                and (not age or lab.get("age", "") == age))
+    for v in vs:  # 条件に合う日本語の声が My Voices にあればそれ
+        if match(v):
             return v
-    added = add_library_ja_voice(key)  # なければ Voice Library から日本語の声を追加して使う
+    added = add_library_ja_voice(key, gender, age)  # なければ Voice Library から追加して使う
     if added:
         return added
     for v in vs:  # 最後の手段: Sarah (multilingual で日本語も読めるが少し訛る)
@@ -129,16 +153,23 @@ def pick_voice(key, want):
     return vs[0]
 
 
-def add_library_ja_voice(key):
+def add_library_ja_voice(key, gender=DEFAULT_GENDER, age=DEFAULT_AGE):
     try:
-        res = call("/shared-voices?language=ja&page_size=30&sort=cloned_by_count", key=key)
-        cands = [v for v in res.get("voices", []) if v.get("language", "").lower().startswith("ja")]
+        q = "/shared-voices?language=ja&page_size=30&sort=cloned_by_count"
+        if gender:
+            q += f"&gender={gender}"
+        if age:
+            q += f"&age={age}"
+        res = call(q, key=key)
+        cands = [v for v in res.get("voices", []) if v.get("language", "").lower().startswith("ja")
+                 and (not gender or v.get("gender", "") == gender) and (not age or v.get("age", "") == age)]
         if not cands:
             return None
         cands.sort(key=lambda v: (v.get("cloned_by_count") or 0, v.get("usage_character_count_1y") or 0), reverse=True)
         v = cands[0]
         call(f"/voices/add/{v['public_owner_id']}/{v['voice_id']}", data={"new_name": v["name"]}, key=key)
-        print(f"Voice Library から日本語の声を追加: {v['name']}")
+        print(f"Voice Library から日本語の声を追加: {v['name']} ({v.get('gender','')}/{v.get('age','')}, "
+              f"{v.get('cloned_by_count',0)}人が使用)")
         for mv in voices(key):
             if mv["name"] == v["name"]:
                 return mv
@@ -162,17 +193,18 @@ def chapter_text(c, pause=PAUSE_NL):
     title = c["title"].replace("　", "、").replace("――", "、").replace("―", "、")
     lines = [f"{title}。", fix(c["meaning"]) + "。"]
     for n, it in enumerate(c["items"], 1):
-        lines.append(f"{n}。{fix(it)}。")
-    lines.append("一文。" + fix(c["one"]) + "。")
+        lines.append(f"{n}番、{fix(it)}。")
+    lines.append("まとめ。" + fix(c["one"]) + "。")
     return pause.join(lines)
 
 
 def tts(key, voice_id, model, text, mp3):
+    if model.startswith("eleven_v3"):
+        vset = {"stability": 0.5}
+    else:
+        vset = {"stability": 0.65, "similarity_boost": 0.8, "style": 0.0, "use_speaker_boost": True}
     body = call(f"/text-to-speech/{voice_id}?output_format={OUTPUT_FORMAT}",
-                data={"text": text, "model_id": model,
-                      "voice_settings": {"stability": 0.6, "similarity_boost": 0.8, "style": 0.0,
-                                         "use_speaker_boost": True}},
-                key=key, raw=True)
+                data={"text": text, "model_id": model, "voice_settings": vset}, key=key, raw=True)
     with open(mp3, "wb") as f:
         f.write(body)
 
@@ -186,8 +218,12 @@ def duration(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--list", action="store_true", help="声の一覧を表示して終了")
-    ap.add_argument("--voice", default=os.environ.get("ELEVEN_VOICE", ""), help="声の名前か voice_id")
-    ap.add_argument("--model", default=os.environ.get("ELEVEN_MODEL", DEFAULT_MODEL))
+    ap.add_argument("--voice", default=os.environ.get("ELEVEN_VOICE") or cfg_file(".eleven_voice"),
+                    help="声の名前か voice_id (未指定なら .eleven_voice ファイル → 日本語の若い男性を自動選択)")
+    ap.add_argument("--model", default=os.environ.get("ELEVEN_MODEL") or cfg_file(".eleven_model") or DEFAULT_MODEL,
+                    help="eleven_multilingual_v2 (既定) / eleven_v3 (より自然だがアルファ版)")
+    ap.add_argument("--gender", default=DEFAULT_GENDER, help="自動選択の条件: male / female / '' (問わない)")
+    ap.add_argument("--age", default=DEFAULT_AGE, help="自動選択の条件: young / middle_aged / old / ''")
     ap.add_argument("--only", type=int, help="この章番号だけ生成")
     ap.add_argument("--force", action="store_true", help="キャッシュを無視して作り直す")
     ap.add_argument("--dry-run", action="store_true", help="文章と文字数だけ表示 (API を呼ばない)")
@@ -211,7 +247,7 @@ def main():
     if not subprocess.run(["which", "ffmpeg"], capture_output=True).returncode == 0:
         sys.exit("ffmpeg がありません:  sudo apt-get install -y ffmpeg")
 
-    v = pick_voice(key, a.voice)
+    v = pick_voice(key, a.voice, a.gender, a.age)
     print(f"声: {v['name']} ({v['voice_id']})  モデル: {a.model}")
     os.makedirs(a.out, exist_ok=True)
     cache_p = os.path.join(a.out, ".eleven_cache.json")

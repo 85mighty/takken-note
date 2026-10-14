@@ -5,3 +5,5 @@ __pycache__/
 .venv/
 autodeploy.log
 .eleven_api_key
+.eleven_voice
+.eleven_model
