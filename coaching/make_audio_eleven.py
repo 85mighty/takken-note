@@ -67,6 +67,9 @@ def api_key():
     k = find_api_key()
     if not k:
         sys.exit("API キーがありません:  export ELEVEN_API_KEY=sk_xxx  または  echo 'sk_xxx' > .eleven_api_key")
+    if not k.isascii() or len(k) < 20:
+        sys.exit(f"API キーの形式が不正です ('{k[:6]}…'): elevenlabs.io → Profile → API Keys の sk_ で始まる実際のキーを "
+                 ".eleven_api_key に入れてください。  例)  echo 'sk_abcd1234...' > .eleven_api_key")
     return k
 
 
