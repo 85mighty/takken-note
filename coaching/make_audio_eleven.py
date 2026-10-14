@@ -47,12 +47,24 @@ READINGS = {
 }
 
 
-def api_key():
-    k = os.environ.get("ELEVEN_API_KEY", "").strip()
-    if not k:
-        p = os.path.join(ROOT, ".eleven_api_key")
+KEY_NAMES = ("ELEVEN_API_KEY", "ELEVENLABS_API_KEY", "XI_API_KEY", "ELEVEN_LABS_API_KEY")
+
+
+def find_api_key():
+    """キーを探す: 環境変数 (ELEVEN_API_KEY 等) → リポジトリ直下 or HOME の .eleven_api_key"""
+    for n in KEY_NAMES:
+        if os.environ.get(n, "").strip():
+            return os.environ[n].strip()
+    for p in (os.path.join(ROOT, ".eleven_api_key"), os.path.join(os.path.expanduser("~"), ".eleven_api_key")):
         if os.path.exists(p):
             k = open(p, encoding="utf-8").read().strip()
+            if k:
+                return k
+    return ""
+
+
+def api_key():
+    k = find_api_key()
     if not k:
         sys.exit("API キーがありません:  export ELEVEN_API_KEY=sk_xxx  または  echo 'sk_xxx' > .eleven_api_key")
     return k
@@ -82,13 +94,35 @@ def pick_voice(key, want):
             if want in (v["voice_id"], v["name"]):
                 return v
         sys.exit(f"声 '{want}' が見つかりません。--list で確認してください。")
-    for v in vs:  # 日本語ラベルの声があればそれ、なければ Sarah (multilingual で日本語も読める)
+    for v in vs:  # 日本語ラベルの声があればそれ
         if (v.get("labels") or {}).get("language", "").lower().startswith("ja"):
             return v
-    for v in vs:
+    added = add_library_ja_voice(key)  # なければ Voice Library から日本語の声を追加して使う
+    if added:
+        return added
+    for v in vs:  # 最後の手段: Sarah (multilingual で日本語も読めるが少し訛る)
         if v["name"] == "Sarah":
             return v
     return vs[0]
+
+
+def add_library_ja_voice(key):
+    try:
+        res = call("/shared-voices?language=ja&page_size=30&sort=cloned_by_count", key=key)
+        cands = [v for v in res.get("voices", []) if v.get("language", "").lower().startswith("ja")]
+        if not cands:
+            return None
+        cands.sort(key=lambda v: (v.get("cloned_by_count") or 0, v.get("usage_character_count_1y") or 0), reverse=True)
+        v = cands[0]
+        call(f"/voices/add/{v['public_owner_id']}/{v['voice_id']}", data={"new_name": v["name"]}, key=key)
+        print(f"Voice Library から日本語の声を追加: {v['name']}")
+        for mv in voices(key):
+            if mv["name"] == v["name"]:
+                return mv
+        return {"name": v["name"], "voice_id": v["voice_id"]}
+    except SystemExit as e:
+        print(f"※ 日本語の声の追加に失敗 ({e}) → 既定の声で続行")
+        return None
 
 
 def chapter_text(c, pause=PAUSE_NL):
@@ -183,6 +217,10 @@ def main():
         tracks.append({"n": i, "title": c["title"], "file": name, "sec": duration(mp3)})
         mp3s.append(mp3)
 
+    allmp3 = os.path.join(a.out, "toshi_all.mp3")
+    if used == 0 and os.path.exists(allmp3) and os.path.exists(os.path.join(a.out, "toshi_tracks.json")):
+        print("変更なし (全章キャッシュ済み)")
+        return
     lst = os.path.join(a.out, "concat.txt")
     with open(lst, "w") as f:
         for m in mp3s:
