@@ -21,7 +21,10 @@ Open JTalk 版 (make_audio.py) と同じファイル名で static/audio/ に上�
   → echo '声の名前' > .eleven_voice   (次回から deploy.sh でもその声を使う)
 モデル: echo 'eleven_v3' > .eleven_model で v3 (抑揚が自然。アルファ版なので読み間違いがあれば v2 に戻す)
 
-文字数: 全13章で約 7,300 文字 → Free プラン(月1万文字)でも1回は作れる。Starter($5/月, 3万文字)なら余裕。
+読み: 既定では coaching/toshi_kana.json (漢字をひらがなに展開し、人が校正した台本) を送るので
+  漢字の読み間違いが起きない。暗記ノート (toshi_gen.py) を直したら  python3 coaching/make_kana.py  で更新。
+
+文字数: 読み確定版は全13章で約 10,000 文字 (漢字版は約 7,300 文字) → Free プラン(月1万文字)でも1回は作れる。Starter($5/月, 3万文字)なら余裕。
 """
 import argparse
 import hashlib
@@ -190,12 +193,22 @@ def chapter_text(c, pause=PAUSE_NL):
         s = re.sub(r"、{2,}", "、", s)
         return s.rstrip("。")
 
-    title = c["title"].replace("　", "、").replace("――", "、").replace("―", "、")
+    title = c["title"].replace("　", "、").replace("――", "、").replace("―", "、").replace("・", "、").replace("／", "、")
     lines = [f"{title}。", fix(c["meaning"]) + "。"]
     for n, it in enumerate(c["items"], 1):
-        lines.append(f"{n}番、{fix(it)}。")
+        body = fix(it)
+        lines.append(f"{n}番、{body}" + ("" if body.endswith(("！", "？")) else "。"))
     lines.append("まとめ。" + fix(c["one"]) + "。")
     return pause.join(lines)
+
+
+def kana_texts():
+    """make_kana.py が作った読み確定版 (漢字→ひらがな) の台本。無ければ None。"""
+    p = os.path.join(HERE, "toshi_kana.json")
+    if not os.path.exists(p):
+        return None
+    d = json.load(open(p, encoding="utf-8"))
+    return [d[str(i)] for i in range(1, len(toshi_gen.CHAPTERS) + 1)] if all(str(i) in d for i in range(1, len(toshi_gen.CHAPTERS) + 1)) else None
 
 
 def tts(key, voice_id, model, text, mp3):
@@ -203,8 +216,10 @@ def tts(key, voice_id, model, text, mp3):
         vset = {"stability": 0.5}
     else:
         vset = {"stability": 0.65, "similarity_boost": 0.8, "style": 0.0, "use_speaker_boost": True}
-    body = call(f"/text-to-speech/{voice_id}?output_format={OUTPUT_FORMAT}",
-                data={"text": text, "model_id": model, "voice_settings": vset}, key=key, raw=True)
+    data = {"text": text, "model_id": model, "voice_settings": vset}
+    if "v2_5" in model or model.startswith("eleven_v3"):
+        data["language_code"] = "ja"   # 言語を日本語に固定 (turbo/flash v2.5, v3 のみ対応)
+    body = call(f"/text-to-speech/{voice_id}?output_format={OUTPUT_FORMAT}", data=data, key=key, raw=True)
     with open(mp3, "wb") as f:
         f.write(body)
 
@@ -228,10 +243,19 @@ def main():
     ap.add_argument("--force", action="store_true", help="キャッシュを無視して作り直す")
     ap.add_argument("--dry-run", action="store_true", help="文章と文字数だけ表示 (API を呼ばない)")
     ap.add_argument("--breaks", action="store_true", help="改行の代わりに <break> タグで0.7秒の間を入れる")
+    ap.add_argument("--no-kana", action="store_true",
+                    help="漢字のままの台本を送る (既定は toshi_kana.json の読み確定版＝漢字をすべてひらがなに展開した台本)")
     ap.add_argument("--out", default=os.path.join(ROOT, "static", "audio"))
     a = ap.parse_args()
 
     texts = [chapter_text(c, PAUSE_BREAK.join(("\n", "\n")) if a.breaks else PAUSE_NL) for c in toshi_gen.CHAPTERS]
+    kana = None if a.no_kana else kana_texts()
+    if kana:
+        # 読み確定版は「。」区切りの1段落 → 項目ごとに改行を入れて間を作る
+        texts = [re.sub(r"。(\d+ばん、|まとめ。)", r"。\n\n\1", t) for t in kana]
+        print("台本: 読み確定版 (toshi_kana.json)")
+    elif not a.no_kana:
+        print("※ toshi_kana.json がないので漢字のままの台本を使います (python3 coaching/make_kana.py で作成)")
     if a.dry_run:
         for i, t in enumerate(texts, 1):
             print(f"===== 第{i}章 ({len(t)} 文字)\n{t}\n")
