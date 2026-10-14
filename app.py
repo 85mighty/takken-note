@@ -215,6 +215,45 @@ def study():
     return render_template("study.html", chapters=_toshi_chapters())
 
 
+@app.route("/study/audio/<name>.mp3")
+def study_audio_download(name):
+    """章の mp3 を分かりやすいファイル名でダウンロード (name: 01..13 または all)。"""
+    import re as _re
+    if not _re.fullmatch(r"\d{2}|all", name):
+        abort(404)
+    adir = os.path.join(app.static_folder, "audio")
+    meta_p = os.path.join(adir, "toshi_tracks.json")
+    meta = json.load(open(meta_p, encoding="utf-8")) if os.path.exists(meta_p) else {"tracks": []}
+    if name == "all":
+        fname, path = "都市計画法_暗記ノート_全部通し.mp3", os.path.join(adir, "toshi_all.mp3")
+    else:
+        t = next((t for t in meta["tracks"] if f"{t['n']:02d}" == name), None)
+        if not t:
+            abort(404)
+        title = _re.sub(r"[\\/:*?\"<>|]", "", t["title"]).replace("　", "_")
+        fname, path = f"都市計画法_{name}_{title}.mp3", os.path.join(adir, t["file"])
+    if not os.path.exists(path):
+        abort(404)
+    return send_file(path, as_attachment=True, download_name=fname, mimetype="audio/mpeg")
+
+
+@app.route("/study/audio.zip")
+def study_audio_zip():
+    """全13章の mp3 を1つの zip で。"""
+    import io
+    import zipfile
+    adir = os.path.join(app.static_folder, "audio")
+    meta = json.load(open(os.path.join(adir, "toshi_tracks.json"), encoding="utf-8"))
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as z:
+        for t in meta["tracks"]:
+            title = t["title"].replace("　", "_").replace("/", "／")
+            z.write(os.path.join(adir, t["file"]), f"都市計画法_暗記ノート/{t['n']:02d}_{title}.mp3")
+        z.write(os.path.join(adir, "toshi_all.mp3"), "都市計画法_暗記ノート/00_全部通し.mp3")
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name="都市計画法_暗記ノート_音声.zip", mimetype="application/zip")
+
+
 def _toshi_chapters():
     """coaching/toshi_gen.py 의 暗記ノート를 대본(台本) 표시용으로 (red 키워드 {{..}} 는 프런트에서 강조)."""
     import importlib

@@ -26,7 +26,11 @@
       <button type="button" class="btn gray" id="script-toggle">📖 台本を見る（今の章）</button>
       <div id="script-now" class="script" hidden></div>
     </div>
-    <p class="mut">各章の 📖 を押すと、その章の台本（暗記ノート）が開きます。<span class="kw">赤字</span>＝核心語。</p>
+    <p class="mut">各章の 📖 を押すと、その章の台本（暗記ノート）が開きます。<span class="kw">赤字</span>＝核心語。⬇ でその章の mp3 を保存。</p>
+    <div class="dl">
+      <a class="btn gray" href="{{ url_for('study_audio_zip') }}">⬇ 全13章を zip でダウンロード</a>
+      <a class="btn gray" href="{{ url_for('study_audio_download', name='all') }}">⬇ 全部通し mp3</a>
+    </div>
     <ol class="tracks" id="tracks"></ol>
   </div>
 
@@ -122,7 +126,7 @@ fetch(AUDIO + "toshi_tracks.json").then(r => r.json()).then(m => {
   META = m;
   m.tracks.forEach((t, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<div class="trow"><button type="button" class="tbtn"><span class="tn">${t.n}</span><span class="tt">${t.title.replace(/^第\d+章　/, "")}</span><span class="td">${fmt(t.sec)}</span></button><button type="button" class="sbtn" title="台本">📖</button></div><div class="script" hidden></div>`;
+    li.innerHTML = `<div class="trow"><button type="button" class="tbtn"><span class="tn">${t.n}</span><span class="tt">${t.title.replace(/^第\d+章　/, "")}</span><span class="td">${fmt(t.sec)}</span></button><button type="button" class="sbtn" title="台本">📖</button><a class="sbtn dlbtn" title="mp3 をダウンロード" href="${AUDIO.replace(/static\/audio\/$/, "")}study/audio/${String(t.n).padStart(2, "0")}.mp3">⬇</a></div><div class="script" hidden></div>`;
     li.querySelector(".tbtn").addEventListener("click", () => setTrack(i, true));
     li.querySelector(".sbtn").addEventListener("click", e => {
       const box = li.querySelector(".script");
