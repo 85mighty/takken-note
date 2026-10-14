@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """暗記ノートの読み上げ文を、漢字→ひらがなに展開した「読み確定版」台本 (toshi_kana.json) にする。
 開発環境でのみ実行 (fugashi + unidic-lite の辞書が必要)。結果は git にコミットし、VPS 側はそれを読むだけ。
-  python3 coaching/make_kana.py            # coaching/toshi_kana.json を更新
-  python3 coaching/make_kana.py --show 3   # 第3章の変換結果を表示
+  python3 coaching/make_kana.py [--subject toshi|kenki]            # coaching/<key>_kana.json を更新
+  python3 coaching/make_kana.py --subject kenki --show 3           # 第3章の変換結果を表示
 """
 import json
 import os
@@ -11,7 +11,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import toshi_gen  # noqa: E402
+import subjects  # noqa: E402
 import make_audio_eleven  # noqa: E402
 from make_audio_eleven import chapter_text  # noqa: E402
 
@@ -33,6 +33,33 @@ FIX = {
     "建蔽率": "けんぺいりつ",
     "遅滞なく": ("ちたいなく", "副詞"),
     "5t超": "5トンちょう",
+    "使用する室": "しようするしつ",
+    "以上の階": "いじょうのかい",
+    "石綿": "せきめん",
+    "各戸": "かくこ",
+    "平家": "ひらや",
+    "地盤面": "じばんめん",
+    "35日": "35にち",
+    "7日": "なのか",
+    "4日": "よっか",
+    "何か": ("なにか", "助詞"),
+    "JIS": "ジス",
+    "JAS": "ジャス",
+    "軒高": "のきだか",
+    "日影": "にちえい",
+    "冬至日": "とうじび",
+    "門・塀": "もん、へい",
+    "門塀": "もんぺい",
+    "上家": "うわや",
+    "工事請負人": "こうじうけおいにん",
+    "過半数": "かはんすう",
+    "一人協定": "ひとりきょうてい",
+    "角地": "かどち",
+    "高専": "こうとうせんもんがっこう",
+    "一の建築物": "いつのけんちくぶつ",
+    "個室付浴場": "こしつつきよくじょう",
+    "料理店": "りょうりてん",
+    "兼用住宅": "けんようじゅうたく",
     "建基法": "けんきほう",
     "30日前": "30にちまえ",
     "5t": "5トン",
@@ -106,17 +133,23 @@ def convert(text, tg):
 
 
 def main():
+    args = sys.argv[1:]
+    key = "toshi"
+    if "--subject" in args:
+        i = args.index("--subject")
+        key = args[i + 1]
+        del args[i:i + 2]
     tg = tagger()
     res = {}
-    for i, c in enumerate(toshi_gen.CHAPTERS, 1):
+    for i, c in enumerate(subjects.chapters(key), 1):
         res[str(i)] = convert(chapter_text(c), tg)
-    if len(sys.argv) > 2 and sys.argv[1] == "--show":
-        print(res[sys.argv[2]])
+    if len(args) > 1 and args[0] == "--show":
+        print(res[args[1]])
         return
-    with open(os.path.join(HERE, "toshi_kana.json"), "w", encoding="utf-8") as f:
-        json.dump(res, f, ensure_ascii=False, indent=1)
     left = sum(len(KANJI.findall(t)) for t in res.values())
-    print("書き出し: toshi_kana.json / 残った漢字:", left, "/ 合計", sum(map(len, res.values())), "文字")
+    with open(os.path.join(HERE, f"{key}_kana.json"), "w", encoding="utf-8") as f:
+        json.dump(res, f, ensure_ascii=False, indent=1)
+    print(f"書き出し: {key}_kana.json / 残った漢字:", left, "/ 合計", sum(map(len, res.values())), "文字")
 
 
 if __name__ == "__main__":

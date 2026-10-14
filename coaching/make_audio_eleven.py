@@ -39,7 +39,7 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
-import toshi_gen  # noqa: E402
+import subjects  # noqa: E402
 from make_audio import speakable  # noqa: E402
 
 API = "https://api.elevenlabs.io/v1"
@@ -202,13 +202,13 @@ def chapter_text(c, pause=PAUSE_NL):
     return pause.join(lines)
 
 
-def kana_texts():
+def kana_texts(key, n):
     """make_kana.py が作った読み確定版 (漢字→ひらがな) の台本。無ければ None。"""
-    p = os.path.join(HERE, "toshi_kana.json")
+    p = os.path.join(HERE, f"{key}_kana.json")
     if not os.path.exists(p):
         return None
     d = json.load(open(p, encoding="utf-8"))
-    return [d[str(i)] for i in range(1, len(toshi_gen.CHAPTERS) + 1)] if all(str(i) in d for i in range(1, len(toshi_gen.CHAPTERS) + 1)) else None
+    return [d[str(i)] for i in range(1, n + 1)] if all(str(i) in d for i in range(1, n + 1)) else None
 
 
 def tts(key, voice_id, model, text, mp3):
@@ -232,6 +232,7 @@ def duration(path):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--subject", default="toshi", choices=list(subjects.SUBJECTS), help="toshi=都市計画法 / kenki=建築基準法")
     ap.add_argument("--list", action="store_true", help="声の一覧を表示して終了")
     ap.add_argument("--voice", default=os.environ.get("ELEVEN_VOICE") or cfg_file(".eleven_voice"),
                     help="声の名前か voice_id (未指定なら .eleven_voice ファイル → 日本語の若い男性を自動選択)")
@@ -248,14 +249,15 @@ def main():
     ap.add_argument("--out", default=os.path.join(ROOT, "static", "audio"))
     a = ap.parse_args()
 
-    texts = [chapter_text(c, PAUSE_BREAK.join(("\n", "\n")) if a.breaks else PAUSE_NL) for c in toshi_gen.CHAPTERS]
-    kana = None if a.no_kana else kana_texts()
+    KEY, CH, SUBJ = a.subject, subjects.chapters(a.subject), subjects.name(a.subject)
+    texts = [chapter_text(c, PAUSE_BREAK.join(("\n", "\n")) if a.breaks else PAUSE_NL) for c in CH]
+    kana = None if a.no_kana else kana_texts(KEY, len(CH))
     if kana:
         # 読み確定版は「。」区切りの1段落 → 項目ごとに改行を入れて間を作る
         texts = [re.sub(r"。(\d+ばん、|まとめ。)", r"。\n\n\1", t) for t in kana]
-        print("台本: 読み確定版 (toshi_kana.json)")
+        print(f"台本: 読み確定版 ({KEY}_kana.json)")
     elif not a.no_kana:
-        print("※ toshi_kana.json がないので漢字のままの台本を使います (python3 coaching/make_kana.py で作成)")
+        print(f"※ {KEY}_kana.json がないので漢字のままの台本を使います (python3 coaching/make_kana.py --subject {KEY} で作成)")
     if a.dry_run:
         for i, t in enumerate(texts, 1):
             print(f"===== 第{i}章 ({len(t)} 文字)\n{t}\n")
@@ -272,14 +274,14 @@ def main():
         sys.exit("ffmpeg がありません:  sudo apt-get install -y ffmpeg")
 
     v = pick_voice(key, a.voice, a.gender, a.age)
-    print(f"声: {v['name']} ({v['voice_id']})  モデル: {a.model}")
+    print(f"[{SUBJ}] 声: {v['name']} ({v['voice_id']})  モデル: {a.model}")
     os.makedirs(a.out, exist_ok=True)
     cache_p = os.path.join(a.out, ".eleven_cache.json")
     cache = json.load(open(cache_p)) if os.path.exists(cache_p) else {}
 
     tracks, mp3s, used = [], [], 0
-    for i, (c, text) in enumerate(zip(toshi_gen.CHAPTERS, texts), 1):
-        name = f"toshi_{i:02d}.mp3"
+    for i, (c, text) in enumerate(zip(CH, texts), 1):
+        name = f"{KEY}_{i:02d}.mp3"
         mp3 = os.path.join(a.out, name)
         h = hashlib.sha1(f"{v['voice_id']}|{a.model}|{text}".encode("utf-8")).hexdigest()
         want = a.only is None or a.only == i
@@ -309,21 +311,20 @@ def main():
         tracks.append({"n": i, "title": c["title"], "file": name, "sec": duration(mp3)})
         mp3s.append(mp3)
 
-    allmp3 = os.path.join(a.out, "toshi_all.mp3")
-    if used == 0 and os.path.exists(allmp3) and os.path.exists(os.path.join(a.out, "toshi_tracks.json")):
+    allmp3 = os.path.join(a.out, f"{KEY}_all.mp3")
+    if used == 0 and os.path.exists(allmp3) and os.path.exists(os.path.join(a.out, f"{KEY}_tracks.json")):
         print("変更なし (全章キャッシュ済み)")
         return
-    lst = os.path.join(a.out, "concat.txt")
+    lst = os.path.join(a.out, f"concat_{KEY}.txt")
     with open(lst, "w") as f:
         for m in mp3s:
             f.write(f"file '{os.path.basename(m)}'\n")
-    allmp3 = os.path.join(a.out, "toshi_all.mp3")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst,
                     "-c", "copy", allmp3], check=True, cwd=a.out)
     os.unlink(lst)
-    meta = {"title": "都市計画法 暗記ノート", "voice": v["name"], "tracks": tracks,
-            "all": {"file": "toshi_all.mp3", "sec": duration(allmp3)}}
-    with open(os.path.join(a.out, "toshi_tracks.json"), "w", encoding="utf-8") as f:
+    meta = {"title": f"{SUBJ} 暗記ノート", "voice": v["name"], "tracks": tracks,
+            "all": {"file": f"{KEY}_all.mp3", "sec": duration(allmp3)}}
+    with open(os.path.join(a.out, f"{KEY}_tracks.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)
     print(f"完了: 使用 {used} 文字 / 通し {meta['all']['sec']} 秒 → {a.out}")
 

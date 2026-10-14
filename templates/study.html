@@ -3,73 +3,71 @@
 {% block body %}
 
 <div class="tabs">
-  <button type="button" class="tab on" data-t="toshi">都市計画法</button>
-  <button type="button" class="tab" data-t="kenki">建築基準法</button>
+  {% for s in subjects %}
+  <button type="button" class="tab {% if loop.first %}on{% endif %}" data-t="{{ s.key }}">{{ s.name }}</button>
+  {% endfor %}
 </div>
 
-<section id="sec-toshi" class="sec">
-  <div class="panel player">
-    <h2>🎧 暗記ノート 音声（13章）</h2>
+{% for s in subjects %}
+<section id="sec-{{ s.key }}" class="sec" {% if not loop.first %}hidden{% endif %} data-key="{{ s.key }}">
+  <div class="panel player" id="player-{{ s.key }}">
+    <h2>🎧 {{ s.name }} 暗記ノート 音声（{{ s.chapters|length }}章）</h2>
     <p class="mut">イヤホンで歩きながら。画面を消してもバックグラウンドで続けて再生され、ロック画面から操作できます。</p>
-    <div class="now"><span id="now-title">—</span><span id="now-time" class="mut"></span></div>
-    <audio id="player" preload="metadata" playsinline controls></audio>
+    {% if s.has_audio %}
+    <div class="now"><span class="now-title">—</span><span class="now-time mut"></span></div>
+    <audio class="audio" preload="metadata" playsinline controls></audio>
     <div class="pctl">
-      <button type="button" class="btn" id="play-all">▶ 全部通して（約29分）</button>
-      <button type="button" class="btn gray" id="prev-t">⏮ 前の章</button>
-      <button type="button" class="btn gray" id="next-t">⏭ 次の章</button>
-      <label class="chk"><input type="checkbox" id="loop-all" checked> 最後まで行ったら最初から</label>
+      <button type="button" class="btn play-all">▶ 全部通して</button>
+      <button type="button" class="btn gray prev-t">⏮ 前の章</button>
+      <button type="button" class="btn gray next-t">⏭ 次の章</button>
+      <label class="chk"><input type="checkbox" class="loop-all" checked> 最後まで行ったら最初から</label>
       <label class="chk">速さ
-        <select id="rate"><option value="0.8">0.8×</option><option value="1" selected>1.0×</option><option value="1.2">1.2×</option><option value="1.5">1.5×</option></select>
+        <select class="rate"><option value="0.8">0.8×</option><option value="1" selected>1.0×</option><option value="1.2">1.2×</option><option value="1.5">1.5×</option></select>
       </label>
     </div>
     <div class="scriptbox">
-      <button type="button" class="btn gray" id="script-toggle">📖 台本を見る（今の章）</button>
-      <div id="script-now" class="script" hidden></div>
+      <button type="button" class="btn gray script-toggle">📖 台本を見る（今の章）</button>
+      <div class="script script-now" hidden></div>
     </div>
     <p class="mut">各章の 📖 を押すと、その章の台本（暗記ノート）が開きます。<span class="kw">赤字</span>＝核心語。⬇ でその章の mp3 を保存。</p>
     <div class="dl">
-      <a class="btn gray" href="{{ url_for('study_audio_zip') }}">⬇ 全13章を zip でダウンロード</a>
-      <a class="btn gray" href="{{ url_for('study_audio_download', name='all') }}">⬇ 全部通し mp3</a>
+      <a class="btn gray" href="{{ url_for('study_audio_zip', key=s.key) }}">⬇ 全{{ s.chapters|length }}章を zip でダウンロード</a>
+      <a class="btn gray" href="{{ url_for('study_audio_download', key=s.key, name='all') }}">⬇ 全部通し mp3</a>
     </div>
-    <ol class="tracks" id="tracks"></ol>
+    <ol class="tracks"></ol>
+    {% else %}
+    <p>音声は準備中です。</p>
+    {% endif %}
   </div>
 
   <div class="panel">
     <h2>📄 プリント・資料</h2>
     <ul class="docs">
+      {% if s.key == 'toshi' %}
       <li><a href="{{ url_for('static', filename='docs/toshi_100.pdf') }}" target="_blank">都市計画法 問15・16 特訓100問</a> <span class="mut">（大きい字・巻末に解答解説・40p）</span></li>
-      <li><a href="{{ url_for('static', filename='docs/toshi_test.pdf') }}" target="_blank">都市計画法 暗記テスト（穴埋め）</a> <span class="mut">（1章1ページ・14p）</span></li>
-      <li><a href="{{ url_for('static', filename='docs/toshi_note.pdf') }}" target="_blank">都市計画法 暗記ノート（答え）</a> <span class="mut">（赤字＝核心語・14p）</span></li>
+      {% endif %}
+      <li><a href="{{ url_for('static', filename='docs/' ~ s.key ~ '_test.pdf') }}" target="_blank">{{ s.name }} 暗記テスト（穴埋め）</a> <span class="mut">（1章1ページ）</span></li>
+      <li><a href="{{ url_for('static', filename='docs/' ~ s.key ~ '_note.pdf') }}" target="_blank">{{ s.name }} 暗記ノート（答え）</a> <span class="mut">（赤字＝核心語）</span></li>
+      {% if s.key == 'kenki' %}
+      <li><a href="{{ url_for('static', filename='docs/plan_0924.pdf') }}" target="_blank">合格プラン・弱点分析（9/24版）</a></li>
+      {% endif %}
     </ul>
   </div>
 
   <div class="panel">
     <h2>✍️ サイトで解く</h2>
     <ul class="docs">
-      <li><a href="{{ url_for('review') }}?year=練習-都計&min_wrong=0&mode=exam">特訓100問を試験モードで解く</a>（全部解いてから採点）</li>
-      <li><a href="{{ url_for('review') }}?year=練習-都計&min_wrong=0&mode=instant">特訓100問をすぐ採点モードで解く</a>（1問ずつ解説つき）</li>
-      <li><a href="{{ url_for('index') }}?year=練習-都計&min_wrong=1">特訓100問で間違えた問題だけ</a></li>
-      <li><a href="{{ url_for('index') }}?subtopic=都市計画法&min_wrong=1">本試験で間違えた都市計画法の問題</a></li>
+      {% if s.year %}
+      <li><a href="{{ url_for('review') }}?year={{ s.year }}&min_wrong=0&mode=exam">特訓100問を試験モードで解く</a>（全部解いてから採点）</li>
+      <li><a href="{{ url_for('review') }}?year={{ s.year }}&min_wrong=0&mode=instant">特訓100問をすぐ採点モードで解く</a>（1問ずつ解説つき）</li>
+      <li><a href="{{ url_for('index') }}?year={{ s.year }}&min_wrong=1">特訓100問で間違えた問題だけ</a></li>
+      {% endif %}
+      <li><a href="{{ url_for('index') }}?subtopic={{ s.subtopic }}&min_wrong=1">本試験で間違えた{{ s.name }}の問題</a></li>
+      <li><a href="{{ url_for('review') }}?subtopic={{ s.subtopic }}&min_wrong=1&mode=instant">それをすぐ採点モードで解き直す</a></li>
     </ul>
   </div>
 </section>
-
-<section id="sec-kenki" class="sec" hidden>
-  <div class="panel">
-    <h2>建築基準法（問17・18）</h2>
-    <p>特訓100問・暗記ノート・音声は準備中。都市計画法が終わったら作ります。</p>
-    <ul class="docs">
-      <li><a href="{{ url_for('index') }}?subtopic=建築基準法&min_wrong=1">本試験で間違えた建築基準法の問題</a>（8回中5回落とした問18がここ）</li>
-      <li><a href="{{ url_for('review') }}?subtopic=建築基準法&min_wrong=1&mode=instant">それをすぐ採点モードで解き直す</a></li>
-    </ul>
-  </div>
-  <div class="panel">
-    <h2>📄 共通資料</h2>
-    <ul class="docs">
-      <li><a href="{{ url_for('static', filename='docs/plan_0924.pdf') }}" target="_blank">合格プラン・弱点分析（9/24版）</a></li>
-    </ul>
-  </div>
-</section>
+{% endfor %}
 
 <script>
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
@@ -79,85 +77,102 @@ document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () =>
 }));
 try { const t = localStorage.getItem("studyTab"); if (t) document.querySelector(`.tab[data-t="${t}"]`)?.click(); } catch (e) {}
 
-// ---- 플레이어 ----
 const AUDIO = "{{ url_for('static', filename='audio/') }}";
-const CHAPTERS = {{ chapters | tojson }};
+const CHAPTERS = {{ subjects | map(attribute='chapters') | list | tojson }};
+const KEYS = {{ subjects | map(attribute='key') | list | tojson }};
+const NAMES = {{ subjects | map(attribute='name') | list | tojson }};
+const players = [];
 function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function kw(s) { return esc(s).replace(/\{\{(.+?)\}\}/g, '<span class="kw">$1</span>'); }
+function fmt(s) { s = Math.round(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
 function scriptHTML(c) {
   if (!c) return "";
   return `<h3>${esc(c.title)}</h3><p class="mean">${kw(c.meaning)}</p><ol>` +
     c.items.map(it => `<li>${kw(it)}</li>`).join("") +
     `</ol><p class="one">一文：${kw(c.one)}</p>`;
 }
-function renderNowScript() {
-  const box = document.getElementById("script-now");
-  if (cur === "all" || cur < 0) { box.innerHTML = '<p class="mut">章を選ぶと、その章の台本がここに出ます。</p>'; return; }
-  box.innerHTML = scriptHTML(CHAPTERS[cur]);
-}
-const audio = document.getElementById("player");
-const list = document.getElementById("tracks");
-let META = null, cur = -1;   // cur: -1=없음, 0..n-1=장, "all"=전체
 
-function fmt(s) { s = Math.round(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
-function setTrack(i, autoplay) {
-  cur = i;
-  const t = i === "all" ? {title: "全部通して", file: META.all.file, sec: META.all.sec} : META.tracks[i];
-  audio.src = AUDIO + t.file;
-  document.getElementById("now-title").textContent = t.title;
-  document.getElementById("now-time").textContent = " " + fmt(t.sec);
-  list.querySelectorAll("li").forEach((li, k) => li.classList.toggle("playing", k === i));
-  renderNowScript();
-  if ("mediaSession" in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({title: t.title, artist: "都市計画法 暗記ノート", album: "宅建"});
+function initPlayer(key, name, chapters) {
+  const root = document.getElementById("player-" + key);
+  const audio = root.querySelector(".audio");
+  if (!audio) return null;
+  const list = root.querySelector(".tracks");
+  const $ = sel => root.querySelector(sel);
+  let META = null, cur = -1;
+  const P = {key, audio};
+
+  function renderNowScript() {
+    const box = $(".script-now");
+    if (cur === "all" || cur < 0) { box.innerHTML = '<p class="mut">章を選ぶと、その章の台本がここに出ます。</p>'; return; }
+    box.innerHTML = scriptHTML(chapters[cur]);
   }
-  try { localStorage.setItem("toshiTrack", String(i)); } catch (e) {}
-  if (autoplay) audio.play().catch(() => {});
-}
-function next() {
-  if (cur === "all") { if (document.getElementById("loop-all").checked) setTrack("all", true); return; }
-  const n = cur + 1;
-  if (n < META.tracks.length) setTrack(n, true);
-  else if (document.getElementById("loop-all").checked) setTrack(0, true);
-}
-function prev() { if (cur === "all") return; if (audio.currentTime > 3) { audio.currentTime = 0; return; } setTrack(Math.max(0, cur - 1), true); }
+  function setTrack(i, autoplay) {
+    cur = i;
+    const t = i === "all" ? {title: "全部通して", file: META.all.file, sec: META.all.sec} : META.tracks[i];
+    audio.src = AUDIO + t.file;
+    $(".now-title").textContent = t.title;
+    $(".now-time").textContent = " " + fmt(t.sec);
+    list.querySelectorAll("li").forEach((li, k) => li.classList.toggle("playing", k === i));
+    renderNowScript();
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({title: t.title, artist: name + " 暗記ノート", album: "宅建"});
+    }
+    try { localStorage.setItem(key + "Track", String(i)); } catch (e) {}
+    if (autoplay) { players.forEach(p => { if (p !== P) p.audio.pause(); }); audio.play().catch(() => {}); }
+  }
+  function next() {
+    if (cur === "all") { if ($(".loop-all").checked) setTrack("all", true); return; }
+    const n = cur + 1;
+    if (n < META.tracks.length) setTrack(n, true);
+    else if ($(".loop-all").checked) setTrack(0, true);
+  }
+  function prev() { if (cur === "all") return; if (audio.currentTime > 3) { audio.currentTime = 0; return; } setTrack(Math.max(0, cur - 1), true); }
+  P.next = next; P.prev = prev;
 
-fetch(AUDIO + "toshi_tracks.json").then(r => r.json()).then(m => {
-  META = m;
-  m.tracks.forEach((t, i) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<div class="trow"><button type="button" class="tbtn"><span class="tn">${t.n}</span><span class="tt">${t.title.replace(/^第\d+章　/, "")}</span><span class="td">${fmt(t.sec)}</span></button><button type="button" class="sbtn" title="台本">📖</button><a class="sbtn dlbtn" title="mp3 をダウンロード" href="${AUDIO.replace(/static\/audio\/$/, "")}study/audio/${String(t.n).padStart(2, "0")}.mp3">⬇</a></div><div class="script" hidden></div>`;
-    li.querySelector(".tbtn").addEventListener("click", () => setTrack(i, true));
-    li.querySelector(".sbtn").addEventListener("click", e => {
-      const box = li.querySelector(".script");
-      if (box.hidden) box.innerHTML = scriptHTML(CHAPTERS[i]);
-      box.hidden = !box.hidden;
-      e.currentTarget.classList.toggle("on", !box.hidden);
+  fetch(AUDIO + key + "_tracks.json").then(r => r.json()).then(m => {
+    META = m;
+    $(".play-all").textContent = `▶ 全部通して（約${Math.round(m.all.sec / 60)}分）`;
+    m.tracks.forEach((t, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<div class="trow"><button type="button" class="tbtn"><span class="tn">${t.n}</span><span class="tt">${esc(t.title.replace(/^第\d+章　/, ""))}</span><span class="td">${fmt(t.sec)}</span></button><button type="button" class="sbtn" title="台本">📖</button><a class="sbtn dlbtn" title="mp3 をダウンロード" href="${AUDIO.replace(/static\/audio\/$/, "")}study/audio/${key}/${String(t.n).padStart(2, "0")}.mp3">⬇</a></div><div class="script" hidden></div>`;
+      li.querySelector(".tbtn").addEventListener("click", () => setTrack(i, true));
+      li.querySelector(".sbtn").addEventListener("click", e => {
+        const box = li.querySelector(".script");
+        if (box.hidden) box.innerHTML = scriptHTML(chapters[i]);
+        box.hidden = !box.hidden;
+        e.currentTarget.classList.toggle("on", !box.hidden);
+      });
+      list.appendChild(li);
     });
-    list.appendChild(li);
+    let saved = 0; try { const s = localStorage.getItem(key + "Track"); if (s !== null) saved = s === "all" ? "all" : Math.min(+s, m.tracks.length - 1); } catch (e) {}
+    setTrack(saved, false);
   });
-  let saved = 0; try { const s = localStorage.getItem("toshiTrack"); if (s !== null) saved = s === "all" ? "all" : +s; } catch (e) {}
-  setTrack(saved, false);
-});
-audio.addEventListener("ended", next);
-document.getElementById("play-all").addEventListener("click", () => setTrack("all", true));
-document.getElementById("script-toggle").addEventListener("click", e => {
-  const box = document.getElementById("script-now");
-  box.hidden = !box.hidden;
-  if (!box.hidden) renderNowScript();
-  e.currentTarget.textContent = box.hidden ? "📖 台本を見る（今の章）" : "📖 台本を閉じる";
-  try { localStorage.setItem("toshiScript", box.hidden ? "0" : "1"); } catch (e2) {}
-});
-try { if (localStorage.getItem("toshiScript") === "1") document.getElementById("script-toggle").click(); } catch (e) {}
-document.getElementById("next-t").addEventListener("click", next);
-document.getElementById("prev-t").addEventListener("click", prev);
-document.getElementById("rate").addEventListener("change", e => audio.playbackRate = +e.target.value);
-audio.addEventListener("play", () => audio.playbackRate = +document.getElementById("rate").value);
-if ("mediaSession" in navigator) {
-  navigator.mediaSession.setActionHandler("nexttrack", next);
-  navigator.mediaSession.setActionHandler("previoustrack", prev);
-  navigator.mediaSession.setActionHandler("play", () => audio.play());
-  navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+  audio.addEventListener("ended", next);
+  $(".play-all").addEventListener("click", () => setTrack("all", true));
+  $(".next-t").addEventListener("click", next);
+  $(".prev-t").addEventListener("click", prev);
+  $(".rate").addEventListener("change", e => audio.playbackRate = +e.target.value);
+  audio.addEventListener("play", () => {
+    audio.playbackRate = +$(".rate").value;
+    players.forEach(p => { if (p !== P) p.audio.pause(); });
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.setActionHandler("nexttrack", next);
+      navigator.mediaSession.setActionHandler("previoustrack", prev);
+      navigator.mediaSession.setActionHandler("play", () => audio.play());
+      navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+    }
+  });
+  $(".script-toggle").addEventListener("click", e => {
+    const box = $(".script-now");
+    box.hidden = !box.hidden;
+    if (!box.hidden) renderNowScript();
+    e.currentTarget.textContent = box.hidden ? "📖 台本を見る（今の章）" : "📖 台本を閉じる";
+    try { localStorage.setItem(key + "Script", box.hidden ? "0" : "1"); } catch (e2) {}
+  });
+  try { if (localStorage.getItem(key + "Script") === "1") $(".script-toggle").click(); } catch (e) {}
+  players.push(P);
+  return P;
 }
+KEYS.forEach((k, i) => initPlayer(k, NAMES[i], CHAPTERS[i]));
 </script>
 {% endblock %}

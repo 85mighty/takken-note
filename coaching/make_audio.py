@@ -12,7 +12,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import toshi_gen  # noqa: E402
+import subjects  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(HERE), "static", "audio")
 DIC = "/var/lib/mecab/dic/open-jtalk/naist-jdic"
@@ -26,14 +26,14 @@ def speakable(s):
     s = re.sub(r"(\d+)/(\d+)", r"\2分の\1", s)           # 2/3 → 3分の2
     s = re.sub(r"(\d)\s*㎡", r"\1平方メートル", s)
     s = re.sub(r"(\d)\s*ha", r"\1ヘクタール", s)
-    s = re.sub(r"(\d)\s*m\b", r"\1メートル", s)
-    s = re.sub(r"(\d)\s*t\b", r"\1トン", s)
+    s = re.sub(r"(\d)\s*m(?![A-Za-z])", r"\1メートル", s)
+    s = re.sub(r"(\d)\s*t(?![A-Za-z])", r"\1トン", s)
     s = s.replace("％", "パーセント").replace("%", "パーセント")
     s = s.replace(" or ", "、または、").replace("OK", "オーケー")
     s = s.replace("○", "マル").replace("×", "バツ").replace("〜", "から")
     s = s.replace("＝", "は、").replace("→", "、").replace("／", "、").replace("・", "、")
     s = s.replace("（", "、").replace("）", "、").replace("「", "").replace("」", "")
-    s = s.replace("＋", "、プラス、").replace("&", "と").replace("＆", "と")
+    s = s.replace("＋", "、プラス、").replace("+", "、プラス、").replace("÷", "、わる、").replace("&", "と").replace("＆", "と")
     s = s.replace("〜", "から").replace("…", "。")
     s = re.sub(r"、{2,}", "、", s)
     s = s.replace("：", "、").replace("。。", "。")
@@ -90,28 +90,29 @@ def duration(path):
 
 
 def main():
+    key = sys.argv[sys.argv.index("--subject") + 1] if "--subject" in sys.argv else "toshi"
     os.makedirs(OUT, exist_ok=True)
     tracks, mp3s = [], []
-    for i, c in enumerate(toshi_gen.CHAPTERS, 1):
-        wav = os.path.join(OUT, f"toshi_{i:02d}.wav")
-        mp3 = os.path.join(OUT, f"toshi_{i:02d}.mp3")
+    for i, c in enumerate(subjects.chapters(key), 1):
+        wav = os.path.join(OUT, f"{key}_{i:02d}.wav")
+        mp3 = os.path.join(OUT, f"{key}_{i:02d}.mp3")
         tts(chapter_script(i, c), wav)
         to_mp3(wav, mp3)
         d = duration(mp3)
-        tracks.append({"n": i, "title": c["title"], "file": f"toshi_{i:02d}.mp3", "sec": d})
+        tracks.append({"n": i, "title": c["title"], "file": f"{key}_{i:02d}.mp3", "sec": d})
         mp3s.append(mp3)
         print(f"{i:02d} {d}s {c['title']}")
-    lst = os.path.join(OUT, "concat.txt")
+    lst = os.path.join(OUT, f"concat_{key}.txt")
     with open(lst, "w") as f:
         for m in mp3s:
             f.write(f"file '{os.path.basename(m)}'\n")
-    allmp3 = os.path.join(OUT, "toshi_all.mp3")
+    allmp3 = os.path.join(OUT, f"{key}_all.mp3")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
                     "-i", lst, "-c", "copy", allmp3], check=True, cwd=OUT)
     os.unlink(lst)
-    meta = {"title": "都市計画法 暗記ノート", "tracks": tracks,
-            "all": {"file": "toshi_all.mp3", "sec": duration(allmp3)}}
-    with open(os.path.join(OUT, "toshi_tracks.json"), "w", encoding="utf-8") as f:
+    meta = {"title": f"{subjects.name(key)} 暗記ノート", "voice": "Open JTalk", "tracks": tracks,
+            "all": {"file": f"{key}_all.mp3", "sec": duration(allmp3)}}
+    with open(os.path.join(OUT, f"{key}_tracks.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)
     print("all", meta["all"]["sec"], "s")
 

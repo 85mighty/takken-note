@@ -43,7 +43,11 @@ then
     (apt-get install -y ffmpeg || sudo -n apt-get install -y ffmpeg) >/dev/null 2>&1 || echo "※ ffmpeg 설치 실패 → sudo apt-get install -y ffmpeg"
   fi
   if command -v ffmpeg >/dev/null; then
-    if .venv/bin/python3 coaching/make_audio_eleven.py; then
+    ok=1
+    for subj in toshi kenki; do
+      .venv/bin/python3 coaching/make_audio_eleven.py --subject "$subj" || ok=0
+    done
+    if [ "$ok" = 1 ]; then
       if ! git diff --quiet -- static/audio || [ -n "$(git ls-files --others --exclude-standard static/audio)" ]; then
         git add static/audio
         git commit -qm "ElevenLabs 音声 生成 $(date +%F_%H%M)"

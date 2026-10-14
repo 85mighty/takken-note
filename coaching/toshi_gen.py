@@ -235,10 +235,26 @@ CSS = """
   .blank { display: inline-block; min-width: 22mm; border-bottom: 1.5px solid #333; height: 1.1em; vertical-align: bottom; margin: 0 1mm; }
   .one { background: #fff8dc; border: 2px solid #c8a400; border-radius: 2mm; padding: 2mm 3.5mm; margin-top: 4mm; font-size: 11.5pt; }
   .toc li { margin-bottom: 1mm; }
+  .compact { font-size: 10.8pt; line-height: 1.5; }
+  .compact ol li { margin-bottom: 1.4mm; }
+  .compact .meaning { font-size: 10.2pt; padding: 1.5mm 3mm; margin-bottom: 2.5mm; }
+  .compact .one { font-size: 10.5pt; margin-top: 2.5mm; }
+  .compact2 { font-size: 10pt; line-height: 1.42; }
+  .compact2 ol li { margin-bottom: 1mm; }
+  .compact2 .meaning { font-size: 9.6pt; padding: 1.2mm 3mm; margin-bottom: 2mm; }
+  .compact2 .one { font-size: 10pt; margin-top: 2mm; padding: 1.5mm 3mm; }
+  .compact2 h2 { font-size: 13.5pt; padding: 1.5mm 3mm; }
   .note { font-size: 10.5pt; color: #555; }
 """
 
-def render(mode):
+SUBJECT = "都市計画法"
+
+
+def render(mode, chapters=None, subject=None, compact=()):
+    """mode: study/test. compact: 1ページに収まらない章番号(1始まり)の集合 → 字を少し詰める。"""
+    chapters = chapters or CHAPTERS
+    subject = subject or SUBJECT
+
     def term(m):
         t = m.group(1)
         if mode == "study":
@@ -248,17 +264,18 @@ def render(mode):
     def conv(s):
         return re.sub(r"\{\{(.+?)\}\}", term, s)
 
-    title = "都市計画法 暗記ノート" if mode == "study" else "都市計画法 暗記テスト（穴埋め）"
+    title = f"{subject} 暗記ノート" if mode == "study" else f"{subject} 暗記テスト（穴埋め）"
     sub = ("章ごとに1ページ・特徴は番号つきで1行ずつ。赤字＝必ず覚える核心語（穴埋めテストで空欄になる部分）"
            if mode == "study" else
-           "空欄を埋めて、暗記ノートと照合。全部書けたら都市計画法は完成。")
+           f"空欄を埋めて、暗記ノートと照合。全部書けたら{subject}は完成。")
     out = [f"<!DOCTYPE html><html lang='ja'><head><meta charset='UTF-8'><style>{CSS}</style></head><body>"]
     out.append(f"<div class='cover'><h1>{title}</h1><p class='note'>{sub}</p><h3>目次</h3><ol class='toc'>")
-    for c in CHAPTERS:
+    for c in chapters:
         out.append(f"<li>{c['title']}</li>")
     out.append("</ol></div>")
-    for c in CHAPTERS:
-        out.append(f"<div class='chapter'><h2>{c['title']}</h2>")
+    for i, c in enumerate(chapters, 1):
+        cls = "chapter compact2" if compact and i in compact and compact[i] >= 2 else ("chapter compact" if i in compact else "chapter")
+        out.append(f"<div class='{cls}'><h2>{c['title']}</h2>")
         out.append(f"<div class='meaning'>{c['meaning']}</div><ol>")
         for it in c["items"]:
             out.append(f"<li>{conv(it)}</li>")
@@ -268,9 +285,40 @@ def render(mode):
     out.append("</body></html>")
     return "\n".join(out)
 
-if __name__ == "__main__":
+def write_pdf(mode, outpath, chapters=None, subject=None):
+    """1章1ページに収まるまで、はみ出した章だけ compact → compact2 と詰めて PDF を書く。"""
     from weasyprint import HTML
+    chapters = chapters or CHAPTERS
+    compact = {}
+    for _ in range(3):
+        doc = HTML(string=render(mode, chapters, subject, compact)).render()
+        # 各ページの先頭テキストで「どの章のページか」を判定 → 2ページ以上使った章を検出
+        pages_of = {}
+        for pi, page in enumerate(doc.pages):
+            txt = "".join(getattr(b, "text", "") for b in _boxes(page._page_box))
+            for ci, c in enumerate(chapters, 1):
+                if txt.replace(" ", "").startswith(c["title"].replace(" ", "")[:8]) or c["title"][:6] in txt[:40]:
+                    pages_of.setdefault(ci, []).append(pi)
+        over = {ci for ci, ps in pages_of.items() if len(ps) > 1}
+        # ページ数で二重チェック (表紙1 + 章数)
+        if not over and len(doc.pages) <= 1 + len(chapters):
+            doc.write_pdf(outpath)
+            return compact
+        if not over:
+            over = set(range(1, len(chapters) + 1))
+        for ci in over:
+            compact[ci] = compact.get(ci, 0) + 1
+    doc.write_pdf(outpath)
+    return compact
+
+
+def _boxes(box):
+    yield box
+    for ch in getattr(box, "children", []) or []:
+        yield from _boxes(ch)
+
+
+if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "study"
     outpath = sys.argv[2]
-    HTML(string=render(mode)).write_pdf(outpath)
-    print("ok", outpath)
+    print("compact:", write_pdf(mode, outpath), outpath)

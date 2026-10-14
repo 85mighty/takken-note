@@ -212,61 +212,77 @@ def api_subtopic():
 
 @app.route("/study")
 def study():
-    return render_template("study.html", chapters=_toshi_chapters())
+    subs = []
+    for key in _subjects().ORDER:
+        info = dict(_subjects().SUBJECTS[key])
+        info["key"] = key
+        info["chapters"] = _chapters(key)
+        info["has_audio"] = os.path.exists(os.path.join(app.static_folder, "audio", f"{key}_tracks.json"))
+        subs.append(info)
+    return render_template("study.html", subjects=subs)
 
 
-@app.route("/study/audio/<name>.mp3")
-def study_audio_download(name):
-    """章の mp3 を分かりやすいファイル名でダウンロード (name: 01..13 または all)。"""
-    import re as _re
-    if not _re.fullmatch(r"\d{2}|all", name):
+@app.route("/study/audio/<key>/<name>.mp3")
+def study_audio_download(key, name):
+    """章の mp3 を分かりやすいファイル名でダウンロード (key: toshi/kenki, name: 01.. または all)。"""
+    if key not in _subjects().SUBJECTS or not re.fullmatch(r"\d{2}|all", name):
         abort(404)
+    subj = _subjects().name(key)
     adir = os.path.join(app.static_folder, "audio")
-    meta_p = os.path.join(adir, "toshi_tracks.json")
+    meta_p = os.path.join(adir, f"{key}_tracks.json")
     meta = json.load(open(meta_p, encoding="utf-8")) if os.path.exists(meta_p) else {"tracks": []}
     if name == "all":
-        fname, path = "都市計画法_暗記ノート_全部通し.mp3", os.path.join(adir, "toshi_all.mp3")
+        fname, path = f"{subj}_暗記ノート_全部通し.mp3", os.path.join(adir, f"{key}_all.mp3")
     else:
         t = next((t for t in meta["tracks"] if f"{t['n']:02d}" == name), None)
         if not t:
             abort(404)
-        title = _re.sub(r"[\\/:*?\"<>|]", "", t["title"]).replace("　", "_")
-        fname, path = f"都市計画法_{name}_{title}.mp3", os.path.join(adir, t["file"])
+        title = re.sub(r"[\\/:*?\"<>|]", "", t["title"]).replace("　", "_")
+        fname, path = f"{subj}_{name}_{title}.mp3", os.path.join(adir, t["file"])
     if not os.path.exists(path):
         abort(404)
     return send_file(path, as_attachment=True, download_name=fname, mimetype="audio/mpeg")
 
 
-@app.route("/study/audio.zip")
-def study_audio_zip():
-    """全13章の mp3 を1つの zip で。"""
+@app.route("/study/audio/<key>.zip")
+def study_audio_zip(key):
+    """全章の mp3 を1つの zip で。"""
     import io
     import zipfile
+    if key not in _subjects().SUBJECTS:
+        abort(404)
+    subj = _subjects().name(key)
     adir = os.path.join(app.static_folder, "audio")
-    meta = json.load(open(os.path.join(adir, "toshi_tracks.json"), encoding="utf-8"))
+    meta_p = os.path.join(adir, f"{key}_tracks.json")
+    if not os.path.exists(meta_p):
+        abort(404)
+    meta = json.load(open(meta_p, encoding="utf-8"))
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as z:
         for t in meta["tracks"]:
             title = t["title"].replace("　", "_").replace("/", "／")
-            z.write(os.path.join(adir, t["file"]), f"都市計画法_暗記ノート/{t['n']:02d}_{title}.mp3")
-        z.write(os.path.join(adir, "toshi_all.mp3"), "都市計画法_暗記ノート/00_全部通し.mp3")
+            z.write(os.path.join(adir, t["file"]), f"{subj}_暗記ノート/{t['n']:02d}_{title}.mp3")
+        z.write(os.path.join(adir, f"{key}_all.mp3"), f"{subj}_暗記ノート/00_全部通し.mp3")
     buf.seek(0)
-    return send_file(buf, as_attachment=True, download_name="都市計画法_暗記ノート_音声.zip", mimetype="application/zip")
+    return send_file(buf, as_attachment=True, download_name=f"{subj}_暗記ノート_音声.zip", mimetype="application/zip")
 
 
-def _toshi_chapters():
-    """coaching/toshi_gen.py 의 暗記ノート를 대본(台本) 표시용으로 (red 키워드 {{..}} 는 프런트에서 강조)."""
-    import importlib
-    import sys
+def _subjects():
     coaching = os.path.join(os.path.dirname(os.path.abspath(__file__)), "coaching")
     if coaching not in sys.path:
         sys.path.insert(0, coaching)
+    import subjects
+    return subjects
+
+
+def _chapters(key):
+    """coaching/<subject>_gen.py 의 暗記ノート를 대본(台本) 표시용으로 (red 키워드 {{..}} 는 프런트에서 강조)."""
     try:
-        tg = importlib.import_module("toshi_gen")
+        ch = _subjects().chapters(key)
     except Exception:
         return []
     return [{"n": i, "title": c["title"], "meaning": c["meaning"], "items": c["items"], "one": c["one"]}
-            for i, c in enumerate(tg.CHAPTERS, 1)]
+            for i, c in enumerate(ch, 1)]
 
 
 # ---- D. 통계 ----
