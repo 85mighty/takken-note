@@ -223,28 +223,29 @@ CHAPTERS = [
 ]
 
 CSS = """
-  @page { size: A4; margin: 13mm 12mm; @bottom-center { content: counter(page) " / " counter(pages); font-size: 9pt; color: #888; font-family: "Noto Sans CJK JP"; } }
-  body { font-family: "Noto Sans CJK JP", sans-serif; font-size: 11.8pt; line-height: 1.6; color: #1a1a1a; margin: 0; }
-  .cover h1 { font-size: 20pt; border-bottom: 3px solid #0d47a1; padding-bottom: 2mm; }
+  @page { size: A4; margin: 12mm 12mm 11mm; @bottom-center { content: counter(page) " / " counter(pages); font-size: 9pt; color: #000; font-family: "Noto Sans CJK JP"; } }
+  /* 印刷用: 大きめのゴシック・純黒・色背景なし (モノクロ印刷でもはっきり見える) */
+  body { font-family: "Noto Sans CJK JP", sans-serif; font-size: 13pt; line-height: 1.55; color: #000; margin: 0; }
+  .cover h1 { font-size: 22pt; border-bottom: 3px solid #000; padding-bottom: 2mm; }
   .chapter { page-break-before: always; }
-  h2 { font-size: 15pt; background: #0d47a1; color: #fff; padding: 2mm 3.5mm; margin: 0 0 2.5mm 0; border-radius: 1mm; }
-  .meaning { background: #e3f2fd; border-left: 5px solid #0d47a1; padding: 2mm 3.5mm; margin: 0 0 3.5mm 0; font-size: 11pt; }
+  h2 { font-size: 16pt; background: #000; color: #fff; padding: 2mm 3.5mm; margin: 0 0 3mm 0; border-radius: 1mm; }
+  .meaning { border: 1.5px solid #000; border-left: 6px solid #000; padding: 2mm 3.5mm; margin: 0 0 3.5mm 0; font-size: 12pt; }
   ol { margin: 0; padding-left: 7mm; }
   ol li { margin-bottom: 2.2mm; padding-left: 1mm; }
-  .k { color: #b71c1c; font-weight: bold; }
-  .blank { display: inline-block; min-width: 22mm; border-bottom: 1.5px solid #333; height: 1.1em; vertical-align: bottom; margin: 0 1mm; }
-  .one { background: #fff8dc; border: 2px solid #c8a400; border-radius: 2mm; padding: 2mm 3.5mm; margin-top: 4mm; font-size: 11.5pt; }
+  .k { color: #000; font-weight: bold; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
+  .blank { display: inline-block; min-width: 22mm; border-bottom: 2px solid #000; height: 1.1em; vertical-align: bottom; margin: 0 1mm; }
+  .one { border: 2px solid #000; border-radius: 2mm; padding: 2mm 3.5mm; margin-top: 4mm; font-size: 12.5pt; font-weight: bold; }
   .toc li { margin-bottom: 1mm; }
-  .compact { font-size: 10.8pt; line-height: 1.5; }
+  .note { font-size: 11pt; }
+  .compact { font-size: 12pt; line-height: 1.45; }
   .compact ol li { margin-bottom: 1.4mm; }
-  .compact .meaning { font-size: 10.2pt; padding: 1.5mm 3mm; margin-bottom: 2.5mm; }
-  .compact .one { font-size: 10.5pt; margin-top: 2.5mm; }
-  .compact2 { font-size: 10pt; line-height: 1.42; }
+  .compact .meaning { font-size: 11pt; padding: 1.5mm 3mm; margin-bottom: 2.5mm; }
+  .compact .one { font-size: 11.5pt; margin-top: 2.5mm; }
+  .compact2 { font-size: 11pt; line-height: 1.4; }
   .compact2 ol li { margin-bottom: 1mm; }
-  .compact2 .meaning { font-size: 9.6pt; padding: 1.2mm 3mm; margin-bottom: 2mm; }
-  .compact2 .one { font-size: 10pt; margin-top: 2mm; padding: 1.5mm 3mm; }
-  .compact2 h2 { font-size: 13.5pt; padding: 1.5mm 3mm; }
-  .note { font-size: 10.5pt; color: #555; }
+  .compact2 .meaning { font-size: 10.5pt; padding: 1.2mm 3mm; margin-bottom: 2mm; }
+  .compact2 .one { font-size: 11pt; margin-top: 2mm; padding: 1.5mm 3mm; }
+  .compact2 h2 { font-size: 14pt; padding: 1.5mm 3mm; }
 """
 
 SUBJECT = "都市計画法"
@@ -265,7 +266,7 @@ def render(mode, chapters=None, subject=None, compact=()):
         return re.sub(r"\{\{(.+?)\}\}", term, s)
 
     title = f"{subject} 暗記ノート" if mode == "study" else f"{subject} 暗記テスト（穴埋め）"
-    sub = ("章ごとに1ページ・特徴は番号つきで1行ずつ。赤字＝必ず覚える核心語（穴埋めテストで空欄になる部分）"
+    sub = ("章ごとに1ページ・特徴は番号つきで1行ずつ。太字＋下線＝必ず覚える核心語（穴埋めテストで空欄になる部分）"
            if mode == "study" else
            f"空欄を埋めて、暗記ノートと照合。全部書けたら{subject}は完成。")
     out = [f"<!DOCTYPE html><html lang='ja'><head><meta charset='UTF-8'><style>{CSS}</style></head><body>"]
