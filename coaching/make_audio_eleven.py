@@ -23,6 +23,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
@@ -98,6 +99,7 @@ def chapter_text(c, pause=PAUSE_NL):
         for k, v in zip("①②③④⑤⑥⑦⑧⑨⑩", "1234567890"):
             s = s.replace(k, f"その{v}、")
         s = s.replace("！。", "！").replace("？。", "？")
+        s = re.sub(r"、{2,}", "、", s)
         return s.rstrip("。")
 
     title = c["title"].replace("　", "、").replace("――", "、").replace("―", "、")
