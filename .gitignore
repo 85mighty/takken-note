@@ -4,3 +4,4 @@ __pycache__/
 .takken_password
 .venv/
 autodeploy.log
+.eleven_api_key

@@ -89,3 +89,16 @@ python3 -c "import json, db; db.add_year(json.load(open('r5.json')))"
 | `takken_db.json` | 문제·오답 DB |
 | `R6_question_answer.pdf` | R6 원본 문제 PDF (파서 검증용 원본) |
 | `R7_question_answer.pdf` | ※ 원본이 아니라 `make_pdf.py`로 생성한 오답노트 PDF 샘플 |
+
+## 学習 탭 음성 (都市計画法 暗記ノート)
+
+- 기본 음성은 Open JTalk(무료 합성음)로 `coaching/make_audio.py`가 생성 → `static/audio/`.
+- 더 자연스러운 음성은 ElevenLabs로 교체 가능 (`coaching/make_audio_eleven.py`, 같은 파일명으로 덮어쓰므로 사이트 변경 불필요):
+  ```bash
+  cd ~/takken-note && sudo apt-get install -y ffmpeg
+  echo 'sk_xxxx' > .eleven_api_key            # elevenlabs.io → Profile → API Keys
+  python3 coaching/make_audio_eleven.py --list      # 일본어 목소리 찾기
+  python3 coaching/make_audio_eleven.py --voice 이름  # 생성 (약 7,300자, Free 플랜 범위)
+  git add static/audio && git commit -m "ElevenLabs 音声" && git push origin HEAD
+  ```
+- 한자 읽기가 틀리면 스크립트의 `READINGS`에 `"用語": "よみ"`를 추가하고 `--force`로 재생성.
