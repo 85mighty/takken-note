@@ -9,8 +9,8 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 SUBJECTS = {
-    "toshi": {"name": "都市計画法", "module": "toshi_gen", "q": "問15・16", "year": "練習-都計", "subtopic": "都市計画法"},
-    "kenki": {"name": "建築基準法", "module": "kenki_gen", "q": "問17・18", "year": None, "subtopic": "建築基準法"},
+    "toshi": {"name": "都市計画法", "module": "toshi_gen", "q": "問15・16", "year": "練習-都計", "subtopic": "都市計画法", "doc100": "toshi_100.pdf"},
+    "kenki": {"name": "建築基準法", "module": "kenki_gen", "q": "問17・18", "year": "練習-建基", "subtopic": "建築基準法", "doc100": "kenki_100.pdf"},
 }
 ORDER = ["toshi", "kenki"]
 

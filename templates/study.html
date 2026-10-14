@@ -43,8 +43,8 @@
   <div class="panel">
     <h2>📄 プリント・資料</h2>
     <ul class="docs">
-      {% if s.key == 'toshi' %}
-      <li><a href="{{ url_for('static', filename='docs/toshi_100.pdf') }}" target="_blank">都市計画法 問15・16 特訓100問</a> <span class="mut">（大きい字・巻末に解答解説・40p）</span></li>
+      {% if s.doc100 %}
+      <li><a href="{{ url_for('static', filename='docs/' ~ s.doc100) }}" target="_blank">{{ s.name }} {{ s.q }} 特訓100問</a> <span class="mut">（大きい字・巻末に解答解説）</span></li>
       {% endif %}
       <li><a href="{{ url_for('static', filename='docs/' ~ s.key ~ '_test.pdf') }}" target="_blank">{{ s.name }} 暗記テスト（穴埋め）</a> <span class="mut">（1章1ページ）</span></li>
       <li><a href="{{ url_for('static', filename='docs/' ~ s.key ~ '_note.pdf') }}" target="_blank">{{ s.name }} 暗記ノート（答え）</a> <span class="mut">（赤字＝核心語）</span></li>
