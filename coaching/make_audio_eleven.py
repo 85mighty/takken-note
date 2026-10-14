@@ -82,8 +82,28 @@ def call(path, data=None, key=None, raw=False):
         with urllib.request.urlopen(req, timeout=180) as r:
             body = r.read()
     except urllib.error.HTTPError as e:
-        sys.exit(f"ElevenLabs エラー {e.code}: {e.read().decode('utf-8', 'replace')[:500]}")
+        raise ApiError(e.code, e.read().decode("utf-8", "replace")[:500])
     return body if raw else json.loads(body)
+
+
+class ApiError(Exception):
+    def __init__(self, code, body):
+        super().__init__(f"ElevenLabs エラー {code}: {body}")
+        self.code, self.body = code, body
+
+
+# Free プランでは Voice Library の声が API で使えない (402) → 標準搭載 (premade) の声で代替
+PREMADE_FALLBACK = ("Sarah", "Matilda", "Lily", "Alice", "Charlotte", "Laura")
+
+
+def premade_voice(key):
+    vs = voices(key)
+    pre = [v for v in vs if v.get("category") == "premade"]
+    for name in PREMADE_FALLBACK:
+        for v in pre:
+            if v["name"] == name:
+                return v
+    return (pre or vs)[0]
 
 
 def voices(key):
@@ -123,7 +143,7 @@ def add_library_ja_voice(key):
             if mv["name"] == v["name"]:
                 return mv
         return {"name": v["name"], "voice_id": v["voice_id"]}
-    except SystemExit as e:
+    except ApiError as e:
         print(f"※ 日本語の声の追加に失敗 ({e}) → 既定の声で続行")
         return None
 
@@ -208,7 +228,16 @@ def main():
                 subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
                                 "-t", "2", "-b:a", "64k", mp3], check=True)
             else:
-                tts(key, v["voice_id"], a.model, text, mp3)
+                try:
+                    tts(key, v["voice_id"], a.model, text, mp3)
+                except ApiError as e:
+                    if e.code != 402 or "paid_plan_required" not in e.body:
+                        raise
+                    v = premade_voice(key)
+                    print(f"※ Free プランでは Library の声が使えません → 標準の声 {v['name']} で続行 "
+                          "(日本人の声にするには Starter プラン $5/月 に上げて --force で再生成)")
+                    h = hashlib.sha1(f"{v['voice_id']}|{a.model}|{text}".encode("utf-8")).hexdigest()
+                    tts(key, v["voice_id"], a.model, text, mp3)
             cache[name] = h
             used += len(text)
             json.dump(cache, open(cache_p, "w"), indent=1)
@@ -240,4 +269,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ApiError as e:
+        sys.exit(str(e))
