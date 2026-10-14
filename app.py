@@ -208,6 +208,13 @@ def api_subtopic():
     return jsonify(ok=True)
 
 
+# ---- 학습 탭 ----
+
+@app.route("/study")
+def study():
+    return render_template("study.html")
+
+
 # ---- D. 통계 ----
 
 @app.route("/stats")

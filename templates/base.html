@@ -11,6 +11,7 @@
   <span class="brand">宅建 오답노트</span>
   <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="on"{% endif %}>오답 목록</a>
   <a href="{{ url_for('stats') }}" {% if request.endpoint == 'stats' %}class="on"{% endif %}>통계</a>
+  <a href="{{ url_for('study') }}" {% if request.endpoint == 'study' %}class="on"{% endif %}>学習</a>
   <a href="{{ url_for('register') }}" {% if request.endpoint == 'register' %}class="on"{% endif %}>등록</a>
   <span class="dday">시험일 2026-10-18</span>
 </nav>

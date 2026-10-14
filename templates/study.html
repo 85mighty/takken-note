@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}学習 — 宅建 오답노트{% endblock %}
+{% block body %}
+
+<div class="tabs">
+  <button type="button" class="tab on" data-t="toshi">都市計画法</button>
+  <button type="button" class="tab" data-t="kenki">建築基準法</button>
+</div>
+
+<section id="sec-toshi" class="sec">
+  <div class="panel player">
+    <h2>🎧 暗記ノート 音声（13章）</h2>
+    <p class="mut">イヤホンで歩きながら。画面を消してもバックグラウンドで続けて再生され、ロック画面から操作できます。</p>
+    <div class="now"><span id="now-title">—</span><span id="now-time" class="mut"></span></div>
+    <audio id="player" preload="metadata" playsinline controls></audio>
+    <div class="pctl">
+      <button type="button" class="btn" id="play-all">▶ 全部通して（約29分）</button>
+      <button type="button" class="btn gray" id="prev-t">⏮ 前の章</button>
+      <button type="button" class="btn gray" id="next-t">⏭ 次の章</button>
+      <label class="chk"><input type="checkbox" id="loop-all" checked> 最後まで行ったら最初から</label>
+      <label class="chk">速さ
+        <select id="rate"><option value="0.8">0.8×</option><option value="1" selected>1.0×</option><option value="1.2">1.2×</option><option value="1.5">1.5×</option></select>
+      </label>
+    </div>
+    <ol class="tracks" id="tracks"></ol>
+  </div>
+
+  <div class="panel">
+    <h2>📄 プリント・資料</h2>
+    <ul class="docs">
+      <li><a href="{{ url_for('static', filename='docs/toshi_100.pdf') }}" target="_blank">都市計画法 問15・16 特訓100問</a> <span class="mut">（大きい字・巻末に解答解説・40p）</span></li>
+      <li><a href="{{ url_for('static', filename='docs/toshi_test.pdf') }}" target="_blank">都市計画法 暗記テスト（穴埋め）</a> <span class="mut">（1章1ページ・14p）</span></li>
+      <li><a href="{{ url_for('static', filename='docs/toshi_note.pdf') }}" target="_blank">都市計画法 暗記ノート（答え）</a> <span class="mut">（赤字＝核心語・14p）</span></li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h2>✍️ サイトで解く</h2>
+    <ul class="docs">
+      <li><a href="{{ url_for('review') }}?year=練習-都計&min_wrong=0&mode=exam">特訓100問を試験モードで解く</a>（全部解いてから採点）</li>
+      <li><a href="{{ url_for('review') }}?year=練習-都計&min_wrong=0&mode=instant">特訓100問をすぐ採点モードで解く</a>（1問ずつ解説つき）</li>
+      <li><a href="{{ url_for('index') }}?year=練習-都計&min_wrong=1">特訓100問で間違えた問題だけ</a></li>
+      <li><a href="{{ url_for('index') }}?subtopic=都市計画法&min_wrong=1">本試験で間違えた都市計画法の問題</a></li>
+    </ul>
+  </div>
+</section>
+
+<section id="sec-kenki" class="sec" hidden>
+  <div class="panel">
+    <h2>建築基準法（問17・18）</h2>
+    <p>特訓100問・暗記ノート・音声は準備中。都市計画法が終わったら作ります。</p>
+    <ul class="docs">
+      <li><a href="{{ url_for('index') }}?subtopic=建築基準法&min_wrong=1">本試験で間違えた建築基準法の問題</a>（8回中5回落とした問18がここ）</li>
+      <li><a href="{{ url_for('review') }}?subtopic=建築基準法&min_wrong=1&mode=instant">それをすぐ採点モードで解き直す</a></li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h2>📄 共通資料</h2>
+    <ul class="docs">
+      <li><a href="{{ url_for('static', filename='docs/plan_0924.pdf') }}" target="_blank">合格プラン・弱点分析（9/24版）</a></li>
+    </ul>
+  </div>
+</section>
+
+<script>
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".sec").forEach(s => s.hidden = (s.id !== "sec-" + b.dataset.t));
+  try { localStorage.setItem("studyTab", b.dataset.t); } catch (e) {}
+}));
+try { const t = localStorage.getItem("studyTab"); if (t) document.querySelector(`.tab[data-t="${t}"]`)?.click(); } catch (e) {}
+
+// ---- 플레이어 ----
+const AUDIO = "{{ url_for('static', filename='audio/') }}";
+const audio = document.getElementById("player");
+const list = document.getElementById("tracks");
+let META = null, cur = -1;   // cur: -1=없음, 0..n-1=장, "all"=전체
+
+function fmt(s) { s = Math.round(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+function setTrack(i, autoplay) {
+  cur = i;
+  const t = i === "all" ? {title: "全部通して", file: META.all.file, sec: META.all.sec} : META.tracks[i];
+  audio.src = AUDIO + t.file;
+  document.getElementById("now-title").textContent = t.title;
+  document.getElementById("now-time").textContent = " " + fmt(t.sec);
+  list.querySelectorAll("li").forEach((li, k) => li.classList.toggle("playing", k === i));
+  if ("mediaSession" in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({title: t.title, artist: "都市計画法 暗記ノート", album: "宅建"});
+  }
+  try { localStorage.setItem("toshiTrack", String(i)); } catch (e) {}
+  if (autoplay) audio.play().catch(() => {});
+}
+function next() {
+  if (cur === "all") { if (document.getElementById("loop-all").checked) setTrack("all", true); return; }
+  const n = cur + 1;
+  if (n < META.tracks.length) setTrack(n, true);
+  else if (document.getElementById("loop-all").checked) setTrack(0, true);
+}
+function prev() { if (cur === "all") return; if (audio.currentTime > 3) { audio.currentTime = 0; return; } setTrack(Math.max(0, cur - 1), true); }
+
+fetch(AUDIO + "toshi_tracks.json").then(r => r.json()).then(m => {
+  META = m;
+  m.tracks.forEach((t, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<button type="button" class="tbtn"><span class="tn">${t.n}</span><span class="tt">${t.title.replace(/^第\d+章　/, "")}</span><span class="td">${fmt(t.sec)}</span></button>`;
+    li.querySelector("button").addEventListener("click", () => setTrack(i, true));
+    list.appendChild(li);
+  });
+  let saved = 0; try { const s = localStorage.getItem("toshiTrack"); if (s !== null) saved = s === "all" ? "all" : +s; } catch (e) {}
+  setTrack(saved, false);
+});
+audio.addEventListener("ended", next);
+document.getElementById("play-all").addEventListener("click", () => setTrack("all", true));
+document.getElementById("next-t").addEventListener("click", next);
+document.getElementById("prev-t").addEventListener("click", prev);
+document.getElementById("rate").addEventListener("change", e => audio.playbackRate = +e.target.value);
+audio.addEventListener("play", () => audio.playbackRate = +document.getElementById("rate").value);
+if ("mediaSession" in navigator) {
+  navigator.mediaSession.setActionHandler("nexttrack", next);
+  navigator.mediaSession.setActionHandler("previoustrack", prev);
+  navigator.mediaSession.setActionHandler("play", () => audio.play());
+  navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+}
+</script>
+{% endblock %}
