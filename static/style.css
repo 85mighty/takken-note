@@ -201,3 +201,16 @@ table.list.hide-ans tr.detail:not(.revealed) .expl { display: none; }
 .tbtn .td { color: #778; font-size: 13px; }
 ul.docs { padding-left: 18px; } ul.docs li { margin: 6px 0; }
 @media (pointer: coarse) { .tbtn { padding: 13px 6px; font-size: 16px; } }
+.trow { display: flex; align-items: stretch; }
+.trow .tbtn { flex: 1; width: auto; }
+.sbtn { border: 0; background: none; font-size: 20px; padding: 0 12px; cursor: pointer; color: #556; }
+.sbtn.on { background: #fff3cd; }
+.scriptbox { margin: 4px 0 8px; }
+.script { background: #fffdf5; border: 1px solid #eadfb0; border-radius: 8px; padding: 10px 14px; margin: 6px 0 10px; font-size: 15px; line-height: 1.7; }
+.script h3 { margin: 0 0 6px; font-size: 16px; }
+.script .mean { color: #556; margin: 0 0 6px; }
+.script ol { padding-left: 1.4em; margin: 0 0 8px; }
+.script li { margin: 3px 0; }
+.script .one { font-weight: bold; margin: 0; border-top: 1px dashed #d9c98a; padding-top: 6px; }
+.kw { color: #c0392b; font-weight: bold; }
+@media (pointer: coarse) { .script { font-size: 16px; } .sbtn { padding: 0 14px; } }

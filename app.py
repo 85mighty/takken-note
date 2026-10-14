@@ -212,7 +212,22 @@ def api_subtopic():
 
 @app.route("/study")
 def study():
-    return render_template("study.html")
+    return render_template("study.html", chapters=_toshi_chapters())
+
+
+def _toshi_chapters():
+    """coaching/toshi_gen.py 의 暗記ノート를 대본(台本) 표시용으로 (red 키워드 {{..}} 는 프런트에서 강조)."""
+    import importlib
+    import sys
+    coaching = os.path.join(os.path.dirname(os.path.abspath(__file__)), "coaching")
+    if coaching not in sys.path:
+        sys.path.insert(0, coaching)
+    try:
+        tg = importlib.import_module("toshi_gen")
+    except Exception:
+        return []
+    return [{"n": i, "title": c["title"], "meaning": c["meaning"], "items": c["items"], "one": c["one"]}
+            for i, c in enumerate(tg.CHAPTERS, 1)]
 
 
 # ---- D. 통계 ----

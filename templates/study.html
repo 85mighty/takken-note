@@ -22,6 +22,11 @@
         <select id="rate"><option value="0.8">0.8×</option><option value="1" selected>1.0×</option><option value="1.2">1.2×</option><option value="1.5">1.5×</option></select>
       </label>
     </div>
+    <div class="scriptbox">
+      <button type="button" class="btn gray" id="script-toggle">📖 台本を見る（今の章）</button>
+      <div id="script-now" class="script" hidden></div>
+    </div>
+    <p class="mut">各章の 📖 を押すと、その章の台本（暗記ノート）が開きます。<span class="kw">赤字</span>＝核心語。</p>
     <ol class="tracks" id="tracks"></ol>
   </div>
 
@@ -72,6 +77,20 @@ try { const t = localStorage.getItem("studyTab"); if (t) document.querySelector(
 
 // ---- 플레이어 ----
 const AUDIO = "{{ url_for('static', filename='audio/') }}";
+const CHAPTERS = {{ chapters | tojson }};
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function kw(s) { return esc(s).replace(/\{\{(.+?)\}\}/g, '<span class="kw">$1</span>'); }
+function scriptHTML(c) {
+  if (!c) return "";
+  return `<h3>${esc(c.title)}</h3><p class="mean">${kw(c.meaning)}</p><ol>` +
+    c.items.map(it => `<li>${kw(it)}</li>`).join("") +
+    `</ol><p class="one">一文：${kw(c.one)}</p>`;
+}
+function renderNowScript() {
+  const box = document.getElementById("script-now");
+  if (cur === "all" || cur < 0) { box.innerHTML = '<p class="mut">章を選ぶと、その章の台本がここに出ます。</p>'; return; }
+  box.innerHTML = scriptHTML(CHAPTERS[cur]);
+}
 const audio = document.getElementById("player");
 const list = document.getElementById("tracks");
 let META = null, cur = -1;   // cur: -1=없음, 0..n-1=장, "all"=전체
@@ -84,6 +103,7 @@ function setTrack(i, autoplay) {
   document.getElementById("now-title").textContent = t.title;
   document.getElementById("now-time").textContent = " " + fmt(t.sec);
   list.querySelectorAll("li").forEach((li, k) => li.classList.toggle("playing", k === i));
+  renderNowScript();
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({title: t.title, artist: "都市計画法 暗記ノート", album: "宅建"});
   }
@@ -102,8 +122,14 @@ fetch(AUDIO + "toshi_tracks.json").then(r => r.json()).then(m => {
   META = m;
   m.tracks.forEach((t, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<button type="button" class="tbtn"><span class="tn">${t.n}</span><span class="tt">${t.title.replace(/^第\d+章　/, "")}</span><span class="td">${fmt(t.sec)}</span></button>`;
-    li.querySelector("button").addEventListener("click", () => setTrack(i, true));
+    li.innerHTML = `<div class="trow"><button type="button" class="tbtn"><span class="tn">${t.n}</span><span class="tt">${t.title.replace(/^第\d+章　/, "")}</span><span class="td">${fmt(t.sec)}</span></button><button type="button" class="sbtn" title="台本">📖</button></div><div class="script" hidden></div>`;
+    li.querySelector(".tbtn").addEventListener("click", () => setTrack(i, true));
+    li.querySelector(".sbtn").addEventListener("click", e => {
+      const box = li.querySelector(".script");
+      if (box.hidden) box.innerHTML = scriptHTML(CHAPTERS[i]);
+      box.hidden = !box.hidden;
+      e.currentTarget.classList.toggle("on", !box.hidden);
+    });
     list.appendChild(li);
   });
   let saved = 0; try { const s = localStorage.getItem("toshiTrack"); if (s !== null) saved = s === "all" ? "all" : +s; } catch (e) {}
@@ -111,6 +137,14 @@ fetch(AUDIO + "toshi_tracks.json").then(r => r.json()).then(m => {
 });
 audio.addEventListener("ended", next);
 document.getElementById("play-all").addEventListener("click", () => setTrack("all", true));
+document.getElementById("script-toggle").addEventListener("click", e => {
+  const box = document.getElementById("script-now");
+  box.hidden = !box.hidden;
+  if (!box.hidden) renderNowScript();
+  e.currentTarget.textContent = box.hidden ? "📖 台本を見る（今の章）" : "📖 台本を閉じる";
+  try { localStorage.setItem("toshiScript", box.hidden ? "0" : "1"); } catch (e2) {}
+});
+try { if (localStorage.getItem("toshiScript") === "1") document.getElementById("script-toggle").click(); } catch (e) {}
 document.getElementById("next-t").addEventListener("click", next);
 document.getElementById("prev-t").addEventListener("click", prev);
 document.getElementById("rate").addEventListener("change", e => audio.playbackRate = +e.target.value);
