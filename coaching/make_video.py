@@ -61,12 +61,24 @@ def synth_with_marks(key, voice, rate, lines, mp3):
                        "voice": {"languageCode": "ja-JP", "name": voice},
                        "audioConfig": {"audioEncoding": "MP3", "speakingRate": rate, "sampleRateHertz": 24000},
                        "enableTimePointing": ["SSML_MARK"]}).encode("utf-8")
-    req = urllib.request.Request(f"{API}?key={key}", data=body, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=180) as r:
-            res = json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        sys.exit(f"Google TTS エラー {e.code}: {e.read().decode('utf-8', 'replace')[:600]}")
+    import time
+    res = None
+    for attempt in range(4):   # 一時的な "Failed to synthesize" に備えて再試行
+        req = urllib.request.Request(f"{API}?key={key}", data=body, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                res = json.loads(r.read())
+            break
+        except urllib.error.HTTPError as e:
+            msg = e.read().decode("utf-8", "replace")[:600]
+            if attempt == 3 or e.code in (401, 403):
+                sys.exit(f"Google TTS エラー {e.code}: {msg}")
+            print(f"  ※ Google TTS エラー {e.code} → {5 * (attempt + 1)} 秒後に再試行")
+            time.sleep(5 * (attempt + 1))
+        except (urllib.error.URLError, TimeoutError) as e:
+            if attempt == 3:
+                sys.exit(f"Google TTS 接続エラー: {e}")
+            time.sleep(5 * (attempt + 1))
     with open(mp3, "wb") as f:
         f.write(base64.b64decode(res["audioContent"]))
     tp = {t["markName"]: float(t["timeSeconds"]) for t in res.get("timepoints", [])}
@@ -111,8 +123,12 @@ def scroll_expr(times, ys, page_h, dur):
     return expr
 
 
-def render_chapter(key, i, c, pdf_path, voice, rate, keyv, workdir):
+def render_chapter(key, i, c, pdf_path, voice, rate, keyv, workdir, force=False):
     page = i  # 表紙が 0 ページ目なので 第i章 = ページ i
+    out = os.path.join(workdir, f"{key}_{i:02d}.mp4")
+    if not force and os.path.exists(out) and os.path.getmtime(out) > os.path.getmtime(pdf_path):
+        print(f"{i:02d} 済み (再生成は --force)  {c['title']}")
+        return out
     png = os.path.join(workdir, f"{key}_{i:02d}.png")
     subprocess.run(["pdftoppm", "-f", str(page + 1), "-l", str(page + 1), "-r", "232", "-png", "-singlefile",
                     pdf_path, png[:-4]], check=True)
@@ -139,7 +155,6 @@ def render_chapter(key, i, c, pdf_path, voice, rate, keyv, workdir):
     dur = duration(mp3) + TAIL
     n = min(len(times), len(ys))
     expr = scroll_expr(times[:n], ys[:n], page_h, dur)
-    out = os.path.join(workdir, f"{key}_{i:02d}.mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-framerate", str(FPS), "-i", png2, "-i", mp3,
                     "-filter_complex", f"[0:v]crop={W}:{H}:0:'{expr}',format=yuv420p[v];[1:a]apad=pad_dur={TAIL}[a]",
                     "-map", "[v]", "-map", "[a]", "-t", f"{dur:.2f}", "-r", str(FPS),
@@ -155,6 +170,7 @@ def main():
     ap.add_argument("--voice", default=os.environ.get("GOOGLE_TTS_VOICE") or cfg_file(".google_voice") or DEFAULT_VOICE)
     ap.add_argument("--rate", type=float, default=1.0)
     ap.add_argument("--only", type=int)
+    ap.add_argument("--force", action="store_true", help="作成済みの章も作り直す")
     ap.add_argument("--out", default=os.path.join(ROOT, "static", "video"))
     a = ap.parse_args()
     keyv = google_key()
@@ -170,7 +186,7 @@ def main():
     for i, c in enumerate(CH, 1):
         if a.only and a.only != i:
             continue
-        segs.append(render_chapter(key, i, c, pdf_path, a.voice, a.rate, keyv, work))
+        segs.append(render_chapter(key, i, c, pdf_path, a.voice, a.rate, keyv, work, a.force))
     final = os.path.join(a.out, f"{key}_note{'_' + str(a.only) if a.only else ''}.mp4")
     if len(segs) == 1:
         os.replace(segs[0], final)
