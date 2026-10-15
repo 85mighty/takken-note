@@ -57,12 +57,35 @@ def split_chunks(text):
     return chunks
 
 
+def shorten_sentences(text, limit=70):
+    """Chirp3-HD は1文が長いと 400 になるので、長い文は読点を句点に替えて区切る。"""
+    out = []
+    for line in text.split("\n"):
+        if len(line) <= limit:
+            out.append(line)
+            continue
+        buf, segs = "", []
+        for piece in line.split("、"):
+            cand = (buf + "、" + piece) if buf else piece
+            if len(cand) > limit and buf:
+                segs.append(buf.rstrip("。") + "。")
+                buf = piece
+            else:
+                buf = cand
+        if buf:
+            segs.append(buf)
+        out.append("".join(segs))
+    return "\n".join(out)
+
+
 def tts_cloud(key, voice, rate, text, mp3):
+    if "Chirp" in voice:
+        text = shorten_sentences(text)
     parts = []
     for i, chunk in enumerate(split_chunks(text)):
         body = json.dumps({"input": {"text": chunk},
                            "voice": {"languageCode": "ja-JP", "name": voice},
-                           "audioConfig": {"audioEncoding": "MP3", "speakingRate": rate, "pitch": 0.0,
+                           "audioConfig": {"audioEncoding": "MP3", "speakingRate": rate,
                                            "sampleRateHertz": 24000}}).encode("utf-8")
         req = urllib.request.Request(f"{API}?key={key}", data=body, headers={"Content-Type": "application/json"})
         try:
