@@ -1,82 +1,82 @@
 {
  "title": "建築基準法 暗記ノート",
- "voice": "Takumi - Calm & Healing Voice",
+ "voice": "Google ja-JP-Neural2-D",
  "tracks": [
   {
    "n": 1,
    "title": "第1章　用語と適用範囲",
    "file": "kenki_01.mp3",
-   "sec": 156
+   "sec": 152
   },
   {
    "n": 2,
    "title": "第2章　建築確認①　どの建築物・どの工事に必要か（令和7年改正）",
    "file": "kenki_02.mp3",
-   "sec": 155
+   "sec": 153
   },
   {
    "n": 3,
    "title": "第3章　建築確認②　検査・使用制限・中間検査",
    "file": "kenki_03.mp3",
-   "sec": 139
+   "sec": 125
   },
   {
    "n": 4,
    "title": "第4章　単体規定①　構造・防火・設備（数字で覚える）",
    "file": "kenki_04.mp3",
-   "sec": 153
+   "sec": 151
   },
   {
    "n": 5,
    "title": "第5章　単体規定②　居室の衛生（採光・換気・天井高・地階・便所）",
    "file": "kenki_05.mp3",
-   "sec": 134
+   "sec": 129
   },
   {
    "n": 6,
    "title": "第6章　道路規制（道路の定義・2項道路・接道義務）",
    "file": "kenki_06.mp3",
-   "sec": 194
+   "sec": 175
   },
   {
    "n": 7,
    "title": "第7章　用途制限（13地域と建物）",
    "file": "kenki_07.mp3",
-   "sec": 193
+   "sec": 190
   },
   {
    "n": 8,
    "title": "第8章　容積率",
    "file": "kenki_08.mp3",
-   "sec": 149
+   "sec": 140
   },
   {
    "n": 9,
    "title": "第9章　建蔽率",
    "file": "kenki_09.mp3",
-   "sec": 140
+   "sec": 132
   },
   {
    "n": 10,
    "title": "第10章　高さ制限（絶対高さ・斜線・日影）",
    "file": "kenki_10.mp3",
-   "sec": 153
+   "sec": 147
   },
   {
    "n": 11,
    "title": "第11章　防火地域・準防火地域",
    "file": "kenki_11.mp3",
-   "sec": 160
+   "sec": 154
   },
   {
    "n": 12,
    "title": "第12章　建築協定・違反建築物・その他の手続",
    "file": "kenki_12.mp3",
-   "sec": 156
+   "sec": 138
   }
  ],
  "all": {
   "file": "kenki_all.mp3",
-  "sec": 1883
+  "sec": 1787
  }
 }

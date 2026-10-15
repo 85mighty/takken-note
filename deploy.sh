@@ -37,6 +37,9 @@ fi
 ENGINE=$(cat .tts_engine 2>/dev/null | tr -d '[:space:]' || true)
 if [ -z "$ENGINE" ]; then
   if [ -s .google_api_key ]; then ENGINE=google
+  elif grep -q '"voice": "Google' static/audio/toshi_tracks.json 2>/dev/null; then
+    # 現在の音声が Google 製 → キーが無ければ ElevenLabs で上書きせず、そのまま維持
+    echo "※ 音声は Google 製のまま維持 (再生成するには .google_api_key を置くか .tts_engine に eleven と書く)"
   elif .venv/bin/python3 - <<'PY'
 import sys; sys.path.insert(0, "coaching")
 from make_audio_eleven import find_api_key

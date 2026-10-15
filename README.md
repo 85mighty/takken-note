@@ -113,5 +113,6 @@ python3 -c "import json, db; db.add_year(json.load(open('r5.json')))"
   echo 'ja-JP-Neural2-D' > .google_voice    # 목소리 변경 (남성 Neural2-C/D, 여성 Neural2-B, 고품질 Chirp3-HD-Charon 등)
   ```
 - 키 없이 Google 번역 음성(여성)으로: `echo gtts > .tts_engine && ./deploy.sh`
-- ElevenLabs로 되돌리기: `echo eleven > .tts_engine && ./deploy.sh` (캐시가 있어 재과금 없음)
+- ElevenLabs로 되돌리기: `echo eleven > .tts_engine && ./deploy.sh`
+- 현재 사이트 음성: Google ja-JP-Neural2-D (2026-10-15). 서버에 Google 키가 없으면 deploy.sh는 음성을 그대로 유지한다.
 
