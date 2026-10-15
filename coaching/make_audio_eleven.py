@@ -303,6 +303,11 @@ def main():
             cache[name] = h
             used += len(text)
             json.dump(cache, open(cache_p, "w"), indent=1)
+            gp = os.path.join(a.out, ".google_cache.json")   # Google 版のキャッシュを無効化
+            if os.path.exists(gp):
+                gc = json.load(open(gp))
+                if gc.pop(name, None) is not None:
+                    json.dump(gc, open(gp, "w"), indent=1)
             print(f"{i:02d} 生成 {len(text)}文字")
         elif not os.path.exists(mp3):
             sys.exit(f"{name} がありません (--only を外して全章を作ってください)")

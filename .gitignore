@@ -7,3 +7,6 @@ autodeploy.log
 .eleven_api_key
 .eleven_voice
 .eleven_model
+.google_api_key
+.google_voice
+.tts_engine

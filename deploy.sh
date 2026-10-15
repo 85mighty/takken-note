@@ -31,29 +31,40 @@ if ! fc-list 2>/dev/null | grep -qi "Noto Sans CJK"; then
   echo "※ PDF 일본어 폰트가 없습니다:  sudo apt-get install -y fonts-noto-cjk"
 fi
 
-# 4) ElevenLabs 음성: API 키(환경변수 ELEVEN_API_KEY 또는 .eleven_api_key 파일)가 있으면 생성해서 커밋 (변경 없으면 즉시 종료)
-if [ -z "$(git status --porcelain -- static/audio)" ] && \
-   .venv/bin/python3 - <<'PY'
+# 4) 暗記ノート 音声 생성 (변경 없으면 즉시 종료). 엔진 선택:
+#    .tts_engine 파일에 google / gtts / eleven 를 쓰면 그것을 사용.
+#    없으면: .google_api_key 가 있으면 google → ElevenLabs 키가 있으면 eleven → 둘 다 없으면 건너뜀.
+ENGINE=$(cat .tts_engine 2>/dev/null | tr -d '[:space:]' || true)
+if [ -z "$ENGINE" ]; then
+  if [ -s .google_api_key ]; then ENGINE=google
+  elif .venv/bin/python3 - <<'PY'
 import sys; sys.path.insert(0, "coaching")
 from make_audio_eleven import find_api_key
 sys.exit(0 if find_api_key() else 1)
 PY
-then
+  then ENGINE=eleven; fi
+fi
+if [ -n "$ENGINE" ] && [ -z "$(git status --porcelain -- static/audio)" ]; then
   if ! command -v ffmpeg >/dev/null; then
     (apt-get install -y ffmpeg || sudo -n apt-get install -y ffmpeg) >/dev/null 2>&1 || echo "※ ffmpeg 설치 실패 → sudo apt-get install -y ffmpeg"
   fi
   if command -v ffmpeg >/dev/null; then
     ok=1
     for subj in toshi kenki; do
-      .venv/bin/python3 coaching/make_audio_eleven.py --subject "$subj" || ok=0
+      case "$ENGINE" in
+        google) .venv/bin/python3 coaching/make_audio_google.py --subject "$subj" --engine cloud || ok=0 ;;
+        gtts)   .venv/bin/pip install -q gTTS; .venv/bin/python3 coaching/make_audio_google.py --subject "$subj" --engine gtts || ok=0 ;;
+        eleven) .venv/bin/python3 coaching/make_audio_eleven.py --subject "$subj" || ok=0 ;;
+        *) echo "※ .tts_engine の値が不正: $ENGINE (google/gtts/eleven)"; ok=0 ;;
+      esac
     done
     if [ "$ok" = 1 ]; then
       if ! git diff --quiet -- static/audio || [ -n "$(git ls-files --others --exclude-standard static/audio)" ]; then
         git add static/audio
-        git commit -qm "ElevenLabs 音声 生成 $(date +%F_%H%M)"
+        git commit -qm "音声 生成 ($ENGINE) $(date +%F_%H%M)"
       fi
     else
-      echo "※ ElevenLabs 음성 생성 실패 (위 메시지 참고) → 기존 음성 유지"
+      echo "※ 음성 생성 실패 (위 메시지 참고) → 기존 음성 유지"
     fi
   fi
 fi

@@ -105,3 +105,13 @@ python3 -c "import json, db; db.add_year(json.load(open('r5.json')))"
   git add static/audio && git commit -m "ElevenLabs 音声" && git push origin HEAD
   ```
 - 한자 읽기가 틀리면 스크립트의 `READINGS`에 `"用語": "よみ"`를 추가하고 `--force`로 재생성.
+
+### Google 음성으로 바꾸기 (숫자·단위·분수·한자 읽기가 정확)
+- Cloud Text-to-Speech: Google Cloud Console → 프로젝트 → 「Cloud Text-to-Speech API」 사용 설정 → 사용자 인증 정보 → API 키.
+  ```bash
+  cd ~/takken-note && echo 'AIza...' > .google_api_key && ./deploy.sh     # 이후 배포마다 Google 사용
+  echo 'ja-JP-Neural2-D' > .google_voice    # 목소리 변경 (남성 Neural2-C/D, 여성 Neural2-B, 고품질 Chirp3-HD-Charon 등)
+  ```
+- 키 없이 Google 번역 음성(여성)으로: `echo gtts > .tts_engine && ./deploy.sh`
+- ElevenLabs로 되돌리기: `echo eleven > .tts_engine && ./deploy.sh` (캐시가 있어 재과금 없음)
+
