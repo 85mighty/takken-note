@@ -15,6 +15,7 @@
     <p class="mut">イヤホンで歩きながら。画面を消してもバックグラウンドで続けて再生され、ロック画面から操作できます。</p>
     {% if s.has_audio %}
     <div class="now"><span class="now-title">—</span><span class="now-time mut"></span></div>
+    <p class="mut voice-label"></p>
     <audio class="audio" preload="metadata" playsinline controls></audio>
     <div class="pctl">
       <button type="button" class="btn play-all">▶ 全部通して</button>
@@ -131,6 +132,7 @@ function initPlayer(key, name, chapters) {
 
   fetch(AUDIO + key + "_tracks.json").then(r => r.json()).then(m => {
     META = m;
+    if (m.voice) $(".voice-label").textContent = "音声: " + m.voice;
     $(".play-all").textContent = `▶ 全部通して（約${Math.round(m.all.sec / 60)}分）`;
     m.tracks.forEach((t, i) => {
       const li = document.createElement("li");
