@@ -116,3 +116,9 @@ python3 -c "import json, db; db.add_year(json.load(open('r5.json')))"
 - ElevenLabs로 되돌리기: `echo eleven > .tts_engine && ./deploy.sh`
 - 현재 사이트 음성: Google ja-JP-Neural2-D (2026-10-15). 서버에 Google 키가 없으면 deploy.sh는 음성을 그대로 유지한다.
 
+### 暗記ノート 動画 (음성에 맞춰 페이지가 스크롤되는 16:9 mp4)
+- 생성(VPS, Google 키 필요): `sudo apt-get install -y poppler-utils` 후
+  `cd ~/takken-note && .venv/bin/python3 coaching/make_video.py --subject toshi && .venv/bin/python3 coaching/make_video.py --subject kenki`
+  → `static/video/<key>_note.mp4` (git 관리 밖). 파일이 있으면 学習 탭에 자동으로 플레이어와 저장 버튼이 뜬다.
+- 암기노트를 고쳤으면 PDF(`coaching/<key>_gen.py study static/docs/<key>_note.pdf`)를 먼저 다시 만들고 실행.
+

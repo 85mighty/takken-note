@@ -10,3 +10,4 @@ autodeploy.log
 .google_api_key
 .google_voice
 .tts_engine
+static/video/

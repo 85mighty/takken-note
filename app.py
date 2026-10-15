@@ -218,6 +218,8 @@ def study():
         info["key"] = key
         info["chapters"] = _chapters(key)
         info["has_audio"] = os.path.exists(os.path.join(app.static_folder, "audio", f"{key}_tracks.json"))
+        vp = os.path.join(app.static_folder, "video", f"{key}_note.mp4")
+        info["video_mb"] = round(os.path.getsize(vp) / 1e6) if os.path.exists(vp) else 0
         subs.append(info)
     return render_template("study.html", subjects=subs)
 

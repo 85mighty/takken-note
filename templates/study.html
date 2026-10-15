@@ -41,6 +41,14 @@
     {% endif %}
   </div>
 
+  {% if s.video_mb %}
+  <div class="panel">
+    <h2>🎬 暗記ノート 動画（音声＋ページが自動スクロール）</h2>
+    <p class="mut">YouTube のように見るだけ。目と耳で同時に。画面を横にすると大きく見えます。</p>
+    <video controls playsinline preload="metadata" style="width:100%;max-height:60vh;background:#000" src="{{ url_for('static', filename='video/' ~ s.key ~ '_note.mp4') }}"></video>
+    <div class="dl"><a class="btn gray" href="{{ url_for('static', filename='video/' ~ s.key ~ '_note.mp4') }}" download>⬇ 動画を保存（{{ s.video_mb }}MB）</a></div>
+  </div>
+  {% endif %}
   <div class="panel">
     <h2>📄 プリント・資料</h2>
     <ul class="docs">
