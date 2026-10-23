@@ -11,3 +11,6 @@ autodeploy.log
 .google_voice
 .tts_engine
 static/video/
+coaching/yt/out/
+coaching/yt/bgm/
+coaching/yt/__pycache__/
