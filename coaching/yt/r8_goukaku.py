@@ -220,7 +220,7 @@ def render(body, title, sub, name):
     im.save(png)
     return png, bottom
 
-def build(only=None):
+def build(only=None, name="R8_goukaku"):
     segs = []
     for i, (title, sub, body, speech) in enumerate(SLIDES, 1):
         if only and only != i: continue
@@ -234,7 +234,7 @@ def build(only=None):
         V.encode_subtitled(png, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, out, OUT, f"s{i:02d}")
         print(f"slide {i:02d} {total:5.0f}s  page_h={h}  {title}", flush=True)
         segs.append(out)
-    final = os.path.join(OUT, f"R8_goukaku{'_s'+str(only) if only else ''}.mp4")
+    final = os.path.join(OUT, f"{name}{'_s'+str(only) if only else ''}.mp4")
     V.concat(segs, final)
     print("完了:", final, f"{os.path.getsize(final)/1e6:.1f}MB {dur(final)/60:.1f}分", flush=True)
 

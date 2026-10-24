@@ -205,9 +205,12 @@ def add_bgm(video, out, bgm=None, db=None):
     if db >= 0: 
         if video != out: os.replace(video, out)
         return out
-    if not bgm:
+    if bgm == "pad":
         os.makedirs(BGM_DIR, exist_ok=True); bgm = make_pad(os.path.join(BGM_DIR, "_pad_placeholder.wav"))
-        print("  BGM: ファイルが無いので仮パッド音を使用 (bgm/ に mp3 を置けば差し替わる)", flush=True)
+    if not bgm:
+        print("  BGM: bgm/ にファイルが無いので BGM なし (YT_BGM=pad で仮パッド音)", flush=True)
+        if video != out: os.replace(video, out)
+        return out
     total = dur(video)
     ch = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=channels", "-of", "csv=p=0", video], capture_output=True, text=True).stdout.strip()
     # モノラル→ステレオの自動変換は -3dB されるので、pan で両chにそのままコピーする
