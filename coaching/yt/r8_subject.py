@@ -205,7 +205,8 @@ def build_subject(key, only=None):
         final = os.path.join(OUT, f"R8_{key}_q{only}.mp4"); V.concat(segs, final)
         print("完了:", final, f"{os.path.getsize(final)/1e6:.1f}MB {dur(final)/60:.1f}分", flush=True); return
     label = {"kenri": "権利関係_問題1-14", "horei": "法令上の制限_問題15-22", "zei": "税その他_問題23-25_46-50", "gyoho": "宅建業法_問題26-45"}[key]
-    parts = V.split_parts(segs, limit_mb=27)
+    lim = float(os.environ.get("YT_PART_MB", "27"))          # 0 なら分割しない (1本の高画質ファイル)
+    parts = V.split_parts(segs, limit_mb=lim) if lim > 0 else [segs]
     for i, p in enumerate(parts, 1):
         final = os.path.join(OUT, f"令和8年_宅建_{label}" + (f"_part{i}" if len(parts) > 1 else "") + ".mp4")
         V.concat(p, final)
