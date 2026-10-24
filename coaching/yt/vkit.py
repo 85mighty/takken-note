@@ -119,21 +119,33 @@ def spans(tp, n, total):
 
 # ---------------- 字幕バンド (スライド動画の下部に、いま読んでいる文を表示) ----------------
 BAND = 170
-def band_png(text, name, outdir, width=W, font=40):
-    """半透明の黒帯に白文字。PNG(RGBA)"""
-    png = os.path.join(outdir, name + ".png"); pdf = os.path.join(outdir, name + ".pdf")
-    css = f"""@page {{ size: {width/96*25.4:.1f}mm {BAND/96*25.4:.1f}mm; margin: 0; }}
-    body {{ margin:0; width:{width}px; height:{BAND}px; background: rgba(15,27,51,0.86); font-family:"Noto Sans CJK JP",sans-serif; color:#fff; font-size:{font}px; line-height:1.4; display:flex; align-items:center; justify-content:center; text-align:center; box-sizing:border-box; padding:0 80px; }}
-    span {{ background: rgba(255,209,102,0.22); border-bottom: 5px solid #ffd166; padding: 2px 10px; }}"""
-    HTML(string=f"<html><head><meta charset='utf-8'><style>{css}</style></head><body><span>{html.escape(text)}</span></body></html>").write_pdf(pdf)
-    subprocess.run(["pdftoppm", "-f", "1", "-l", "1", "-r", "96", "-png", "-singlefile", pdf, png[:-4]], check=True)
-    im = Image.open(png).convert("RGBA").resize((width, BAND))
-    # 帯は半透明にする (pdftoppm は白背景で描くので、ここで alpha を付ける)
-    px = im.load()
-    for y in range(BAND):
-        for x in range(0, width):
-            r, g, b, a = px[x, y]
-            px[x, y] = (r, g, b, 225)
+SUB_FONT = "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"
+def band_png(text, name, outdir, width=W, font=46):
+    """映画字幕風: 透明背景に白文字＋黒フチ＋影。帯は無し。最大2行、収まらなければ縮小"""
+    from PIL import ImageDraw, ImageFont
+    png = os.path.join(outdir, name + ".png")
+    maxw = width - 2 * 120
+    def wrap(fnt):
+        lines, cur = [], ""
+        for ch in text:
+            if fnt.getlength(cur + ch) > maxw and cur:
+                lines.append(cur); cur = ch
+            else: cur += ch
+        if cur: lines.append(cur)
+        return lines
+    size = font
+    while True:
+        fnt = ImageFont.truetype(SUB_FONT, size, index=0)
+        lines = wrap(fnt)
+        if len(lines) <= 2 or size <= 32: break
+        size -= 4
+    im = Image.new("RGBA", (width, BAND), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    lh = int(size * 1.35); total_h = lh * len(lines); y = (BAND - total_h) // 2 + 4
+    for ln in lines:
+        w = fnt.getlength(ln); x = (width - w) / 2
+        d.text((x + 3, y + 3), ln, font=fnt, fill=(0, 0, 0, 150), stroke_width=4, stroke_fill=(0, 0, 0, 150))   # 影
+        d.text((x, y), ln, font=fnt, fill=(255, 255, 255, 255), stroke_width=4, stroke_fill=(0, 0, 0, 255))     # 本体
+        y += lh
     im.save(png); return png
 
 def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name):
