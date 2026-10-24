@@ -184,15 +184,35 @@ slide("まとめ", """
 <div class='note'>この動画は、各社の公式発表と不動産適正取引推進機構の公表資料をまとめた記事（イング資格取得ラボ、10月22日更新）をもとに構成しています。各社の予想は非公式の見込みです。</div>""",
  "最後にまとめです。今年の予想の中心は32点から34点、幅は31点から35点です。大原とLECの予想会のあとに数字が動くこともあります。各社の予想は過去5年で26件中20件が的中していますが、外れるときは実際の合格点のほうが低いことが多いです。合格点は33点から38点、合格率は13パーセントから19パーセントで推移していて、去年の33点はこの10年で最低でした。5問免除の合格点は、これまで全例で一般から5点低い数字です。自己採点は2社から3社の速報で、割れた問題は幅で持ち、分野別に集計しておきましょう。正式な合格点と正解番号が出るのは、11月25日水曜日、午前9時30分です。それまでは、合格していた場合と届かなかった場合、両方の準備を進めておいてください。ご視聴ありがとうございました。")
 
-def render(body, title, sub, name):
-    head = f"<h1>{E(title)}<small>{E(sub)}</small></h1>" if title else ""
+def _render_once(head, body, name, scale):
+    """ページ幅を W/scale にして描き、解像度を scale 倍にして W px の画像にする → 文字が scale 倍になる"""
+    pw = W / scale
+    ph_mm = 3000 if scale == 1.0 else (H * 1.3 / scale) / 96 * 25.4   # 拡大時は収まるか見るだけなので短いページで十分 (速い)
+    css = CSS.replace("size: 508mm 3000mm", f"size: {pw/96*25.4:.2f}mm {ph_mm:.1f}mm").replace("width: 1920px", f"width: {pw:.0f}px")
     pdf = os.path.join(OUT, name + ".pdf"); png = os.path.join(OUT, name + ".png")
-    HTML(string=f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body>{head}{body}</body></html>").write_pdf(pdf)
-    subprocess.run(["pdftoppm", "-f", "1", "-l", "1", "-r", "96", "-png", "-singlefile", pdf, png[:-4]], check=True)
+    HTML(string=f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{css}</style></head><body>{head}{body}</body></html>").write_pdf(pdf)
+    subprocess.run(["pdftoppm", "-f", "1", "-l", "1", "-r", f"{96*scale:.3f}", "-png", "-singlefile", pdf, png[:-4]], check=True)
     im = Image.open(png).convert("RGB")
     if im.size[0] != W: im = im.resize((W, int(im.size[1] * W / im.size[0])))
     bbox = ImageOps.invert(im.convert("L")).point(lambda v: 255 if v > 55 else 0).getbbox()
-    bottom = max(H, min(im.size[1], (bbox[3] + 90) if bbox else H))
+    content_h = (bbox[3] if bbox else 0)
+    return im, content_h, png
+
+def render(body, title, sub, name):
+    head = f"<h1>{E(title)}<small>{E(sub)}</small></h1>" if title else ""
+    avail = H - (V.BAND if V.HIGHLIGHT else 0) - 70        # 字幕帯と下余白を除いた高さ
+    im, ch, png = _render_once(head, body, name, 1.0)
+    if 0 < ch < avail * 0.85:                               # 下が空くなら文字を大きくして埋める (最大1.6倍)
+        best = (im, ch, png)
+        scale = min(1.6, avail / ch)
+        for _ in range(5):                                  # 折り返しで高さが非線形に変わるので、収まるまで少しずつ下げる
+            if scale < 1.08: break
+            im2, ch2, png2 = _render_once(head, body, name, scale)
+            if ch2 <= avail: best = (im2, ch2, png2); break
+            scale = max(1.0, min(scale - 0.06, scale * avail / ch2))
+        im, ch, png = best
+        if png != best[2] or ch > avail: im, ch, png = _render_once(head, body, name, 1.0)
+    bottom = max(H, min(im.size[1], ch + 90))
     im = im.crop((0, 0, W, bottom))
     if V.HIGHLIGHT:   # 字幕帯のぶん下に余白を足す
         pad = V.BAND - 90
