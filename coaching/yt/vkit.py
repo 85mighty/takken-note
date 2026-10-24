@@ -228,7 +228,9 @@ def concat(segs, out, bgm=True):
     lst = out + ".list.txt"; open(lst, "w").write("".join(f"file '{os.path.abspath(s)}'\n" for s in segs))
     tmp = out + ".nobgm.mp4" if bgm else out
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", "-movflags", "+faststart", tmp], check=True)
-    if bgm: add_bgm(tmp, out); os.remove(tmp)
+    if bgm:
+        add_bgm(tmp, out)
+        if os.path.exists(tmp): os.remove(tmp)
     return out
 
 def split_parts(segs, limit_mb=27, boundary="_1.mp4"):
