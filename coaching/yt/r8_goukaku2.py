@@ -31,16 +31,16 @@ slide("結論｜予想の中心は「33〜34点」に1点下がった", """
 
 # 3 各社一覧
 slide("各社の予想一覧（10月25日時点）", """
-<table><tr><th>会社</th><th class='c'>予想</th><th>備考</th></tr>
-<tr><td>TAC</td><td class='c hi'>34点±1点</td><td>据え置き</td></tr>
-<tr><td>日建学院</td><td class='c hi'>34点±1点</td><td>据え置き</td></tr>
-<tr><td>LEC</td><td class='c hi'>34点±1点</td><td>10/25（日）合格基準点予想会（本校開催）。再現答案が増えると変わる可能性ありと注記</td></tr>
-<tr><td>フォーサイト</td><td class='c hi'>34点±1点</td><td>据え置き</td></tr>
+<table><tr><th style='width:230px'>会社</th><th class='c' style='width:190px;white-space:nowrap'>予想</th><th>備考</th></tr>
+<tr><td>TAC</td><td class='c hi' style='white-space:nowrap'>34点±1点</td><td>据え置き</td></tr>
+<tr><td>日建学院</td><td class='c hi' style='white-space:nowrap'>34点±1点</td><td>据え置き</td></tr>
+<tr><td>LEC</td><td class='c hi' style='white-space:nowrap'>34点±1点</td><td>10/25（日）合格基準点予想会（本校開催）。再現答案が増えると変わる可能性ありと注記</td></tr>
+<tr><td>フォーサイト</td><td class='c hi' style='white-space:nowrap'>34点±1点</td><td>据え置き</td></tr>
 <tr><td>大原</td><td class='c'>33・34点</td><td><b>10/23に34・35点から修正</b>。10/24（土）合格ライン予想会</td></tr>
 <tr><td>住宅新報</td><td class='c'>33点前後</td><td><b>10/20に34点前後から修正</b></td></tr>
 <tr><td>大栄・宅建ゼミナール</td><td class='c'>33・34点</td><td>—</td></tr>
-<tr><td>アガルート</td><td class='c'>34点／32点</td><td>講師2人の見解（工藤講師34点、林講師32点）</td></tr>
-<tr><td>ユーキャン</td><td class='c lo'>32点±1点</td><td>据え置き。各社で最も低い</td></tr>
+<tr><td>アガルート</td><td class='c' style='white-space:nowrap'>34点／32点</td><td>講師2人の見解（工藤講師34点、林講師32点）</td></tr>
+<tr><td>ユーキャン</td><td class='c lo' style='white-space:nowrap'>32点±1点</td><td>据え置き。各社で最も低い</td></tr>
 <tr><td>総合資格学院</td><td class='c'>非公開</td><td>採点サービス利用者にメールで案内</td></tr></table>""",
  "各社の予想を一覧にしました。TAC、日建学院、LEC、フォーサイトの4社が34点プラスマイナス1点で変わらず。LECは10月25日に本校で合格基準点予想会を開きましたが、再現答案が増えると変わる可能性があると注記しています。大原は10月23日に34・35点から33・34点へ修正し、24日に予想会を開きました。住宅新報は20日に34点前後から33点前後へ修正。大栄と宅建ゼミナールは33・34点。アガルートは講師2人の見解が34点と32点に分かれています。ユーキャンは32点プラスマイナス1点で、各社でいちばん低い予想のままです。総合資格学院は公式ページには載せず、採点サービスの利用者にメールで案内しています。")
 
