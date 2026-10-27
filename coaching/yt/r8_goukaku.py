@@ -222,16 +222,21 @@ def render(body, title, sub, name):
 
 def build(only=None, name="R8_goukaku"):
     segs = []
+    import hashlib
     for i, (title, sub, body, speech) in enumerate(SLIDES, 1):
         if only and only != i: continue
+        out = os.path.join(OUT, f"s{i:02d}.mp4"); keyf = out + ".key"
+        key = hashlib.md5(repr((title, sub, body, speech, V.HIGHLIGHT, CSS)).encode()).hexdigest()
+        if os.path.exists(out) and os.path.exists(keyf) and open(keyf).read() == key:
+            print(f"slide {i:02d} (変更なし・再利用)  {title}", flush=True); segs.append(out); continue
         png, h = render(body, title, sub, f"s{i:02d}")
         mp3 = os.path.join(OUT, f"s{i:02d}.mp3")
         sents = V.split_sentences(speech)
         tp = tts(V.ssml_sentences(sents), mp3, ssml=True, rate=1.0)
         total = dur(mp3) + 1.5
         pts = [(2.0, 0), (total - 2.0, h - H)] if h > H else []
-        out = os.path.join(OUT, f"s{i:02d}.mp4")
         V.encode_subtitled(png, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, out, OUT, f"s{i:02d}")
+        open(keyf, "w").write(key)
         print(f"slide {i:02d} {total:5.0f}s  page_h={h}  {title}", flush=True)
         segs.append(out)
     final = os.path.join(OUT, f"{name}{'_s'+str(only) if only else ''}.mp4")
