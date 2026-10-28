@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}スタジオ｜動画の検収{% endblock %}
+{% block body %}
+<style>
+.st-wrap{max-width:980px;margin:0 auto}
+.st-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border:1px solid #ddd;border-radius:10px;margin:10px 0;background:#fff}
+.st-card a.t{font-weight:bold;font-size:17px;text-decoration:none;color:#1a3d7c}
+.st-meta{color:#666;font-size:13px}
+.st-bench{display:block;padding:16px;border-radius:10px;background:#0f1b33;color:#fff;text-decoration:none;margin:14px 0}
+.st-bench b{color:#ffd166}
+.st-note{background:#fff3c4;border-left:6px solid #e0a800;padding:10px 14px;border-radius:6px;font-size:14px}
+code{background:#f2f2f2;padding:1px 5px;border-radius:4px}
+</style>
+<div class="st-wrap">
+<h2>スタジオ（動画の検収・修正）</h2>
+{% if bench %}
+<a class="st-bench" href="{{ url_for('studio.bench') }}"><b>宅建 YouTube ベンチマーク分析</b>　テーマ別・タイトルの型別に、何が再生されているかを見る →</a>
+{% else %}
+<div class="st-note">ベンチマーク分析はまだありません。VPS で <code>bash coaching/bench/run_bench.sh</code> を実行すると、ここに表示されます。</div>
+{% endif %}
+<h3>スライド型の動画</h3>
+{% for it in items %}
+<div class="st-card">
+  <div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a>
+    <div class="st-meta">{{ it.name }}・{{ it.n }}枚{% if it.total %}・{{ (it.total//60)|int }}分{{ (it.total%60)|int }}秒・書き出し {{ it.built_at }}{% else %}・未書き出し{% endif %}</div></div>
+  <a href="{{ url_for('studio.edit', name=it.name) }}">開く →</a>
+</div>
+{% else %}
+<p>specs がありません。</p>
+{% endfor %}
+</div>
+{% endblock %}

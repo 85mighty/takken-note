@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}{{ label }}｜スタジオ{% endblock %}
+{% block body %}
+<style>
+main{max-width:none!important}
+.ed{max-width:1400px;margin:0 auto}
+.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #ddd;padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar h2{margin:0 12px 0 0;font-size:18px}
+.bar button{padding:8px 14px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;cursor:pointer}
+.bar button.pri{background:#1a3d7c;color:#fff}
+.bar .dirty{color:#c0392b;font-weight:bold}
+.top{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;margin:12px 0}
+@media(max-width:900px){.top{grid-template-columns:1fr}}
+video{width:100%;background:#000;border-radius:8px}
+.job{background:#0f1b33;color:#dfe6f3;border-radius:8px;padding:10px 12px;font:12px/1.45 monospace;white-space:pre-wrap;max-height:260px;overflow:auto}
+.job b{color:#ffd166}
+.sl{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:14px;border:1px solid #ddd;border-radius:10px;padding:12px;margin:12px 0;background:#fff}
+@media(max-width:900px){.sl{grid-template-columns:1fr}}
+.sl.mod{border-color:#c0392b;box-shadow:0 0 0 2px #f5c6c0}
+.sl .hd{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sl .no{font-weight:bold;font-size:16px;color:#1a3d7c}
+.tm{cursor:pointer;color:#1a3d7c;text-decoration:underline}
+.badge{font-size:12px;padding:2px 8px;border-radius:10px;background:#e8f0ff;color:#1a3d7c}
+.badge.chg{background:#ffe8e4;color:#c0392b}
+.sl .ops{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.sl .ops button{padding:4px 10px;border-radius:6px;border:1px solid #bbb;background:#fafafa;cursor:pointer}
+.img{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:top;border:1px solid #ccc;border-radius:6px;background:#eee}
+.noimg{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px dashed #bbb;border-radius:6px;color:#888;font-size:13px}
+label{display:block;font-size:12px;color:#555;margin:6px 0 2px}
+input[type=text],textarea{width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:6px;padding:6px 8px;font-size:14px}
+textarea.body{font:12px/1.45 monospace;min-height:120px}
+textarea.speech{min-height:110px;line-height:1.6}
+.cnt{font-size:12px;color:#666;text-align:right}
+.hint{font-size:12px;color:#777}
+</style>
+<div class="ed">
+<div class="bar">
+  <h2>{{ label }}</h2>
+  <button class="pri" onclick="save()">保存</button>
+  <button class="pri" onclick="buildNow()">保存して書き出し（変わった所だけ）</button>
+  <button onclick="copyChapters()">YouTube目次をコピー</button>
+  <a href="{{ url_for('studio.index') }}">← 一覧</a>
+  <span id="dirty"></span>
+</div>
+<div class="top">
+  <div><video id="vid" controls preload="metadata"></video><div id="vinfo" class="hint"></div></div>
+  <div><div class="job" id="job">待機中</div>
+    <p class="hint">・赤い枠＝前回の書き出しから内容が変わったスライド。「書き出し」で変わったスライドだけ音声と映像を作り直します。<br>
+    ・時間をタップすると、動画のその位置に移動します。<br>・本文は HTML です。文字だけ直すなら、タグ（&lt;b&gt; など）はそのままにして中の文字を書き換えてください。</p></div>
+</div>
+<div id="slides"></div>
+</div>
+<script>
+const NAME = {{ name|tojson }};
+let spec = null, rows = [], dirty = false, poll = null;
+const $ = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = t => t==null ? "—" : `${String(Math.floor(t/60)).padStart(2,"0")}:${String(Math.floor(t%60)).padStart(2,"0")}`;
+const fileUrl = (f, v) => `/studio/file/${NAME}/${f}` + (v ? `?v=${v}` : "");
+
+async function load(){
+  const r = await fetch(`/studio/api/spec/${NAME}`); const d = await r.json();
+  spec = d.spec; rows = d.rows; setDirty(false); render(); showVideo(d.video); showJob(d.job);
+}
+function showVideo(v){
+  const el = $("#vid");
+  if (v){ const u = fileUrl(v.file, v.mtime); if (el.dataset.src !== u){ el.src = u; el.dataset.src = u; }
+          $("#vinfo").textContent = `書き出し ${v.built_at}・${fmt(v.total)}`; }
+  else { $("#vinfo").textContent = "まだ書き出されていません。「保存して書き出し」を押すと作られます（初回は全スライドの音声を作るので数分かかります）。"; }
+}
+function render(){
+  const box = $("#slides"); box.innerHTML = "";
+  spec.slides.forEach((s, k) => {
+    const i = k + 1, r = rows[k] || {state:"changed"};
+    const img = r.preview_local ? fileUrl(r.preview_local, r.pv_t) : (r.thumb ? fileUrl(r.thumb) : (r.preview ? fileUrl(r.preview, Date.now()) : null));
+    const chars = (s.speech||"").length;
+    const div = document.createElement("div");
+    div.className = "sl" + (r.state === "built" && !r.edited ? "" : " mod");
+    div.innerHTML = `
+      <div class="hd"><span class="no">#${i}</span>
+        <span class="tm" data-t="${r.start ?? ""}">${r.in_video ? fmt(r.start) + "〜" + fmt(r.start + r.dur) + `（${Math.round(r.dur)}秒）` : "動画に未反映"}</span>
+        <span class="badge ${r.state === "built" && !r.edited ? "" : "chg"}">${r.edited ? "編集中（未保存）" : (r.state === "built" ? "書き出し済み" : "変更あり・未書き出し")}</span>
+        <span class="ops"><button data-op="pv">プレビュー画像</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">複製して後ろに追加</button><button data-op="del">削除</button></span></div>
+      <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">画像なし（プレビュー画像を押す）</div>`}</div>
+      <div>
+        <label>見出し</label><input type="text" data-f="title" value="${esc(s.title)}">
+        <label>小見出し</label><input type="text" data-f="sub" value="${esc(s.sub)}">
+        <label>本文（HTML）</label><textarea class="body" data-f="body">${esc(s.body)}</textarea>
+        <label>読み上げ（ナレーション＝字幕）</label><textarea class="speech" data-f="speech">${esc(s.speech)}</textarea>
+        <div class="cnt">${chars}字・約${Math.round(chars/4.3)}秒</div>
+      </div>`;
+    div.querySelectorAll("[data-f]").forEach(el => el.addEventListener("input", () => {
+      spec.slides[k][el.dataset.f] = el.value; rows[k].edited = true; setDirty(true);
+      div.classList.add("mod"); div.querySelector(".badge").textContent = "編集中（未保存）"; div.querySelector(".badge").classList.add("chg");
+      if (el.dataset.f === "speech") div.querySelector(".cnt").textContent = `${el.value.length}字・約${Math.round(el.value.length/4.3)}秒`;
+    }));
+    div.querySelector(".tm").addEventListener("click", e => { const t = e.target.dataset.t; if (t !== ""){ $("#vid").currentTime = +t; $("#vid").play(); window.scrollTo({top:0, behavior:"smooth"}); } });
+    div.querySelectorAll("[data-op]").forEach(b => b.addEventListener("click", () => op(b.dataset.op, k, div)));
+    box.appendChild(div);
+  });
+}
+function setDirty(v){ dirty = v; $("#dirty").innerHTML = v ? '<span class="dirty">● 未保存の変更があります</span>' : ""; }
+async function op(kind, k, div){
+  const S = spec.slides, R = rows;
+  if (kind === "pv"){
+    const b = div.querySelector('[data-op="pv"]'); b.textContent = "作成中…"; b.disabled = true;
+    const r = await fetch(`/studio/api/preview/${NAME}/${k+1}`, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(S[k])});
+    const d = await r.json(); b.textContent = "プレビュー画像"; b.disabled = false;
+    if (!d.ok){ alert("プレビュー失敗:\n" + d.error); return; }
+    R[k].preview_local = d.png; R[k].pv_t = d.t; render(); return;
+  }
+  if (kind === "up" && k > 0){ [S[k-1], S[k]] = [S[k], S[k-1]]; [R[k-1], R[k]] = [R[k], R[k-1]]; }
+  else if (kind === "down" && k < S.length-1){ [S[k+1], S[k]] = [S[k], S[k+1]]; [R[k+1], R[k]] = [R[k], R[k+1]]; }
+  else if (kind === "dup"){ S.splice(k+1, 0, JSON.parse(JSON.stringify(S[k]))); R.splice(k+1, 0, {...R[k], in_video:false, edited:true}); }
+  else if (kind === "del"){ if (S.length <= 1 || !confirm(`#${k+1} を削除しますか？`)) return; S.splice(k, 1); R.splice(k, 1); }
+  else return;
+  R.forEach(r => { r.in_video = false; });   // 並びが変わったら時間表示は書き出しまで無効
+  setDirty(true); render();
+}
+async function save(){
+  const r = await fetch(`/studio/api/spec/${NAME}`, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slides: spec.slides})});
+  const d = await r.json(); if (!d.ok){ alert("保存失敗: " + d.error); return false; }
+  await load(); return true;
+}
+async function buildNow(){
+  if (dirty && !(await save())) return;
+  const r = await fetch(`/studio/api/build/${NAME}`, {method:"POST"}); const d = await r.json();
+  if (!d.ok){ alert(d.error); return; }
+  startPoll();
+}
+function showJob(j){
+  const el = $("#job");
+  if (!j || !j.name){ el.textContent = "待機中"; return; }
+  const st = j.running ? `<b>書き出し中…</b> ${j.elapsed}秒` : (j.rc === 0 ? "<b>完了</b>" : `<b>終了（コード ${j.rc}）</b>`);
+  el.innerHTML = `${st}　${esc(j.name)}\n` + esc(j.log); el.scrollTop = el.scrollHeight;
+  if (j.running) startPoll();
+}
+function startPoll(){
+  if (poll) return;
+  poll = setInterval(async () => {
+    const j = await (await fetch("/studio/api/job")).json(); showJob(j);
+    if (!j.running){ clearInterval(poll); poll = null; if (j.name === NAME) load(); }
+  }, 3000);
+}
+async function copyChapters(){
+  const r = await fetch(`/studio/api/chapters/${NAME}`); const d = await r.json();
+  if (!d.ok){ alert(d.error); return; }
+  try { await navigator.clipboard.writeText(d.text); alert("目次をコピーしました:\n\n" + d.text); }
+  catch(e){ prompt("コピーしてください", d.text); }
+}
+window.addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+load();
+</script>
+{% endblock %}

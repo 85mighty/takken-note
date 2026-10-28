@@ -220,27 +220,49 @@ def render(body, title, sub, name):
     im.save(png)
     return png, bottom
 
-def build(only=None, name="R8_goukaku"):
-    segs = []
+def slide_key(title, sub, body, speech):
+    """スライド内容 + 描画設定のハッシュ。同じなら書き出し済みの動画を再利用する"""
     import hashlib
+    return hashlib.md5(repr((title, sub, body, speech, V.HIGHLIGHT, CSS)).encode()).hexdigest()
+
+def build(only=None, name="R8_goukaku"):
+    """内容アドレス方式のキャッシュ: c_<key>.mp4 があれば再利用。挿入・削除・並べ替えでも変わったスライドだけ作り直す。
+    書き出し後に <name>.manifest.json (各スライドの長さ・サムネイル) を出す"""
+    import shutil
+    segs, man = [], []
     for i, (title, sub, body, speech) in enumerate(SLIDES, 1):
         if only and only != i: continue
-        out = os.path.join(OUT, f"s{i:02d}.mp4"); keyf = out + ".key"
-        key = hashlib.md5(repr((title, sub, body, speech, V.HIGHLIGHT, CSS)).encode()).hexdigest()
-        if os.path.exists(out) and os.path.exists(keyf) and open(keyf).read() == key:
-            print(f"slide {i:02d} (変更なし・再利用)  {title}", flush=True); segs.append(out); continue
-        png, h = render(body, title, sub, f"s{i:02d}")
-        mp3 = os.path.join(OUT, f"s{i:02d}.mp3")
-        sents = V.split_sentences(speech)
-        tp = tts(V.ssml_sentences(sents), mp3, ssml=True, rate=1.0)
-        total = dur(mp3) + 1.5
-        pts = [(2.0, 0), (total - 2.0, h - H)] if h > H else []
-        V.encode_subtitled(png, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, out, OUT, f"s{i:02d}")
-        open(keyf, "w").write(key)
-        print(f"slide {i:02d} {total:5.0f}s  page_h={h}  {title}", flush=True)
-        segs.append(out)
+        key = slide_key(title, sub, body, speech)
+        seg = os.path.join(OUT, f"c_{key}.mp4"); thumb = os.path.join(OUT, f"c_{key}.png")
+        old = os.path.join(OUT, f"s{i:02d}.mp4")            # 旧方式 (s01.mp4 + .key) からの移行
+        if not os.path.exists(seg) and os.path.exists(old + ".key") and open(old + ".key").read() == key:
+            shutil.copy(old, seg)
+            if os.path.exists(os.path.join(OUT, f"s{i:02d}.png")): shutil.copy(os.path.join(OUT, f"s{i:02d}.png"), thumb)
+        if os.path.exists(seg):
+            print(f"slide {i:02d} (変更なし・再利用)  {title}", flush=True)
+        else:
+            png, h = render(body, title, sub, f"s{i:02d}")
+            mp3 = os.path.join(OUT, f"s{i:02d}.mp3")
+            sents = V.split_sentences(speech)
+            tp = tts(V.ssml_sentences(sents), mp3, ssml=True, rate=1.0)
+            total = dur(mp3) + 1.5
+            pts = [(2.0, 0), (total - 2.0, h - H)] if h > H else []
+            tmp = seg + ".part.mp4"
+            V.encode_subtitled(png, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, tmp, OUT, f"s{i:02d}")
+            os.replace(tmp, seg); shutil.copy(png, thumb)
+            print(f"slide {i:02d} {total:5.0f}s  page_h={h}  {title}", flush=True)
+        shutil.copy(seg, old); open(old + ".key", "w").write(key)     # 旧スクリプト互換 (s01.mp4)
+        segs.append(seg)
+        man.append({"i": i, "title": title or "はじめに", "key": key, "seg": os.path.basename(seg),
+                    "thumb": os.path.basename(thumb), "dur": round(dur(seg), 2)})
     final = os.path.join(OUT, f"{name}{'_s'+str(only) if only else ''}.mp4")
     V.concat(segs, final)
+    if not only:
+        import json, time
+        t = 0.0
+        for m in man: m["start"] = round(t, 2); t += m["dur"]
+        json.dump({"name": name, "video": os.path.basename(final), "total": round(t, 2), "built_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                   "slides": man}, open(os.path.join(OUT, f"{name}.manifest.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("完了:", final, f"{os.path.getsize(final)/1e6:.1f}MB {dur(final)/60:.1f}分", flush=True)
 
 if __name__ == "__main__":

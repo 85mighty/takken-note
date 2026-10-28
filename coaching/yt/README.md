@@ -36,3 +36,20 @@ BGM は YouTube オーディオライブラリ等から mp3 を `bgm/` に入れ
 - `r8_goukaku.py` — スライド型の例 (合格点予想まとめ)。`slide(title, body_html, speech)` を並べれば別テーマでも使える
 
 ※ 解答は独自解答。公式正答が出たら r8_q.py / r8_exp.py を直して該当問題を `--only N` で作り直す。
+
+## スタジオ（検収パネル）— サイトの /studio
+スライド型の動画は `specs/<名前>.json` が正（見出し・小見出し・本文HTML・読み上げ）。サイトのメニュー「스튜디오」から:
+- 動画を再生しながら、スライドごとの開始〜終了時刻・画像・本文・読み上げを一画面で確認
+- 文字を直す →「プレビュー画像」で即確認 →「保存して書き出し」で**変わったスライドだけ**音声と映像を作り直す
+- 並べ替え・複製して追加・削除、YouTube 目次のコピー
+- 編集前の版は `specs/.history/` に自動保存（git 管理外）
+- コマンドで書き出すとき: `python3 build_spec.py specs/R8_menjo.json`
+- VPS で書き出すには poppler-utils・ffmpeg・fonts-noto-cjk と `.google_api_key` が必要
+
+キャッシュは内容アドレス方式（`out/<dir>/c_<hash>.mp4`）。並べ替えや挿入をしても、内容が同じスライドは作り直さない。
+
+## 宅建ベンチマーク — /studio/bench
+`coaching/bench/`。seido-tube と同じ収集方式（yt-dlp の一覧取得 1回、Data API キーがあれば正確な投稿日）。
+- 対象チャンネル: `coaching/bench/channels.json`（url が空なら名前で検索。見つかったURLは out/channels_resolved.json）
+- VPS で実行: `bash coaching/bench/run_bench.sh`（収集 → 分析 → コミット）
+- 比べ方: 再生数を「そのチャンネルの中央値の何倍か」に直して、テーマ別・タイトルの型別・長さ別・投稿月別に集計

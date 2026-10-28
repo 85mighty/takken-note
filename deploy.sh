@@ -5,9 +5,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # 1) VPS에서 쌓인 오답 기록(takken_db.json)을 먼저 커밋해 두고 pull (기록 유실 방지)
-if ! git diff --quiet -- takken_db.json; then
-  git add takken_db.json
-  git commit -m "VPS 오답 기록 $(date +%F_%H%M)"
+#    スタジオ(/studio)で直した動画の定義(coaching/yt/specs)も同じく先にコミット
+if ! git diff --quiet -- takken_db.json coaching/yt/specs; then
+  git add takken_db.json coaching/yt/specs
+  git commit -m "VPS 오답 기록・スタジオ編集 $(date +%F_%H%M)"
 fi
 git pull --rebase --autostash
 
@@ -27,6 +28,9 @@ fi
 .venv/bin/pip install -q -r requirements.txt
 
 # 3) 일본어 폰트 (PDF용) — 없으면 안내만
+if ! command -v pdftoppm >/dev/null; then
+  echo "※ スタジオの動画書き出しに pdftoppm が必要です:  sudo apt-get install -y poppler-utils"
+fi
 if ! fc-list 2>/dev/null | grep -qi "Noto Sans CJK"; then
   echo "※ PDF 일본어 폰트가 없습니다:  sudo apt-get install -y fonts-noto-cjk"
 fi

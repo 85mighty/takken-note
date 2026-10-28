@@ -13,6 +13,7 @@
   <a href="{{ url_for('stats') }}" {% if request.endpoint == 'stats' %}class="on"{% endif %}>통계</a>
   <a href="{{ url_for('study') }}" {% if request.endpoint == 'study' %}class="on"{% endif %}>学習</a>
   <a href="{{ url_for('register') }}" {% if request.endpoint == 'register' %}class="on"{% endif %}>등록</a>
+  <a href="{{ url_for('studio.index') }}" {% if request.endpoint and request.endpoint.startswith('studio.') %}class="on"{% endif %}>스튜디오</a>
   <span class="dday">시험일 2026-10-18</span>
 </nav>
 <main>

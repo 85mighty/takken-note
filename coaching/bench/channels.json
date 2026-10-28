@@ -1,0 +1,12 @@
+{
+  "_説明": "ベンチマークする宅建チャンネル。url が空なら名前で YouTube 検索して自動で探す（結果は out/channels_resolved.json に出るので確認する）。違っていたら url に https://www.youtube.com/@ハンドル を入れる",
+  "channels": [
+    {"name": "棚田行政書士の不動産大学", "url": ""},
+    {"name": "マジでイケてる宅建講座【ゆーき大学】", "url": ""},
+    {"name": "あこ課長の宅建講座", "url": ""},
+    {"name": "宅建みやざき塾", "url": ""},
+    {"name": "宅建吉野塾", "url": ""},
+    {"name": "こざりえの裏技宅建合格チャンネル", "url": ""},
+    {"name": "NIPPONリアル", "url": "https://www.youtube.com/@nippon-real", "self": true}
+  ]
+}
