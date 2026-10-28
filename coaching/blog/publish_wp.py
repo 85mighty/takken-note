@@ -50,6 +50,8 @@ def main():
     a = ap.parse_args()
     content = open(a.html, encoding="utf-8").read()
     content = content.replace("<!--YOUTUBE_EMBED-->", youtube_embed(a.youtube) if a.youtube else "")
+    link = ('<!-- wp:paragraph -->\n<p>▶ この内容は動画でも解説しています：<a href="%s" target="_blank" rel="noopener">YouTube「NIPPONリアル」で見る</a></p>\n<!-- /wp:paragraph -->' % a.youtube) if a.youtube else ""
+    content = content.replace("<!--YOUTUBE_LINK-->", link)
     if not a.youtube:   # 動画の案内文だけ残らないように
         content = re.sub(r"<!-- wp:paragraph -->\s*<p>動画でも解説しています。</p>\s*<!-- /wp:paragraph -->\s*", "", content)
     auth = base64.b64encode(f"{secret('WP_USER', '.wp_user')}:{secret('WP_APP_PASSWORD', '.wp_app_password')}".encode()).decode()
