@@ -73,8 +73,8 @@ def fetch():
                 if yt.get("title"):
                     upsert(reg, sp["name"], label=sp.get("label"), title=yt["title"])
     chans = channel_videos(reg["channel"])
-    print(f"チャンネルの動画: {len(chans)}本")
-    if not chans: sys.exit("動画一覧が取れませんでした（yt-dlp を更新: .venv/bin/pip install -U yt-dlp）")
+    print(f"채널 영상: {len(chans)}편")
+    if not chans: sys.exit("영상 목록을 가져오지 못했습니다 (yt-dlp 업데이트: .venv/bin/pip install -U yt-dlp)")
     used, filled = set(), 0
     for v in reg["videos"]:
         if v.get("url"):
@@ -90,7 +90,7 @@ def fetch():
             reg["videos"].append({"key": c["id"], "label": c["title"][:40], "yt_title": c["title"], "url": c["url"], "short": c["short"], "auto": True})
     reg["fetched_at"] = time.strftime("%Y-%m-%d %H:%M")
     save(reg)
-    print(f"URL を埋めた動画: {filled}本 / 台帳 {len(reg['videos'])}本")
+    print(f"URL 을 채운 영상: {filled}편 / 대장 {len(reg['videos'])}편")
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--fetch", action="store_true"); a = ap.parse_args()

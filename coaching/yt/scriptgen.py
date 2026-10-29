@@ -12,11 +12,43 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 SPECS = os.path.join(HERE, "specs")
 MODEL = os.environ.get("SCRIPTGEN_MODEL", "claude-opus-5-5")
 
-def api_key():
+def api_key(required=True):
     if os.environ.get("ANTHROPIC_API_KEY"): return os.environ["ANTHROPIC_API_KEY"].strip()
     p = os.path.join(ROOT, ".anthropic_api_key")
-    if os.path.exists(p): return open(p).read().strip()
-    sys.exit("Claude の APIキーがありません。~/takken-note/.anthropic_api_key に保存してください。")
+    if os.path.exists(p) and open(p).read().strip(): return open(p).read().strip()
+    if required: sys.exit("Claude API 키가 없습니다. ~/takken-note/.anthropic_api_key 에 저장해 주세요.")
+    return ""
+
+def claude_cli():
+    """API キーがないときに使う VPS の Claude Code CLI (seido-tube と同じ方式)"""
+    import shutil
+    return shutil.which("claude") or next((p for p in ("/root/.local/bin/claude", "/usr/local/bin/claude") if os.path.exists(p)), None)
+
+def available():
+    return bool(api_key(False) or claude_cli())
+
+def cli_json(prompt, system, schema, check, log=print, tries=3):
+    """claude -p で JSON を1つ返してもらう。check(obj) がエラー文を返したら、それを伝えてやり直す"""
+    import subprocess
+    cli = claude_cli()
+    if not cli: sys.exit("Claude API 키도 Claude Code CLI 도 없습니다.")
+    ask = (prompt + "\n\n# 出力\n次の JSON Schema に合う JSON を ```json ブロックで1つだけ返してください。説明文は不要です。\n"
+           + json.dumps(schema, ensure_ascii=False))
+    for k in range(tries):
+        log(f"… Claude Code CLI 에 요청 중 ({k+1})")
+        r = subprocess.run([cli, "-p", "--output-format", "json", "--append-system-prompt", system, "--allowedTools", "WebSearch", "WebFetch"],
+                           input=ask, capture_output=True, text=True, timeout=2400)
+        if r.returncode != 0: raise RuntimeError("claude CLI 오류: " + (r.stderr or r.stdout)[-500:])
+        try: text = json.loads(r.stdout).get("result", "")
+        except ValueError: text = r.stdout
+        m = re.search(r"```json\s*([\s\S]*?)```", text) or re.search(r"(\{[\s\S]*\})", text)
+        try: obj = json.loads(m.group(1)) if m else None
+        except ValueError: obj = None
+        err = "JSON が読み取れません" if obj is None else check(obj)
+        if not err: return obj
+        log(f"  형식이 맞지 않아 다시 요청합니다: {err}")
+        ask += f"\n\n前回の出力は不正でした（{err}）。スキーマどおりの JSON だけを返してください。"
+    raise RuntimeError("Claude Code CLI 에서 올바른 결과를 받지 못했습니다")
 
 SLIDE_GUIDE = """スライドの body は HTML の断片。使えるクラス:
 - <div class='key'>一番大事な一文</div>（黄色の強調ボックス。1枚に1つまで）
@@ -118,28 +150,31 @@ def _context():
     return "関連動画の台帳 (key: 名前):\n" + "\n".join(vids) + ("\n\n参考: これまでのスライド1枚の例\n" + ex if ex else "")
 
 def generate(topic, minutes=10, notes="", name=None, log=print):
-    import anthropic
-    client = anthropic.Anthropic(api_key=api_key())
     n_slides = max(6, round(minutes * 1.4))
     user = (f"テーマ: {topic}\n長さ: 約{minutes}分（スライド {n_slides}枚前後、speech 合計 約{minutes*260}字）\n"
             f"今日の日付: {time.strftime('%Y-%m-%d')}\n" + (f"メモ・方針: {notes}\n" if notes else "") + "\n" + _context())
+    if not api_key(False):                                   # キーがなければ Claude Code CLI で
+        sysp = SYSTEM.replace("最後に必ず save_video ツールで保存する。", "")
+        return save(cli_json(user, sysp, SAVE_TOOL["input_schema"], _valid, log), topic, name)
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key())
     messages = [{"role": "user", "content": user}]
     for turn in range(8):
-        log(f"… Claude に依頼中 ({turn+1})")
+        log(f"… Claude 에 요청 중 ({turn+1})")
         try:
             with client.messages.stream(model=MODEL, max_tokens=64000, system=SYSTEM, tools=[WEB, SAVE_TOOL],
                                         output_config={"effort": "high"}, messages=messages) as st:
                 msg = st.get_final_message()
         except ValueError as e:          # ツール入力の JSON が壊れていた → やり直す
-            log(f"  入力が読み取れませんでした。再試行します ({e})"); continue
+            log(f"  입력을 읽지 못해 다시 시도합니다 ({e})"); continue
         for b in msg.content:
-            if b.type == "server_tool_use": log(f"  検索: {(b.input or {}).get('query', '')}")
-        if msg.stop_reason == "refusal": raise RuntimeError("Claude がこのテーマの作成を断りました")
+            if b.type == "server_tool_use": log(f"  검색: {(b.input or {}).get('query', '')}")
+        if msg.stop_reason == "refusal": raise RuntimeError("Claude 가 이 주제의 작성을 거절했습니다")
         if msg.stop_reason == "pause_turn":
             messages.append({"role": "assistant", "content": msg.content}); continue
         calls = [b for b in msg.content if b.type == "tool_use" and b.name == "save_video"]
         if msg.stop_reason == "max_tokens":
-            raise RuntimeError("台本が長すぎて途中で切れました。分数を短くしてやり直してください")
+            raise RuntimeError("대본이 너무 길어 중간에 끊겼습니다. 분량을 줄여 다시 해주세요")
         if not calls:
             messages.append({"role": "assistant", "content": msg.content})
             messages.append({"role": "user", "content": "save_video ツールで保存してください。"}); continue
@@ -150,7 +185,7 @@ def generate(topic, minutes=10, notes="", name=None, log=print):
                                                           "content": json.dumps({"INVALID_INPUT": err}, ensure_ascii=False)}]})
             continue
         return save(calls[0].input, topic, name, msg.usage)
-    raise RuntimeError("台本を保存できませんでした（やり取りの上限）")
+    raise RuntimeError("대본을 저장하지 못했습니다 (주고받기 한도)")
 
 def unique_name(base):
     base = re.sub(r"[^A-Za-z0-9_]", "_", base or "") or "R8_video"
@@ -169,7 +204,7 @@ def save(inp, topic, name=None, usage=None):
     p = os.path.join(SPECS, name + ".json")
     with open(p + ".tmp", "w", encoding="utf-8") as f: json.dump(spec, f, ensure_ascii=False, indent=1)
     os.replace(p + ".tmp", p)
-    print(f"保存: specs/{name}.json  スライド{len(spec['slides'])}枚" + (f"  (入力{usage.input_tokens} / 出力{usage.output_tokens} トークン)" if usage else ""), flush=True)
+    print(f"저장: specs/{name}.json  슬라이드 {len(spec['slides'])}장" + (f"  (입력 {usage.input_tokens} / 출력 {usage.output_tokens} 토큰)" if usage else ""), flush=True)
     return name
 
 if __name__ == "__main__":
@@ -182,4 +217,4 @@ if __name__ == "__main__":
         if a.topic_id: topics.update(a.topic_id, status="idea")
         raise
     if a.topic_id: topics.update(a.topic_id, status="done", spec=name)
-    print("→ スタジオの一覧に「台本」として出ました。開いてスライドを確認してください", flush=True)
+    print("→ 스튜디오 목록에 「대본」으로 올라왔습니다. 열어서 슬라이드를 확인해 주세요", flush=True)

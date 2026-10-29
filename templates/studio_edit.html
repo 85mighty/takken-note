@@ -1,5 +1,5 @@
 {% extends "studio_base.html" %}
-{% block title %}{{ label }}｜スタジオ{% endblock %}
+{% block title %}{{ label }}｜스튜디오{% endblock %}
 {% block body %}
 <style>
 main{max-width:none!important}
@@ -65,69 +65,69 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
 <div class="ed">
 <div class="bar">
   <h2>{{ label }}</h2>
-  <button class="pri" onclick="save()">保存</button>
+  <button class="pri" onclick="save()">저장</button>
   <span id="dirty"></span>
-  <a href="{{ url_for('studio.index') }}" style="margin-left:auto">← 一覧</a>
+  <a href="{{ url_for('studio.index') }}" style="margin-left:auto">← 목록</a>
 </div>
-{% if archived %}<div class="warn">過去の動画です。スライドの「ショートにする」で宣伝用ショートを作れます（音声つきの映像がなければ、その1枚だけ音声を作ります）。</div>{% endif %}
+{% if archived %}<div class="warn">지난 영상입니다. 슬라이드의 「쇼츠로 만들기」로 홍보용 쇼츠를 만들 수 있습니다 (음성 있는 영상이 없으면 그 1장만 음성을 만듭니다).</div>{% endif %}
 <div class="stepper" id="stepper"></div>
 
 <div class="grid">
 <div>
   <div class="card">
-    <div class="tabs"><button id="tab-d" onclick="showTab('draft')">下書き動画</button><button id="tab-f" onclick="showTab('final')">完成動画</button></div>
+    <div class="tabs"><button id="tab-d" onclick="showTab('draft')">초안 영상</button><button id="tab-f" onclick="showTab('final')">완성 영상</button></div>
     <video id="vid" controls preload="metadata"></video>
     <div id="vinfo" class="hint"></div>
   </div>
-  <div class="card"><div class="job" id="job">待機中</div></div>
+  <div class="card"><div class="job" id="job">대기 중</div></div>
 </div>
 <div>
   <div class="card">
-    <h3>動画を作る</h3>
+    <h3>영상 만들기</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="run('illust',{i:0})" {% if keys.illust == 'none' %}disabled title="イラストのキーがありません"{% endif %}>イラストを作る（空きのある所だけ）</button>
-      <button class="pri" onclick="run('draft')">② 下書き動画を作る（音声なし）</button>
-      <button class="pri" onclick="run('build')" {% if not keys.tts %}disabled title="音声のキーがありません"{% endif %}>③ 音声で完成させる</button>
+      <button onclick="run('illust',{i:0})" {% if keys.illust == 'none' %}disabled title="일러스트 키가 없습니다"{% endif %}>일러스트 만들기 (공간 있는 곳만)</button>
+      <button class="pri" onclick="run('draft')">② 초안 영상 만들기 (음성 없음)</button>
+      <button class="pri" onclick="run('build')" {% if not keys.tts %}disabled title="음성 키가 없습니다"{% endif %}>③ 음성 넣어 완성</button>
     </div>
-    <p class="hint">下書き＝スライド＋字幕だけ（数十秒〜）。字幕・文字配置・イラストを見て、よければ「音声で完成」。変わったスライドだけ作り直します。
-    　<label style="display:inline"><input type="checkbox" id="illoff"> この動画はイラストなし</label></p>
+    <p class="hint">초안 = 슬라이드 + 자막만 (수십 초~). 자막·글 배치·일러스트를 보고 괜찮으면 「음성 넣어 완성」. 바뀐 슬라이드만 다시 만듭니다.
+    　<label style="display:inline"><input type="checkbox" id="illoff"> 이 영상은 일러스트 없음</label></p>
     <div id="dl"></div>
   </div>
 
   <div class="card">
-    <h3>④ YouTube に載せる文面</h3>
-    <label>タイトル <span class="hint" id="tlen"></span></label><input type="text" id="yt_title">
-    <label>概要欄のテンプレート（{{ '{{chapters}}' }} 目次・{{ '{{blog}}' }} ブログ・{{ '{{related}}' }} 関連動画 は自動で入ります）</label>
+    <h3>④ YouTube 에 올릴 문구</h3>
+    <label>제목 <span class="hint" id="tlen"></span></label><input type="text" id="yt_title">
+    <label>설명란 템플릿 ({{ '{{chapters}}' }} 목차・{{ '{{blog}}' }} 블로그・{{ '{{related}}' }} 관련 영상 은 자동으로 들어갑니다)</label>
     <textarea class="desc" id="yt_desc"></textarea>
-    <label>タグ（カンマ区切り）</label><input type="text" id="yt_tags">
-    <label>関連動画（概要欄・ブログに URL つきで入る）</label><div class="rel" id="rel"></div>
-    <div class="copyrow"><b>貼り付け用（URL・目次入り）</b><span><button onclick="copyTxt('title')">タイトル</button> <button onclick="copyTxt('description')">概要欄</button> <button onclick="copyTxt('tags')">タグ</button></span></div>
+    <label>태그 (쉼표로 구분)</label><input type="text" id="yt_tags">
+    <label>관련 영상 (설명란·블로그에 URL 과 함께 들어감)</label><div class="rel" id="rel"></div>
+    <div class="copyrow"><b>붙여넣기용 (URL·목차 포함)</b><span><button onclick="copyTxt('title')">제목</button> <button onclick="copyTxt('description')">설명란</button> <button onclick="copyTxt('tags')">태그</button></span></div>
     <div id="ywarn"></div>
     <textarea class="desc" id="yt_out" readonly style="background:#fafafa"></textarea>
-    <label>アップロードした動画の URL（入れると台帳に保存。ほかの動画の関連リンク・ブログ埋め込みに使われます）</label>
-    <div style="display:flex;gap:6px"><input type="text" id="yt_url" placeholder="https://youtu.be/..."><button onclick="saveUrl()">保存</button></div>
-    <p class="hint">URL が分からなければ <a href="{{ url_for('studio.registry_page') }}">URL台帳</a> の「チャンネルから取得」で自動で埋まります。</p>
+    <label>업로드한 영상 URL (넣으면 대장에 저장. 다른 영상의 관련 링크·블로그 임베드에 쓰입니다)</label>
+    <div style="display:flex;gap:6px"><input type="text" id="yt_url" placeholder="https://youtu.be/..."><button onclick="saveUrl()">저장</button></div>
+    <p class="hint">URL 을 모르면 <a href="{{ url_for('studio.registry_page') }}">URL 대장</a> 의 「채널에서 가져오기」로 자동으로 채워집니다.</p>
   </div>
 
   <div class="card">
-    <h3>⑤ ブログ（takken.ekunblog.com）</h3>
-    <label>スラッグ（URLの末尾・英小文字とハイフン）</label><input type="text" id="bl_slug">
-    <label>記事タイトル</label><input type="text" id="bl_title">
-    <label>抜粋（導入文・概要欄の冒頭にも使う）</label><textarea id="bl_ex" style="min-height:60px"></textarea>
+    <h3>⑤ 블로그 (takken.ekunblog.com)</h3>
+    <label>슬러그 (URL 끝부분・영문 소문자와 하이픈)</label><input type="text" id="bl_slug">
+    <label>글 제목</label><input type="text" id="bl_title">
+    <label>요약 (도입문・설명란 첫머리에도 사용)</label><textarea id="bl_ex" style="min-height:60px"></textarea>
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-      <button class="pri" onclick="blog(false)" {% if not keys.wp %}disabled title="WordPress のキーがありません"{% endif %}>ブログに発行・更新</button>
-      <button onclick="blog(true)" {% if not keys.wp %}disabled{% endif %}>下書きで保存</button>
+      <button class="pri" onclick="blog(false)" {% if not keys.wp %}disabled title="WordPress 계정이 없습니다"{% endif %}>블로그에 발행·갱신</button>
+      <button onclick="blog(true)" {% if not keys.wp %}disabled{% endif %}>임시글로 저장</button>
     </div>
     <p class="hint" id="blurl"></p>
-    <p class="hint">発行すると記事 URL が保存され、YouTube 概要欄の「ブログで詳しく」に自動で入ります。動画 URL を入れてからもう一度押すと、記事に動画が埋め込まれます。</p>
+    <p class="hint">발행하면 글 URL 이 저장되어 YouTube 설명란의 「ブログで詳しく」에 자동으로 들어갑니다. 영상 URL 을 넣은 뒤 다시 누르면 글에 영상이 임베드됩니다.</p>
   </div>
 
-  <div class="card"><h3>ショート</h3><div id="shorts" class="shl"><span class="hint">まだありません。下のスライドの「ショートにする」で作れます。</span></div></div>
+  <div class="card"><h3>쇼츠</h3><div id="shorts" class="shl"><span class="hint">아직 없습니다. 아래 슬라이드의 「쇼츠로 만들기」로 만들 수 있습니다.</span></div></div>
 </div>
 </div>
 
-<h3>① 台本（スライド）</h3>
-<p class="hint">赤い枠＝前回の書き出しから変わったスライド。本文は HTML。イラストは「空きがある所だけ」自動で入ります（置き方は 自動／上に中央／右に置いて本文を左／なし から選べます）。</p>
+<h3>① 대본 (슬라이드)</h3>
+<p class="hint">빨간 테두리 = 지난번 출력 이후 바뀐 슬라이드. 본문은 HTML. 일러스트는 「공간 있는 곳만」 자동으로 들어갑니다 (배치는 자동 / 위 가운데 / 오른쪽에 두고 본문 왼쪽 / 없음 중 선택).</p>
 <div id="slides"></div>
 </div>
 <script>
@@ -154,22 +154,22 @@ function showTab(t){
   $("#tab-d").className = t === "draft" ? "on" : ""; $("#tab-f").className = t === "final" ? "on" : "";
   const el = $("#vid");
   if (v){ const u = fileUrl(v.file, v.mtime); if (el.dataset.src !== u){ el.src = u; el.dataset.src = u; }
-          $("#vinfo").textContent = `${t === "final" ? "完成" : "下書き"} ${v.built_at}・${fmt(v.total)}`; }
-  else { el.removeAttribute("src"); el.dataset.src = ""; $("#vinfo").textContent = t === "final" ? "まだ音声で書き出していません。" : "まだ下書きがありません。「下書き動画を作る」を押してください。"; }
-  $("#dl").innerHTML = video ? `<a class="btn" href="${fileUrl(video.file, video.mtime)}&dl=1">完成動画をダウンロード (mp4)</a>` : "";
+          $("#vinfo").textContent = `${t === "final" ? "완성" : "초안"} ${v.built_at}・${fmt(v.total)}`; }
+  else { el.removeAttribute("src"); el.dataset.src = ""; $("#vinfo").textContent = t === "final" ? "아직 음성으로 완성하지 않았습니다." : "아직 초안이 없습니다. 「초안 영상 만들기」를 눌러주세요."; }
+  $("#dl").innerHTML = video ? `<a class="btn" href="${fileUrl(video.file, video.mtime)}&dl=1">완성 영상 다운로드 (mp4)</a>` : "";
 }
 function fillMeta(){
   const yt = spec.youtube || {}, bl = spec.blog || {};
   $("#yt_title").value = yt.title || ""; $("#yt_desc").value = yt.description || ""; $("#yt_tags").value = (yt.tags || []).join(", ");
   $("#yt_url").value = yt.url || ((REG.videos || []).find(v => v.key === NAME) || {}).url || "";
   $("#bl_slug").value = bl.slug || ""; $("#bl_title").value = bl.title || ""; $("#bl_ex").value = bl.excerpt || "";
-  $("#blurl").innerHTML = bl.url ? `発行済み: <a href="${esc(bl.url)}" target="_blank">${esc(bl.url)}</a>` : "まだ発行していません";
+  $("#blurl").innerHTML = bl.url ? `발행됨: <a href="${esc(bl.url)}" target="_blank">${esc(bl.url)}</a>` : "아직 발행하지 않았습니다";
   $("#illoff").checked = !!spec.illust_off;
-  $("#tlen").textContent = `${(yt.title||"").length}字`;
+  $("#tlen").textContent = `${(yt.title||"").length}자`;
   const rel = new Set(spec.related || []);
   $("#rel").innerHTML = (REG.videos || []).filter(v => !v.short && v.key !== NAME).map(v =>
-    `<label><input type="checkbox" value="${esc(v.key)}" ${rel.has(v.key) ? "checked" : ""}> ${esc(v.label || v.yt_title || v.key)} ${v.url ? "" : '<span class="nourl">URL未登録</span>'}</label>`).join("");
-  ["#yt_title","#yt_desc","#yt_tags","#bl_slug","#bl_title","#bl_ex"].forEach(s => $(s).oninput = () => { setDirty(true); if (s === "#yt_title") $("#tlen").textContent = `${$(s).value.length}字`; });
+    `<label><input type="checkbox" value="${esc(v.key)}" ${rel.has(v.key) ? "checked" : ""}> ${esc(v.label || v.yt_title || v.key)} ${v.url ? "" : '<span class="nourl">URL 미등록</span>'}</label>`).join("");
+  ["#yt_title","#yt_desc","#yt_tags","#bl_slug","#bl_title","#bl_ex"].forEach(s => $(s).oninput = () => { setDirty(true); if (s === "#yt_title") $("#tlen").textContent = `${$(s).value.length}자`; });
   $("#rel").querySelectorAll("input").forEach(c => c.onchange = () => setDirty(true));
   $("#illoff").onchange = () => setDirty(true);
 }
@@ -189,45 +189,45 @@ function render(){
     div.className = "sl" + (ok ? "" : " mod");
     div.innerHTML = `
       <div class="hd"><span class="no">#${i}</span>
-        <span class="tm" data-t="${r.start ?? ""}">${r.in_video ? fmt(r.start) + "〜" + fmt(r.start + r.dur) + `（${Math.round(r.dur)}秒）` : (r.dstart != null ? "下書き " + fmt(r.dstart) : "動画に未反映")}</span>
-        <span class="badge ${ok ? "" : "chg"}">${r.edited ? "編集中（未保存）" : (r.state === "built" ? "完成済み" : (r.state === "draft" ? "下書き済み" : "変更あり"))}</span>
-        <span class="ops"><button data-op="pv">プレビュー画像</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">複製</button><button data-op="del">削除</button></span></div>
-      <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">画像なし（プレビュー画像を押す）</div>`}
+        <span class="tm" data-t="${r.start ?? ""}">${r.in_video ? fmt(r.start) + "〜" + fmt(r.start + r.dur) + ` (${Math.round(r.dur)}초)` : (r.dstart != null ? "초안 " + fmt(r.dstart) : "영상에 미반영")}</span>
+        <span class="badge ${ok ? "" : "chg"}">${r.edited ? "편집 중 (미저장)" : (r.state === "built" ? "완성됨" : (r.state === "draft" ? "초안 있음" : "변경 있음"))}</span>
+        <span class="ops"><button data-op="pv">미리보기 이미지</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">복제</button><button data-op="del">삭제</button></span></div>
+      <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">이미지 없음 (미리보기 이미지를 누르세요)</div>`}
         <div class="ill">
-          ${r.illust ? `<img src="/studio/illust/${r.illust}">` : `<div class="none">${s.illust_pos === "none" ? "絵なし" : "未作成"}</div>`}
-          <div><textarea data-f="illust" placeholder="絵の説明（空なら本文から自動）: ${esc(r.illust_auto || "")}">${esc(s.illust)}</textarea>
+          ${r.illust ? `<img src="/studio/illust/${r.illust}">` : `<div class="none">${s.illust_pos === "none" ? "그림 없음" : "미생성"}</div>`}
+          <div><textarea data-f="illust" placeholder="그림 설명 (비우면 본문에서 자동): ${esc(r.illust_auto || "")}">${esc(s.illust)}</textarea>
             <div class="r"><select data-f="illust_pos">
-              <option value="">置き方: 自動（空きがある所だけ）</option><option value="top">上に中央</option><option value="right">右に置いて本文を左</option><option value="none">絵なし</option></select>
-              <button data-op="ill" {% if keys.illust == 'none' %}disabled{% endif %}>${r.illust ? "別の絵にする" : "この絵を作る"}</button></div></div>
+              <option value="">배치: 자동 (공간 있는 곳만)</option><option value="top">위 가운데</option><option value="right">오른쪽 (본문은 왼쪽)</option><option value="none">그림 없음</option></select>
+              <button data-op="ill" {% if keys.illust == 'none' %}disabled{% endif %}>${r.illust ? "다른 그림으로" : "이 그림 만들기"}</button></div></div>
         </div>
-        <div class="short"><input type="text" data-f="short_hook" placeholder="ショートの見出し（空なら見出しから）" value="${esc(s.short_hook)}"><button data-op="short">ショートにする</button></div>
+        <div class="short"><input type="text" data-f="short_hook" placeholder="쇼츠 제목 (비우면 슬라이드 제목) — 일본어로" value="${esc(s.short_hook)}"><button data-op="short">쇼츠로 만들기</button></div>
       </div>
       <div>
-        <label>見出し</label><input type="text" data-f="title" value="${esc(s.title)}">
-        <label>小見出し</label><input type="text" data-f="sub" value="${esc(s.sub)}">
-        <label>本文（HTML）</label><textarea class="body" data-f="body">${esc(s.body)}</textarea>
-        <label>読み上げ（ナレーション＝字幕）</label><textarea class="speech" data-f="speech">${esc(s.speech)}</textarea>
-        <div class="cnt">${chars}字・約${Math.round(chars/4.3)}秒</div>
+        <label>제목</label><input type="text" data-f="title" value="${esc(s.title)}">
+        <label>소제목</label><input type="text" data-f="sub" value="${esc(s.sub)}">
+        <label>본문 (HTML)</label><textarea class="body" data-f="body">${esc(s.body)}</textarea>
+        <label>읽기 원고 (내레이션 = 자막)</label><textarea class="speech" data-f="speech">${esc(s.speech)}</textarea>
+        <div class="cnt">${chars}자・약 ${Math.round(chars/4.3)}초</div>
       </div>`;
     div.querySelector('[data-f="illust_pos"]').value = s.illust_pos || "";
     div.querySelectorAll("[data-f]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
       spec.slides[k][el.dataset.f] = el.value; if (!el.value) delete spec.slides[k][el.dataset.f];
       rows[k].edited = true; setDirty(true);
-      div.classList.add("mod"); const b = div.querySelector(".badge"); b.textContent = "編集中（未保存）"; b.classList.add("chg");
-      if (el.dataset.f === "speech") div.querySelector(".cnt").textContent = `${el.value.length}字・約${Math.round(el.value.length/4.3)}秒`;
+      div.classList.add("mod"); const b = div.querySelector(".badge"); b.textContent = "편집 중 (미저장)"; b.classList.add("chg");
+      if (el.dataset.f === "speech") div.querySelector(".cnt").textContent = `${el.value.length}자・약 ${Math.round(el.value.length/4.3)}초`;
     }));
     div.querySelector(".tm").addEventListener("click", e => { const t = e.target.dataset.t; if (t !== ""){ showTab("final"); $("#vid").currentTime = +t; $("#vid").play(); window.scrollTo({top:0, behavior:"smooth"}); } });
     div.querySelectorAll("[data-op]").forEach(b => b.addEventListener("click", () => op(b.dataset.op, k, div)));
     box.appendChild(div);
   });
 }
-function setDirty(v){ dirty = v; $("#dirty").innerHTML = v ? '<span class="dirty">● 未保存の変更があります</span>' : ""; }
+function setDirty(v){ dirty = v; $("#dirty").innerHTML = v ? '<span class="dirty">● 저장하지 않은 변경이 있습니다</span>' : ""; }
 async function op(kind, k, div){
   const S = spec.slides, R = rows;
   if (kind === "pv"){
-    const b = div.querySelector('[data-op="pv"]'); b.textContent = "作成中…"; b.disabled = true;
-    const d = await post(`/studio/api/preview/${NAME}/${k+1}`, S[k]); b.textContent = "プレビュー画像"; b.disabled = false;
-    if (!d.ok){ alert("プレビュー失敗:\n" + d.error); return; }
+    const b = div.querySelector('[data-op="pv"]'); b.textContent = "만드는 중…"; b.disabled = true;
+    const d = await post(`/studio/api/preview/${NAME}/${k+1}`, S[k]); b.textContent = "미리보기 이미지"; b.disabled = false;
+    if (!d.ok){ alert("미리보기 실패:\n" + d.error); return; }
     R[k].preview_local = d.png; R[k].pv_t = d.t; render(); return;
   }
   if (kind === "ill"){ if (dirty && !(await save())) return; return run("illust", {i:k+1}); }
@@ -235,14 +235,14 @@ async function op(kind, k, div){
   if (kind === "up" && k > 0){ [S[k-1], S[k]] = [S[k], S[k-1]]; [R[k-1], R[k]] = [R[k], R[k-1]]; }
   else if (kind === "down" && k < S.length-1){ [S[k+1], S[k]] = [S[k], S[k+1]]; [R[k+1], R[k]] = [R[k], R[k+1]]; }
   else if (kind === "dup"){ S.splice(k+1, 0, JSON.parse(JSON.stringify(S[k]))); R.splice(k+1, 0, {...R[k], in_video:false, edited:true}); }
-  else if (kind === "del"){ if (S.length <= 1 || !confirm(`#${k+1} を削除しますか？`)) return; S.splice(k, 1); R.splice(k, 1); }
+  else if (kind === "del"){ if (S.length <= 1 || !confirm(`#${k+1} 을(를) 삭제할까요?`)) return; S.splice(k, 1); R.splice(k, 1); }
   else return;
   R.forEach(r => { r.in_video = false; });
   setDirty(true); render();
 }
 async function save(){
   const d = await post(`/studio/api/spec/${NAME}`, {slides: spec.slides, meta: meta()});
-  if (!d.ok){ alert("保存失敗: " + d.error); return false; }
+  if (!d.ok){ alert("저장 실패: " + d.error); return false; }
   await load(); return true;
 }
 async function run(kind, args){
@@ -252,21 +252,21 @@ async function run(kind, args){
   startPoll();
 }
 async function blog(asDraft){
-  if (!$("#bl_slug").value.trim()){ alert("スラッグを入れてください（例: takken-5mon-menjo）"); return; }
-  if (!confirm(asDraft ? "ブログに下書きとして保存しますか？" : "ブログに公開しますか？（同じスラッグの記事があれば更新します）")) return;
+  if (!$("#bl_slug").value.trim()){ alert("슬러그를 넣어주세요 (예: takken-5mon-menjo)"); return; }
+  if (!confirm(asDraft ? "블로그에 임시글로 저장할까요?" : "블로그에 공개할까요? (같은 슬러그의 글이 있으면 갱신합니다)")) return;
   run("blog", {draft: asDraft});
 }
 async function saveUrl(){
   const u = $("#yt_url").value.trim();
-  if (u && !/^https:\/\/(youtu\.be|(www\.)?youtube\.com)\//.test(u)){ alert("YouTube の URL を入れてください"); return; }
+  if (u && !/^https:\/\/(youtu\.be|(www\.)?youtube\.com)\//.test(u)){ alert("YouTube URL 을 넣어주세요"); return; }
   const d = await post(`/studio/api/spec/${NAME}`, {meta: {...meta(), youtube: {...meta().youtube, url: u}}});
   if (!d.ok){ alert(d.error); return; }
   REG = null; await load();
 }
 function showJob(j){
   const el = $("#job");
-  if (!j || !j.name){ el.textContent = "待機中"; return; }
-  const st = j.running ? `<b>${esc(j.label)} 実行中…</b> ${j.elapsed}秒` : (j.rc === 0 ? `<b>${esc(j.label)} 完了</b>` : `<b>${esc(j.label)} 終了（コード ${j.rc}）</b>`);
+  if (!j || !j.name){ el.textContent = "대기 중"; return; }
+  const st = j.running ? `<b>${esc(j.label)} 실행 중…</b> ${j.elapsed}초` : (j.rc === 0 ? `<b>${esc(j.label)} 완료</b>` : `<b>${esc(j.label)} 종료 (코드 ${j.rc})</b>`);
   el.innerHTML = `${st}　${esc(j.name)}\n` + esc(j.log); el.scrollTop = el.scrollHeight;
   if (j.running) startPoll();
 }
@@ -279,19 +279,19 @@ function startPoll(){
 }
 async function loadYtext(){
   ytx = await (await fetch(`/studio/api/ytext/${NAME}`)).json();
-  $("#yt_out").value = `【タイトル】\n${ytx.title}\n\n【概要欄】\n${ytx.description}\n\n【タグ】\n${ytx.tags}`;
+  $("#yt_out").value = `【제목】\n${ytx.title}\n\n【설명란】\n${ytx.description}\n\n【태그】\n${ytx.tags}`;
   $("#ywarn").innerHTML = (ytx.warn || []).map(w => `<div class="warn">${esc(w)}</div>`).join("");
 }
 async function copyTxt(k){
   if (dirty && !(await save())) return;
   const t = ytx[k];
-  try { await navigator.clipboard.writeText(t); alert("コピーしました"); } catch(e){ prompt("コピーしてください", t); }
+  try { await navigator.clipboard.writeText(t); alert("복사했습니다"); } catch(e){ prompt("복사해 주세요", t); }
 }
 async function loadShorts(){
   const d = await (await fetch(`/studio/api/shorts/${NAME}`)).json();
   if (!d.shorts.length) return;
   $("#shorts").innerHTML = d.shorts.map(s => `<div><video controls preload="none" src="${fileUrl(s.file, s.mtime)}"></video>
-    <a class="btn" href="${fileUrl(s.file, s.mtime)}&dl=1">ダウンロード</a><pre>${esc(s.text)}</pre></div>`).join("");
+    <a class="btn" href="${fileUrl(s.file, s.mtime)}&dl=1">다운로드</a><pre>${esc(s.text)}</pre></div>`).join("");
 }
 window.addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
 load();

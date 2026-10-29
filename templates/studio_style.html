@@ -1,5 +1,5 @@
 {% extends "studio_base.html" %}
-{% block title %}字幕スタイル｜スタジオ{% endblock %}
+{% block title %}자막 스타일｜스튜디오{% endblock %}
 {% block body %}
 <style>
 .w{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:360px 1fr;gap:16px}
@@ -18,30 +18,30 @@ h3{margin:4px 0 8px;color:#1a3d7c;font-size:15px}
 </style>
 <div class="w">
 <div class="card">
-  <h3>ひな形</h3>
+  <h3>프리셋</h3>
   <div class="pre">{% for k, p in presets.items() %}<button onclick="preset('{{ k }}')">{{ p.label }}</button>{% endfor %}</div>
-  <h3 style="margin-top:14px">文字</h3>
-  <label><span>書体（太さ込み）</span><select id="font">{% for f in fonts %}<option>{{ f }}</option>{% endfor %}</select></label>
-  <label><span>大きさ <b id="v_size"></b></span><input type="range" id="size" min="34" max="72"></label>
-  <label><span>文字の色</span><input type="color" id="color"></label>
-  <label><span>フチの太さ <b id="v_stroke"></b></span><input type="range" id="stroke" min="0" max="10"></label>
-  <label><span>フチの色</span><input type="color" id="stroke_color"></label>
-  <label><span>影</span><input type="checkbox" id="shadow"></label>
-  <h3 style="margin-top:14px">背景ボックス</h3>
-  <label><span>ボックスを敷く</span><input type="checkbox" id="box"></label>
-  <label><span>ボックスの色</span><input type="color" id="box_color"></label>
-  <label><span>濃さ <b id="v_box_alpha"></b></span><input type="range" id="box_alpha" min="0" max="1" step="0.05"></label>
-  <label><span>角の丸み <b id="v_box_radius"></b></span><input type="range" id="box_radius" min="0" max="30"></label>
-  <h3 style="margin-top:14px">区切り・位置</h3>
-  <label><span>1枚の最大文字数 <b id="v_max_chars"></b></span><input type="range" id="max_chars" min="10" max="30"></label>
-  <label><span>最大行数</span><select id="max_lines"><option value="1">1行</option><option value="2">2行</option></select></label>
-  <label><span>下からの位置 <b id="v_bottom"></b></span><input type="range" id="bottom" min="20" max="200"></label>
-  <h3 style="margin-top:14px">スライド本文の書体</h3>
-  <label><span>書体</span><select id="slide_font">{% for f in slide_fonts %}<option>{{ f }}</option>{% endfor %}</select></label>
-  <p class="hint">字幕は文の切れ目（、や助詞の後ろ）で区切り、最大文字数を超えないように1枚ずつ出します。変えると次の書き出しから全スライドに反映されます（動画ごとに変えたいときは spec の sub_style）。</p>
-  <button class="pri" onclick="send(true)">保存</button> <button onclick="send(false)">見本だけ更新</button> <span id="msg" class="hint"></span>
+  <h3 style="margin-top:14px">글자</h3>
+  <label><span>글꼴 (굵기 포함)</span><select id="font">{% for f in fonts %}<option>{{ f }}</option>{% endfor %}</select></label>
+  <label><span>크기 <b id="v_size"></b></span><input type="range" id="size" min="34" max="72"></label>
+  <label><span>글자 색</span><input type="color" id="color"></label>
+  <label><span>테두리 두께 <b id="v_stroke"></b></span><input type="range" id="stroke" min="0" max="10"></label>
+  <label><span>테두리 색</span><input type="color" id="stroke_color"></label>
+  <label><span>그림자</span><input type="checkbox" id="shadow"></label>
+  <h3 style="margin-top:14px">배경 박스</h3>
+  <label><span>박스 깔기</span><input type="checkbox" id="box"></label>
+  <label><span>박스 색</span><input type="color" id="box_color"></label>
+  <label><span>진하기 <b id="v_box_alpha"></b></span><input type="range" id="box_alpha" min="0" max="1" step="0.05"></label>
+  <label><span>모서리 둥글기 <b id="v_box_radius"></b></span><input type="range" id="box_radius" min="0" max="30"></label>
+  <h3 style="margin-top:14px">끊기·위치</h3>
+  <label><span>한 화면 최대 글자 수 <b id="v_max_chars"></b></span><input type="range" id="max_chars" min="10" max="30"></label>
+  <label><span>최대 줄 수</span><select id="max_lines"><option value="1">1줄</option><option value="2">2줄</option></select></label>
+  <label><span>아래에서의 위치 <b id="v_bottom"></b></span><input type="range" id="bottom" min="20" max="200"></label>
+  <h3 style="margin-top:14px">슬라이드 본문 글꼴</h3>
+  <label><span>글꼴</span><select id="slide_font">{% for f in slide_fonts %}<option>{{ f }}</option>{% endfor %}</select></label>
+  <p class="hint">자막은 문장이 끊기는 곳(、나 조사 뒤)에서 나누고, 최대 글자 수를 넘지 않게 한 장씩 보여줍니다. 바꾸면 다음 출력부터 모든 슬라이드에 반영됩니다.</p>
+  <button class="pri" onclick="send(true)">저장</button> <button onclick="send(false)">견본만 갱신</button> <span id="msg" class="hint"></span>
 </div>
-<div class="card"><h3>見本（実際のスライドに重ねた表示）</h3><img id="sample" alt="見本"></div>
+<div class="card"><h3>견본 (실제 슬라이드에 겹친 모습)</h3><img id="sample" alt="견본"></div>
 </div>
 <script>
 const PRESETS = {{ presets|tojson }};
@@ -57,10 +57,10 @@ function preset(k){ const sf = ST.slide_font; ST = {...PRESETS[k], preset:k, sli
 let t = null;
 F.forEach(k => document.getElementById(k).addEventListener("input", () => { read(); clearTimeout(t); t = setTimeout(() => send(false), 400); }));
 async function send(saveIt){
-  read(); document.getElementById("msg").textContent = "更新中…";
+  read(); document.getElementById("msg").textContent = "갱신 중…";
   const r = await fetch("/studio/api/style" + (saveIt ? "?save=1" : ""), {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(ST)});
   const d = await r.json(); document.getElementById("sample").src = "/studio/style/sample/" + d.sample;
-  document.getElementById("msg").textContent = saveIt ? "保存しました" : "";
+  document.getElementById("msg").textContent = saveIt ? "저장했습니다" : "";
 }
 fill(); send(false);
 </script>

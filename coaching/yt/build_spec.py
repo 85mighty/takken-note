@@ -51,9 +51,9 @@ def draft(spec, G):
             V.encode_subtitled(png, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, starts, tmp, G.OUT, f"d{i:02d}")
             os.replace(tmp, seg)
             if not os.path.exists(thumb): shutil.copy(png, thumb)
-            print(f"draft {i:02d} {total:5.0f}s  {s.get('title') or 'はじめに'}", flush=True)
+            print(f"초안 {i:02d} {total:5.0f}초  {s.get('title') or 'はじめに'}", flush=True)
         else:
-            print(f"draft {i:02d} (変更なし・再利用)  {s.get('title') or 'はじめに'}", flush=True)
+            print(f"초안 {i:02d} (변경 없음·재사용)  {s.get('title') or 'はじめに'}", flush=True)
         d = V.dur(seg); segs.append(seg)
         man.append({"i": i, "title": s.get("title") or "はじめに", "key": key, "seg": os.path.basename(seg), "thumb": os.path.basename(thumb), "dur": round(d, 2), "start": round(t, 2)})
         t += d
@@ -61,7 +61,7 @@ def draft(spec, G):
     V.concat(segs, final, bgm=False)
     json.dump({"name": spec["name"], "video": os.path.basename(final), "total": round(t, 2), "built_at": time.strftime("%Y-%m-%d %H:%M:%S"), "draft": True, "slides": man},
               open(os.path.join(G.OUT, f"{spec['name']}.draft.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    print("下書き完了:", final, f"{t/60:.1f}分", flush=True)
+    print("초안 완료:", final, f"{t/60:.1f}분", flush=True)
 
 def set_status(path, status):
     sp = load(path)
@@ -81,7 +81,7 @@ def main():
         import illust
         if a.illust: spec = illust.regen(a.spec, a.illust)
         if illust.provider() == "none":
-            if a.illust is not None: sys.exit("イラストを作るキーがありません (python3 illust.py --check)")
+            if a.illust is not None: sys.exit("일러스트를 만들 키가 없습니다 (python3 illust.py --check)")
         elif illust.ensure_spec(spec, a.illust or None, log=lambda m: print(m, flush=True)):
             G = setup(spec)
         if a.illust is not None: return

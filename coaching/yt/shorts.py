@@ -72,7 +72,7 @@ def make(path, i, hook=None, log=print):
         seg = os.path.join(G.OUT, f"s{i:02d}.mp4")
         if os.path.exists(os.path.join(G.OUT, f"s{i:02d}.png")): png = os.path.join(G.OUT, f"s{i:02d}.png")
     if not os.path.exists(seg):
-        log(f"スライド{i}の音声つき映像がないので作ります…")
+        log(f"슬라이드 {i} 의 음성 영상이 없어서 만듭니다…")
         G.build(only=i, name=spec["name"])
     if not os.path.exists(png):
         png, _h = G.render(s["_body"], s.get("title", ""), s.get("sub", ""), f"sh{i:02d}")
@@ -105,7 +105,7 @@ def make(path, i, hook=None, log=print):
     open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n")
     for f in (m4a, base + "_bg.png"):
         if os.path.exists(f): os.remove(f)
-    log(f"ショート完成: {base}.mp4  {total:.0f}秒" + ("（60秒を超えています。ショートは3分まで投稿できます）" if total > 60 else ""))
+    log(f"쇼츠 완성: {base}.mp4  {total:.0f}초" + (" (60초를 넘습니다. 쇼츠는 3분까지 올릴 수 있습니다)" if total > 60 else ""))
     return {"video": base + ".mp4", "title": title, "description": desc, "dur": round(total, 1), "url_missing": not url}
 
 if __name__ == "__main__":

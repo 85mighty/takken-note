@@ -14,7 +14,7 @@ OUT = os.environ.get("YT_OUT", os.path.join(HERE, "out"))
 BENCH = os.path.join(ROOT, "coaching", "bench", "out")
 ILL = os.path.join(HERE, "illust")
 PY = sys.executable
-STEPS = [("script", "台本"), ("draft", "下書き動画"), ("voiced", "音声で完成"), ("uploaded", "YouTube"), ("blogged", "ブログ")]
+STEPS = [("script", "대본"), ("draft", "초안 영상"), ("voiced", "음성 완성"), ("uploaded", "YouTube"), ("blogged", "블로그")]
 SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "short_hook")
 
 bp = Blueprint("studio", __name__, url_prefix="/studio")
@@ -85,7 +85,7 @@ def _job_state():
 def _start(name, kind, label, argv):
     with LOCK:
         st = _job_state()
-        if st["running"]: return jsonify(ok=False, error=f"ほかの作業中です（{st['label']}・{st['name']}）。終わってから押してください"), 409
+        if st["running"]: return jsonify(ok=False, error=f"다른 작업이 진행 중입니다 ({st['label']} · {st['name']}). 끝난 뒤에 눌러주세요"), 409
         logdir = os.path.join(OUT, "_jobs"); os.makedirs(logdir, exist_ok=True)
         log = os.path.join(logdir, f"{kind}.log")
         f = open(log, "w", encoding="utf-8")
@@ -94,9 +94,9 @@ def _start(name, kind, label, argv):
     return jsonify(ok=True)
 
 def _keys_status():
-    import illust
+    import illust, scriptgen
     return {"tts": bool(os.environ.get("GOOGLE_TTS_API_KEY") or os.path.exists(os.path.join(ROOT, ".google_api_key"))),
-            "claude": bool(os.environ.get("ANTHROPIC_API_KEY") or os.path.exists(os.path.join(ROOT, ".anthropic_api_key"))),
+            "claude": scriptgen.available(),
             "wp": os.path.exists(os.path.join(ROOT, ".wp_app_password")) or bool(os.environ.get("WP_APP_PASSWORD")),
             "illust": illust.provider()}
 
@@ -175,10 +175,10 @@ def api_save(name):
     data = request.get_json(force=True) or {}
     slides = data.get("slides")
     if slides is not None:
-        if not isinstance(slides, list) or not slides: return jsonify(ok=False, error="slides が空です"), 400
+        if not isinstance(slides, list) or not slides: return jsonify(ok=False, error="슬라이드가 비어 있습니다"), 400
         clean = []
         for s in slides:
-            if not isinstance(s, dict): return jsonify(ok=False, error="形式が不正です"), 400
+            if not isinstance(s, dict): return jsonify(ok=False, error="형식이 올바르지 않습니다"), 400
             c = {k: str(s.get(k, "")) for k in ("title", "sub", "body", "speech")}
             if s.get("illust"): c["illust"] = str(s["illust"])
             if s.get("illust_pos") in ("top", "right", "none"): c["illust_pos"] = s["illust_pos"]
@@ -231,17 +231,17 @@ def api_preview(name, i):
 @bp.route("/api/run/<name>/<kind>", methods=["POST"])
 def api_run(name, kind):
     p = _spec_path(name); a = request.get_json(silent=True) or {}
-    if kind == "draft": return _start(name, kind, "下書き動画", ["build_spec.py", p, "--draft"])
-    if kind == "build": return _start(name, kind, "音声で完成", ["build_spec.py", p])
+    if kind == "draft": return _start(name, kind, "초안 영상", ["build_spec.py", p, "--draft"])
+    if kind == "build": return _start(name, kind, "음성 완성", ["build_spec.py", p])
     if kind == "illust":
         i = int(a.get("i") or 0)
-        return _start(name, kind, f"イラスト{' #'+str(i) if i else ''}", ["build_spec.py", p, "--illust", str(i)])
+        return _start(name, kind, f"일러스트{' #'+str(i) if i else ''}", ["build_spec.py", p, "--illust", str(i)])
     if kind == "short":
         i = int(a.get("i") or 0)
         if i < 1: abort(400)
         argv = ["shorts.py", p, str(i)] + (["--hook", str(a["hook"])] if a.get("hook") else [])
-        return _start(name, kind, f"ショート #{i}", argv)
-    if kind == "blog": return _start(name, kind, "ブログ発行", ["blogify.py", p, "--publish"] + (["--draft"] if a.get("draft") else []))
+        return _start(name, kind, f"쇼츠 #{i}", argv)
+    if kind == "blog": return _start(name, kind, "블로그 발행", ["blogify.py", p, "--publish"] + (["--draft"] if a.get("draft") else []))
     abort(404)
 
 @bp.route("/api/job")
@@ -254,16 +254,16 @@ def api_topics():
     a = request.get_json(force=True) or {}
     op = a.get("op")
     if op == "add":
-        if not (a.get("title") or "").strip(): return jsonify(ok=False, error="テーマが空です"), 400
+        if not (a.get("title") or "").strip(): return jsonify(ok=False, error="주제가 비어 있습니다"), 400
         topics.add(a["title"], a.get("why", ""), "manual", a.get("minutes") or 10, a.get("notes", ""))
     elif op == "update": topics.update(a["id"], **{k: a.get(k) for k in ("title", "why", "minutes", "notes", "status")})
     elif op == "delete": topics.delete(a["id"])
-    elif op == "suggest": return _start("topics", "suggest", "テーマ候補をAIで探す", ["topics.py", "--suggest"])
+    elif op == "suggest": return _start("topics", "suggest", "AI 주제 후보 찾기", ["topics.py", "--suggest"])
     elif op == "make":
         t = next((x for x in topics.load()["topics"] if x["id"] == a.get("id")), None)
         if not t: abort(404)
         topics.update(t["id"], status="making")
-        return _start("topics", "script", f"台本づくり: {t['title'][:20]}",
+        return _start("topics", "script", f"대본 만들기: {t['title'][:20]}",
                       ["scriptgen.py", t["title"], "--minutes", str(t.get("minutes") or 10), "--notes", t.get("notes", "") + ("\n" + t["why"] if t.get("why") else ""), "--topic-id", t["id"]])
     return jsonify(ok=True, topics=topics.load()["topics"])
 
@@ -314,7 +314,7 @@ def api_registry():
     import registry
     if request.method == "GET": return jsonify(registry.load())
     a = request.get_json(force=True) or {}
-    if a.get("op") == "fetch": return _start("registry", "fetch", "YouTube の URL を取得", ["registry.py", "--fetch"])
+    if a.get("op") == "fetch": return _start("registry", "fetch", "YouTube URL 가져오기", ["registry.py", "--fetch"])
     reg = registry.load()
     for row in a.get("videos") or []:
         if row.get("key"):

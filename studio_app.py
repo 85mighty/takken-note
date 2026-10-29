@@ -42,7 +42,7 @@ def require_login():
     if session.get("authed"):
         return
     if request.path.startswith("/studio/api/"):
-        return {"ok": False, "error": "ログインが必要です"}, 401
+        return {"ok": False, "error": "로그인이 필요합니다"}, 401
     return redirect(url_for("login", next=request.full_path if request.query_string else request.path))
 
 
@@ -55,7 +55,7 @@ def login():
             session["authed"] = True
             nxt = request.args.get("next") or ""
             return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else url_for("studio.index"))
-        error = "パスワードが違います"
+        error = "비밀번호가 틀립니다"
     return render_template("studio_login.html", error=error)
 
 

@@ -46,8 +46,7 @@ SUGGEST_TOOL = {
 }
 
 def suggest(n=8, log=print):
-    import anthropic, registry, scriptgen
-    client = anthropic.Anthropic(api_key=scriptgen.api_key())
+    import registry, scriptgen
     reg = registry.load()
     made = "\n".join(f"- {v.get('yt_title') or v.get('label')}" for v in reg["videos"])[:4000]
     bench = open(BENCH, encoding="utf-8").read()[:6000] if os.path.exists(BENCH) else "（ベンチマーク未取得）"
@@ -56,20 +55,30 @@ def suggest(n=8, log=print):
             f"時期（試験・合格発表・登録講習・申込みの日程）と、他の宅建チャンネルで伸びている傾向を踏まえて。"
             f"必要なら web_search で今の話題や日程を確認する。すでに作った動画・候補と重ならないこと。\n\n"
             f"■ ベンチマーク（伸びている動画の傾向）\n{bench}\n\n■ 作成済みの動画\n{made}\n\n■ すでにある候補\n{queued}")
+    if not scriptgen.api_key(False):                        # キーがなければ Claude Code CLI で
+        def check(o):
+            ts = o.get("topics") if isinstance(o, dict) else None
+            return None if isinstance(ts, list) and ts and all(isinstance(t, dict) and isinstance(t.get("title"), str) for t in ts) else "topics が不正です"
+        items = scriptgen.cli_json(user, "あなたは宅建 YouTube チャンネルの企画担当です。", SUGGEST_TOOL["input_schema"], check, log)["topics"]
+        for t in reversed(items):
+            add(t["title"], t.get("why", ""), "ai", t.get("minutes") or 10, t.get("notes", "")); log(f"  ＋ {t['title']}")
+        return len(items)
+    import anthropic
+    client = anthropic.Anthropic(api_key=scriptgen.api_key())
     messages = [{"role": "user", "content": user}]
     for _ in range(6):
-        log("… Claude に候補を依頼中")
+        log("… Claude 에 후보 요청 중")
         try:
             with client.messages.stream(model=scriptgen.MODEL, max_tokens=16000, tools=[scriptgen.WEB, SUGGEST_TOOL],
                                         output_config={"effort": "medium"}, messages=messages) as st:
                 msg = st.get_final_message()
         except ValueError as e:
-            log(f"  入力が読み取れませんでした。再試行します ({e})"); continue
-        if msg.stop_reason == "refusal": raise RuntimeError("Claude が提案を断りました")
+            log(f"  입력을 읽지 못해 다시 시도합니다 ({e})"); continue
+        if msg.stop_reason == "refusal": raise RuntimeError("Claude 가 제안을 거절했습니다")
         if msg.stop_reason == "pause_turn":
             messages.append({"role": "assistant", "content": msg.content}); continue
         calls = [b for b in msg.content if b.type == "tool_use" and b.name == "save_topics"]
-        if msg.stop_reason == "max_tokens": raise RuntimeError("途中で切れました")
+        if msg.stop_reason == "max_tokens": raise RuntimeError("중간에 끊겼습니다")
         if not calls:
             messages.append({"role": "assistant", "content": msg.content})
             messages.append({"role": "user", "content": "save_topics ツールで保存してください。"}); continue
@@ -83,12 +92,12 @@ def suggest(n=8, log=print):
             add(t["title"], t.get("why", ""), "ai", t.get("minutes") or 10, t.get("notes", ""))
             log(f"  ＋ {t['title']}")
         return len(items)
-    raise RuntimeError("候補を保存できませんでした")
+    raise RuntimeError("후보를 저장하지 못했습니다")
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--suggest", action="store_true"); ap.add_argument("--n", type=int, default=8)
     ap.add_argument("--add"); ap.add_argument("--why", default=""); ap.add_argument("--minutes", type=int, default=10); ap.add_argument("--notes", default="")
     a = ap.parse_args()
-    if a.suggest: print(f"候補 {suggest(a.n, log=lambda m: print(m, flush=True))}件 を追加しました")
+    if a.suggest: print(f"후보 {suggest(a.n, log=lambda m: print(m, flush=True))}건 추가했습니다")
     elif a.add: print(add(a.add, a.why, "chat", a.minutes, a.notes))
     else: print(json.dumps(load(), ensure_ascii=False, indent=1)[:3000])

@@ -1,5 +1,5 @@
 {% extends "studio_base.html" %}
-{% block title %}スタジオ｜NIPPONリアル{% endblock %}
+{% block title %}스튜디오｜NIPPONリアル{% endblock %}
 {% block body %}
 <style>
 .w{max-width:1100px;margin:0 auto}
@@ -29,70 +29,70 @@ details summary{cursor:pointer;color:#1a3d7c}
 <div class="w">
 {% if not keys.claude or not keys.tts or keys.illust == 'none' or not keys.wp %}
 <div class="warn">
-  {% if not keys.tts %}・音声（Google TTS）のキー <code>.google_api_key</code> がありません。<br>{% endif %}
-  {% if not keys.claude %}・AI（台本づくり・テーマ候補）には Claude のキー <code>.anthropic_api_key</code> が必要です。チャットでテーマを決めて台本を作る場合は不要です。<br>{% endif %}
-  {% if keys.illust == 'none' %}・イラストを自動で作るには <code>.gemini_api_key</code>（おすすめ）か <code>.openai_api_key</code> / <code>.anthropic_api_key</code> が必要です。<br>{% endif %}
-  {% if not keys.wp %}・ブログ発行には <code>.wp_user</code> と <code>.wp_app_password</code> が必要です。{% endif %}
+  {% if not keys.tts %}・음성(Google TTS) 키 <code>.google_api_key</code> 가 없습니다.<br>{% endif %}
+  {% if not keys.claude %}・AI(대본·주제 후보)에는 Claude 키 <code>.anthropic_api_key</code> 또는 서버의 Claude Code CLI 가 필요합니다. 채팅으로 대본을 만들 때는 필요 없습니다.<br>{% endif %}
+  {% if keys.illust == 'none' %}・일러스트 자동 생성에는 <code>.gemini_api_key</code>(추천) 또는 <code>.openai_api_key</code> / <code>.anthropic_api_key</code> 가 필요합니다.<br>{% endif %}
+  {% if not keys.wp %}・블로그 발행에는 <code>.wp_user</code> 와 <code>.wp_app_password</code> 가 필요합니다.{% endif %}
 </div>
 {% endif %}
 
-<h2>① 作る動画を選ぶ</h2>
+<h2>① 만들 영상 고르기</h2>
 <div class="card">
   <div class="row">
-    <input type="text" id="nt" placeholder="テーマを書いて追加（例: 登録実務講習はいつ申し込む？）" style="flex:1;min-width:240px">
-    <select id="nm"><option value="6">6分</option><option value="8">8分</option><option value="10" selected>10分</option><option value="12">12分</option><option value="15">15分</option></select>
-    <button class="btn" onclick="addTopic()">追加</button>
-    <button class="btn pri" onclick="suggest()" {% if not keys.claude %}disabled title="Claude のキーが必要"{% endif %}>伸びているテーマからAIで候補を出す</button>
-    {% if bench %}<a class="btn" href="{{ url_for('studio.bench') }}">ベンチマークを見る</a>{% endif %}
+    <input type="text" id="nt" placeholder="주제를 써서 추가 (예: 登録実務講習はいつ申し込む？)" style="flex:1;min-width:240px">
+    <select id="nm"><option value="6">6분</option><option value="8">8분</option><option value="10" selected>10분</option><option value="12">12분</option><option value="15">15분</option></select>
+    <button class="btn" onclick="addTopic()">추가</button>
+    <button class="btn pri" onclick="suggest()" {% if not keys.claude %}disabled title="Claude 키가 필요합니다"{% endif %}>잘 되는 주제에서 AI로 후보 뽑기</button>
+    {% if bench %}<a class="btn" href="{{ url_for('studio.bench') }}">벤치마크 보기</a>{% endif %}
   </div>
-  <p class="small">チャットで決めたテーマも、ここに並びます。「台本を作る」で AI が台本・YouTube文面・ブログ情報まで作り、下の一覧に出ます。</p>
+  <p class="small">채팅에서 정한 주제도 여기에 나옵니다. 「대본 만들기」를 누르면 AI가 대본·YouTube 문구·블로그 정보까지 만들어 아래 목록에 나옵니다.</p>
   <div id="topics"></div>
   <div class="job" id="job"></div>
 </div>
 
-<h2>② 作っている動画</h2>
+<h2>② 만들고 있는 영상</h2>
 <div class="card">
 {% for it in items %}
   <div class="vid">
     <div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a>
-      <div class="small">{{ it.n }}枚{% if it.total %}・{{ (it.total//60)|int }}分{{ (it.total%60)|int }}秒{% endif %}{% if it.created %}・作成 {{ it.created }}{% endif %}</div>
+      <div class="small">{{ it.n }}장{% if it.total %}・{{ (it.total//60)|int }}분 {{ (it.total%60)|int }}초{% endif %}{% if it.created %}・생성 {{ it.created }}{% endif %}</div>
       <div class="steps">{% set ns = namespace(on=true) %}{% for k, lab in steps %}<span class="{{ 'on' if ns.on else '' }}">{{ lab }}</span>{% if k == it.status %}{% set ns.on = false %}{% endif %}{% endfor %}</div>
     </div>
-    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">開く →</a>
+    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">열기 →</a>
   </div>
 {% else %}
-  <p class="small">まだありません。上でテーマを選んで「台本を作る」を押すか、チャットで作った台本が入るとここに出ます。</p>
+  <p class="small">아직 없습니다. 위에서 주제를 골라 「대본 만들기」를 누르거나, 채팅으로 만든 대본이 들어오면 여기에 나옵니다.</p>
 {% endfor %}
 </div>
 
-<h2>過去の動画（ショート切り出し用）</h2>
+<h2>지난 영상 (쇼츠 잘라내기용)</h2>
 <div class="card">
-  <details><summary>{{ archived|length }}本 — 開いてスライドを選ぶと、宣伝用ショートを作れます</summary>
+  <details><summary>{{ archived|length }}편 — 열어서 슬라이드를 고르면 홍보용 쇼츠를 만들 수 있습니다</summary>
   {% for it in archived %}
-  <div class="vid"><div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a><div class="small">{{ it.n }}枚</div></div>
-    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">ショートを作る →</a></div>
+  <div class="vid"><div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a><div class="small">{{ it.n }}장</div></div>
+    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">쇼츠 만들기 →</a></div>
   {% endfor %}
   </details>
 </div>
-{% if bench_missing %}<div class="warn">ベンチマーク分析はまだありません。VPS で <code>bash coaching/bench/run_bench.sh</code> を実行すると表示されます。</div>{% endif %}
+{% if bench_missing %}<div class="warn">벤치마크 분석이 아직 없습니다. VPS 에서 <code>bash coaching/bench/run_bench.sh</code> 를 실행하면 표시됩니다.</div>{% endif %}
 </div>
 <script>
 let TOPICS = {{ topics|tojson }};
 const esc = s => (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const SRC = {ai:"AI提案", chat:"チャット", manual:"手入力"};
+const SRC = {ai:"AI 제안", chat:"채팅", manual:"직접 입력"};
 function draw(){
   const box = document.getElementById("topics");
   const list = TOPICS.filter(t => t.status !== "skip");
-  box.innerHTML = list.length ? "" : '<p class="small">候補はまだありません。</p>';
+  box.innerHTML = list.length ? "" : '<p class="small">후보가 아직 없습니다.</p>';
   list.forEach(t => {
     const d = document.createElement("div"); d.className = "tp";
     d.innerHTML = `<div><span class="src ${t.source}">${SRC[t.source]||t.source}</span><span class="t">${esc(t.title)}</span>
-        <span class="small">・約${t.minutes||10}分</span>
-        ${t.why ? `<div class="small">${esc(t.why)}</div>` : ""}${t.notes ? `<details><summary class="small">方針メモ</summary><div class="small">${esc(t.notes)}</div></details>` : ""}</div>
-      <div class="row">${t.status === "done" && t.spec ? `<a class="btn" href="/studio/v/${t.spec}">台本を開く</a>`
-          : t.status === "making" ? `<span class="small">台本づくり中…</span>`
-          : `<button class="btn pri" data-op="make" {% if not keys.claude %}disabled{% endif %}>台本を作る</button>`}
-        <button class="btn" data-op="skip">見送る</button></div>`;
+        <span class="small">・약 ${t.minutes||10}분</span>
+        ${t.why ? `<div class="small">${esc(t.why)}</div>` : ""}${t.notes ? `<details><summary class="small">방침 메모</summary><div class="small">${esc(t.notes)}</div></details>` : ""}</div>
+      <div class="row">${t.status === "done" && t.spec ? `<a class="btn" href="/studio/v/${t.spec}">대본 열기</a>`
+          : t.status === "making" ? `<span class="small">대본 만드는 중…</span>`
+          : `<button class="btn pri" data-op="make" {% if not keys.claude %}disabled{% endif %}>대본 만들기</button>`}
+        <button class="btn" data-op="skip">보류</button></div>`;
     d.querySelector('[data-op="make"]')?.addEventListener("click", () => call({op:"make", id:t.id}));
     d.querySelector('[data-op="skip"]').addEventListener("click", () => call({op:"update", id:t.id, status:"skip"}));
     box.appendChild(d);
@@ -113,13 +113,13 @@ async function poll(){
     const j = await (await fetch("/studio/api/job")).json();
     if (!j.name){ return; }
     el.style.display = "block";
-    el.textContent = (j.running ? `${j.label} 実行中… ${j.elapsed}秒\n` : (j.rc === 0 ? `${j.label} 完了\n` : `${j.label} 失敗（コード ${j.rc}）\n`)) + j.log;
+    el.textContent = (j.running ? `${j.label} 실행 중… ${j.elapsed}초\n` : (j.rc === 0 ? `${j.label} 완료\n` : `${j.label} 실패 (코드 ${j.rc})\n`)) + j.log;
     el.scrollTop = el.scrollHeight;
-    if (!j.running && timer){ clearInterval(timer); timer = null; if (["script","suggest"].includes(j.kind)) location.reload(); }
+    if (!j.running && timer){ clearInterval(timer); timer = null; if (["script","suggest","keys"].includes(j.kind)) setTimeout(() => location.reload(), j.kind === "keys" ? 4000 : 0); }
   };
   await tick(); if (!timer) timer = setInterval(tick, 3000);
 }
 draw();
-fetch("/studio/api/job").then(r => r.json()).then(j => { if (j.running && ["script","suggest"].includes(j.kind)) poll(); });
+fetch("/studio/api/job").then(r => r.json()).then(j => { if (j.running && ["script","suggest","keys"].includes(j.kind)) poll(); });
 </script>
 {% endblock %}

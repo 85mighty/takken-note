@@ -318,7 +318,7 @@ def build(only=None, name="R8_goukaku"):
             shutil.copy(old, seg)
             if os.path.exists(os.path.join(OUT, f"s{i:02d}.png")): shutil.copy(os.path.join(OUT, f"s{i:02d}.png"), thumb)
         if os.path.exists(seg):
-            print(f"slide {i:02d} (変更なし・再利用)  {title}", flush=True)
+            print(f"슬라이드 {i:02d} (변경 없음·재사용)  {title}", flush=True)
         else:
             png, h = render(body, title, sub, f"s{i:02d}")
             mp3 = os.path.join(OUT, f"s{i:02d}.mp3")
@@ -329,7 +329,7 @@ def build(only=None, name="R8_goukaku"):
             tmp = seg + ".part.mp4"
             V.encode_subtitled(png, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, tmp, OUT, f"s{i:02d}")
             os.replace(tmp, seg); shutil.copy(png, thumb)
-            print(f"slide {i:02d} {total:5.0f}s  page_h={h}  {title}", flush=True)
+            print(f"슬라이드 {i:02d} {total:5.0f}초  page_h={h}  {title}", flush=True)
         shutil.copy(seg, old); open(old + ".key", "w").write(key)     # 旧スクリプト互換 (s01.mp4)
         segs.append(seg)
         man.append({"i": i, "title": title or "はじめに", "key": key, "seg": os.path.basename(seg),
@@ -342,7 +342,7 @@ def build(only=None, name="R8_goukaku"):
         for m in man: m["start"] = round(t, 2); t += m["dur"]
         json.dump({"name": name, "video": os.path.basename(final), "total": round(t, 2), "built_at": time.strftime("%Y-%m-%d %H:%M:%S"),
                    "slides": man}, open(os.path.join(OUT, f"{name}.manifest.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    print("完了:", final, f"{os.path.getsize(final)/1e6:.1f}MB {dur(final)/60:.1f}分", flush=True)
+    print("완료:", final, f"{os.path.getsize(final)/1e6:.1f}MB {dur(final)/60:.1f}분", flush=True)
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--only", type=int); a = ap.parse_args()

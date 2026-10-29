@@ -96,7 +96,7 @@ def gen_gemini(prompt, out):
             data = (p.get("inlineData") or p.get("inline_data") or {}).get("data")
             if data:
                 _save_raster(base64.b64decode(data), out); return out + ".png"
-    raise RuntimeError("Gemini から画像が返りませんでした: " + json.dumps(d, ensure_ascii=False)[:300])
+    raise RuntimeError("Gemini 가 이미지를 돌려주지 않았습니다: " + json.dumps(d, ensure_ascii=False)[:300])
 
 def gen_openai(prompt, out):
     d = _post("https://api.openai.com/v1/images/generations",
@@ -118,7 +118,7 @@ def gen_claude(prompt, out):
         msg = st.get_final_message()
     txt = "".join(b.text for b in msg.content if b.type == "text")
     m = re.search(r"<svg[\s\S]*</svg>", txt)
-    if not m: raise RuntimeError("SVG が返りませんでした (stop_reason=%s)" % msg.stop_reason)
+    if not m: raise RuntimeError("SVG 가 오지 않았습니다 (stop_reason=%s)" % msg.stop_reason)
     svg = re.sub(r"<(text|script|foreignObject)[\s\S]*?</\1>", "", m.group(0))
     import xml.dom.minidom
     xml.dom.minidom.parseString(svg)                         # 壊れた SVG は保存しない (例外 → 作り直し)
@@ -163,10 +163,10 @@ def ensure_spec(spec, only=None, log=print):
         if only and i != only: continue
         if s.get("illust_off") or (path_for(s) and not only): continue
         if not only and placement(s) == "none":
-            log(f"illust {i:02d} – 空きがないので絵なし  {s.get('title') or 'はじめに'}"); continue
+            log(f"일러스트 {i:02d} – 공간이 없어 그림 없음  {s.get('title') or 'はじめに'}"); continue
         try:
             p = ensure(s)
-            if p: n += 1; log(f"illust {i:02d} ✓ {os.path.basename(p)}  {s.get('title') or 'はじめに'}")
+            if p: n += 1; log(f"일러스트 {i:02d} ✓ {os.path.basename(p)}  {s.get('title') or 'はじめに'}")
         except Exception as e:
             log(f"illust {i:02d} ✗ {e}")
     return n
@@ -198,8 +198,8 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("spec", nargs="?"); ap.add_argument("--only", type=int); ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
     if a.check or not a.spec:
-        print("使える作り方:", providers(), "→ 使うもの:", provider()); sys.exit()
+        print("쓸 수 있는 방식:", providers(), "→ 사용:", provider()); sys.exit()
     path = a.spec
     sp = regen(path, a.only) if a.only else json.load(open(path, encoding="utf-8"))
     n = ensure_spec(sp, a.only)
-    print(f"イラスト {n}枚 作成 ({provider()})")
+    print(f"일러스트 {n}장 생성 ({provider()})")

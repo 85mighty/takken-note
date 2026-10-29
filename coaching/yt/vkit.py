@@ -233,7 +233,7 @@ def add_bgm(video, out, bgm=None, db=None):
     if bgm == "pad":
         os.makedirs(BGM_DIR, exist_ok=True); bgm = make_pad(os.path.join(BGM_DIR, "_pad_placeholder.wav"))
     if not bgm:
-        print("  BGM: bgm/ にファイルが無いので BGM なし (YT_BGM=pad で仮パッド音)", flush=True)
+        print("  BGM: bgm/ 에 파일이 없어 BGM 없음 (YT_BGM=pad 로 임시 패드음)", flush=True)
         if video != out: os.replace(video, out)
         return out
     total = dur(video)

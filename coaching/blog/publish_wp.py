@@ -22,7 +22,7 @@ def secret(env, fname):
     if v: return v.strip()
     p = os.path.join(ROOT, fname)
     if os.path.exists(p): return open(p, encoding="utf-8").read().strip()
-    raise WPError(f"{env} が未設定です。{p} に保存するか、環境変数で渡してください。")
+    raise WPError(f"{env} 가 설정되지 않았습니다. {p} 에 저장하거나 환경변수로 넘겨주세요.")
 
 def call(site, path, auth, method="GET", data=None, raw=None, headers=None):
     url = site.rstrip("/") + "/wp-json/wp/v2/" + path
@@ -34,10 +34,10 @@ def call(site, path, auth, method="GET", data=None, raw=None, headers=None):
     except urllib.error.HTTPError as e:
         msg = e.read().decode("utf-8", "replace")[:500]
         hint = ""
-        if e.code == 401: hint = "\n→ ユーザー名かアプリケーションパスワードが違います（ログイン用パスワードでは通りません）。"
-        if e.code == 403: hint = "\n→ そのユーザーに投稿の権限がないか、セキュリティ系プラグインが REST API を止めています。"
-        if e.code == 404: hint = "\n→ REST API が無効か、パーマリンク設定が「基本」のままの可能性があります。"
-        raise WPError(f"WordPress API エラー {e.code}: {msg}{hint}")
+        if e.code == 401: hint = "\n→ 사용자명이나 애플리케이션 비밀번호가 틀립니다 (로그인 비밀번호로는 안 됩니다)."
+        if e.code == 403: hint = "\n→ 그 사용자에게 글 작성 권한이 없거나, 보안 플러그인이 REST API 를 막고 있습니다."
+        if e.code == 404: hint = "\n→ REST API 가 꺼져 있거나 고유주소 설정이 「기본」일 수 있습니다."
+        raise WPError(f"WordPress API 오류 {e.code}: {msg}{hint}")
 
 def youtube_embed(url):
     return ('<!-- wp:embed {"url":"%s","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->\n'
@@ -75,9 +75,9 @@ def publish(content, title, slug, excerpt="", youtube="", draft=False, site=SITE
     post = {"title": title, "content": fill_youtube(content, youtube), "slug": slug, "excerpt": excerpt, "status": "draft" if draft else "publish"}
     found = call(site, "posts?" + urllib.parse.urlencode({"slug": slug, "status": "publish,draft,pending,future,private", "context": "edit"}), au)
     if found:
-        res = call(site, f"posts/{found[0]['id']}", au, "POST", post); action = "更新"
+        res = call(site, f"posts/{found[0]['id']}", au, "POST", post); action = "갱신"
     else:
-        res = call(site, "posts", au, "POST", post); action = "新規作成"
+        res = call(site, "posts", au, "POST", post); action = "새로 작성"
     return res["link"], action, res["status"], res.get("slug")
 
 def main():
@@ -90,7 +90,7 @@ def main():
         link, action, status, slug = publish(open(a.html, encoding="utf-8").read(), a.title, a.slug, a.excerpt, a.youtube, a.draft, a.site)
     except WPError as e:
         sys.exit(str(e))
-    print(f"{action}しました（{status}）: {link}")
+    print(f"{action} 완료 ({status}): {link}")
     if slug != a.slug:
         print(f"注意: スラッグが {slug} になりました（同じスラッグの固定ページ等があると変わります）。YouTube 概要欄のリンクも合わせてください。")
 

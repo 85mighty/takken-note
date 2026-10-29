@@ -81,7 +81,7 @@ def build(spec, image_url=None):
                 u = image_url(_raster(p))
                 parts.append(f"<!-- wp:image {{\"align\":\"center\",\"width\":\"420px\"}} -->\n<figure class=\"wp-block-image aligncenter is-resized\"><img src=\"{u}\" alt=\"\" style=\"width:420px\"/></figure>\n<!-- /wp:image -->")
             except Exception as e:
-                print("  イラストを上げられませんでした:", e, flush=True)
+                print("  일러스트를 올리지 못했습니다:", e, flush=True)
         c = _convert(s.get("body", ""))
         if c: parts.append(c)
         parts += _speech_paras(s.get("speech", ""))
@@ -118,9 +118,9 @@ def publish(spec_path, draft=False, log=print):
     content = build(spec, image_url=lambda p: publish_wp.upload_media(p, au=au))
     save_html(spec, content)
     yt = youtube_url(spec)
-    if not yt: log("※ YouTube の URL がまだないので、動画の埋め込みなしで発行します（URLが入ったらもう一度押すと埋め込まれます）")
+    if not yt: log("※ YouTube URL 이 아직 없어 영상 임베드 없이 발행합니다 (URL 을 넣고 다시 누르면 임베드됩니다)")
     link, action, status, slug = publish_wp.publish(content, blog["title"], blog["slug"], blog.get("excerpt", ""), yt, draft, au=au)
-    log(f"ブログを{action}しました（{status}）: {link}")
+    log(f"블로그 {action} 완료 ({status}): {link}")
     sp = json.load(open(spec_path, encoding="utf-8"))          # 発行中に編集されていてもよいように読み直す
     sp.setdefault("blog", {}).update({"slug": slug or blog["slug"], "title": blog["title"], "url": link})
     order = ["topic", "script", "draft", "voiced", "uploaded", "blogged"]
