@@ -18,7 +18,6 @@ STEPS = [("script", "대본"), ("draft", "초안 영상"), ("voiced", "음성 �
 SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "short_hook")
 
 bp = Blueprint("studio", __name__, url_prefix="/studio")
-JOB = {"proc": None, "name": None, "log": None, "started": None, "rc": None, "kind": None, "label": None}
 LOCK = threading.Lock()
 
 # ---------------- helpers ----------------
@@ -72,25 +71,42 @@ def _env():
         if os.path.exists(kp): env["GOOGLE_TTS_API_KEY"] = open(kp).read().strip()
     return env
 
-def _job_state():
-    p = JOB["proc"]
-    running = p is not None and p.poll() is None
-    if p is not None and not running and JOB["rc"] is None: JOB["rc"] = p.returncode
-    tail = ""
-    if JOB["log"] and os.path.exists(JOB["log"]):
-        with open(JOB["log"], encoding="utf-8", errors="replace") as f: tail = "".join(f.readlines()[-30:])
-    return {"running": running, "name": JOB["name"], "kind": JOB["kind"], "label": JOB["label"], "rc": JOB["rc"], "log": tail,
-            "elapsed": int(time.time() - JOB["started"]) if JOB["started"] else 0}
+JOBDIR = os.path.join(OUT, "_jobs")
+CUR = os.path.join(JOBDIR, "current.json")
 
-def _start(name, kind, label, argv):
+def _alive(pid):
+    try: os.kill(pid, 0); return True
+    except OSError: return False
+
+def _job_state():
+    """作業の状態。作業は別セッションで動かし current.json に記録するので、スタジオが再起動しても追える"""
+    j = _json(CUR) or {}
+    if not j: return {"running": False, "name": None, "kind": None, "label": None, "rc": None, "log": "", "elapsed": 0}
+    rcf = j["log"] + ".rc"
+    rc = int(open(rcf).read().strip() or -1) if os.path.exists(rcf) else None
+    running = rc is None and _alive(j["pid"])
+    if rc is None and not running: rc = -9          # 結果を書かずに止まった（サーバー再起動など）
+    tail = ""
+    if os.path.exists(j["log"]):
+        with open(j["log"], encoding="utf-8", errors="replace") as f: tail = "".join(f.readlines()[-30:])
+    if rc == -9: tail += "\n※ 작업이 중간에 멈췄습니다 (서버 재시작 등). 다시 눌러주세요."
+    end = os.path.getmtime(rcf) if os.path.exists(rcf) else time.time()
+    return {"running": running, "name": j["name"], "kind": j["kind"], "label": j["label"], "rc": rc, "log": tail,
+            "elapsed": int((end if not running else time.time()) - j["started"]), "topic": j.get("topic")}
+
+def _start(name, kind, label, argv, topic=None):
+    import shlex
     with LOCK:
         st = _job_state()
         if st["running"]: return jsonify(ok=False, error=f"다른 작업이 진행 중입니다 ({st['label']} · {st['name']}). 끝난 뒤에 눌러주세요"), 409
-        logdir = os.path.join(OUT, "_jobs"); os.makedirs(logdir, exist_ok=True)
-        log = os.path.join(logdir, f"{kind}.log")
-        f = open(log, "w", encoding="utf-8")
-        JOB.update(proc=subprocess.Popen([PY, "-u"] + argv, stdout=f, stderr=subprocess.STDOUT, env=_env(), cwd=HERE),
-                   name=name, kind=kind, label=label, log=log, started=time.time(), rc=None)
+        os.makedirs(JOBDIR, exist_ok=True)
+        log = os.path.join(JOBDIR, f"{kind}.log")
+        if os.path.exists(log + ".rc"): os.remove(log + ".rc")
+        # 裏で切り離して動かす（スタジオが再起動・再デプロイされても作業は止まらない）
+        q = shlex.quote
+        cmd = f"( {shlex.join([PY, '-u'] + argv)}; echo $? > {q(log + '.rc')} ) > {q(log)} 2>&1 < /dev/null & echo $!"
+        r = subprocess.run(["sh", "-c", cmd], capture_output=True, text=True, env=_env(), cwd=HERE, start_new_session=True)
+        _write(CUR, {"pid": int(r.stdout.strip()), "name": name, "kind": kind, "label": label, "log": log, "started": time.time(), "topic": topic})
     return jsonify(ok=True)
 
 def _keys_status():
@@ -263,7 +279,7 @@ def api_topics():
         t = next((x for x in topics.load()["topics"] if x["id"] == a.get("id")), None)
         if not t: abort(404)
         topics.update(t["id"], status="making")
-        return _start("topics", "script", f"대본 만들기: {t['title'][:20]}",
+        return _start("topics", "script", f"대본 만들기: {t['title'][:20]}", topic=t["id"], argv=
                       ["scriptgen.py", t["title"], "--minutes", str(t.get("minutes") or 10), "--notes", t.get("notes", "") + ("\n" + t["why"] if t.get("why") else ""), "--topic-id", t["id"]])
     return jsonify(ok=True, topics=topics.load()["topics"])
 

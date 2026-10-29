@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 #    スタジオ(/studio)で直した動画の定義(coaching/yt/specs)も同じく先にコミット
 #    スタジオで作ったもの（台本・テーマ候補・URL台帳・字幕スタイル・イラスト・ブログ原稿）も同じく
 KEEP="takken_db.json coaching/yt/specs coaching/yt/topics.json coaching/yt/videos.json coaching/yt/sub_style.json coaching/yt/illust coaching/blog"
-git add -A -- $KEEP 2>/dev/null || true
+for p in $KEEP; do [ -e "$p" ] && git add -A -- "$p"; done   # 없いパスが混ざると全部失敗するので1つずつ
 if ! git diff --cached --quiet; then
   git commit -m "VPS 오답 기록・スタジオ編集 $(date +%F_%H%M)"
 fi
