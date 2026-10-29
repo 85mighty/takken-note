@@ -1,17 +1,207 @@
 {
  "channel": "https://www.youtube.com/@nippon-real",
  "videos": [
-  {"key": "R8_goukaku", "label": "合格点予想まとめ 第1弾", "match": ["合格点予想まとめ", "各社"]},
-  {"key": "R8_goukaku2", "label": "合格点予想まとめ 第2弾", "match": ["合格点予想まとめ", "第2弾"]},
-  {"key": "R8_keikou", "label": "令和7年と令和8年で試験は何が変わったのか", "match": ["令和7年と令和8年"]},
-  {"key": "R8_happyou", "label": "合格発表の日に何をどう見るか", "match": ["合格発表の日"]},
-  {"key": "R8_q33", "label": "割れ問「問33」正解は1か4か", "match": ["問33"]},
-  {"key": "R8_merit", "label": "宅建に受かったら何が変わる？", "match": ["受かったら"]},
-  {"key": "R8_menjo", "label": "5問免除（登録講習）完全ガイド", "match": ["5問免除"]},
-  {"key": "R8_kenri", "label": "権利関係 問1〜問14 解答解説", "match": ["権利関係", "問1"]},
-  {"key": "R8_horei", "label": "法令上の制限 問15〜問22 解答解説", "match": ["法令上の制限", "問15"]},
-  {"key": "R8_zei", "label": "税・その他 問23〜25・問46〜50 解答解説", "match": ["税", "問23"]},
-  {"key": "R8_gyoho", "label": "宅建業法 問26〜問45 解答解説", "match": ["宅建業法", "問26"]},
-  {"key": "R8_full", "label": "令和8年度 解答速報 全50問", "match": ["解答速報", "合格点数"]}
- ]
+  {
+   "key": "R8_goukaku",
+   "label": "合格点予想まとめ 第1弾",
+   "match": [
+    "合格点予想まとめ",
+    "各社"
+   ],
+   "url": "https://youtu.be/jw57lLO9m7M",
+   "yt_title": "【2026年 宅建】合格点予想まとめ｜各社の予想・難易度講評・過去10年の合格点と11月25日までにやること"
+  },
+  {
+   "key": "R8_goukaku2",
+   "label": "合格点予想まとめ 第2弾",
+   "match": [
+    "合格点予想まとめ",
+    "第2弾"
+   ],
+   "url": "https://youtu.be/TN7nZMSVw5I",
+   "yt_title": "【2026年 宅建】合格点予想まとめ 第2弾｜1週間で予想はどう動いた？割れ問・問33の扱いと、点数別の今の立ち位置（10/25 update）"
+  },
+  {
+   "key": "R8_keikou",
+   "label": "令和7年と令和8年で試験は何が変わったのか",
+   "match": [
+    "令和7年と令和8年"
+   ],
+   "url": "https://youtu.be/i_SYXmaZ5Ao",
+   "yt_title": "【2026年 宅建】令和7年と令和8年で試験は何が変わったのか｜過去問が通用しなかった理由と、合格点が30点台前半に落ちた年の共通点"
+  },
+  {
+   "key": "R8_happyou",
+   "label": "合格発表の日に何をどう見るか",
+   "match": [
+    "合格発表の日"
+   ],
+   "url": "https://youtu.be/-ScrkRK2v6w",
+   "yt_title": "【2026年 宅建】合格発表の日に何をどう見るか｜11月25日 9時30分の確認手順・合格証書・登録実務講習・資格登録・宅建士証までの費用と期間"
+  },
+  {
+   "key": "R8_q33",
+   "label": "割れ問「問33」正解は1か4か",
+   "match": [
+    "問33"
+   ],
+   "url": "https://youtu.be/Wqeoqjk-2Sg",
+   "yt_title": "【2026年 宅建】割れ問「問33」正解は1か4か｜専任の宅建士・個数問題を肢ごとに検証、自己採点への影響と没問の可能性"
+  },
+  {
+   "key": "R8_merit",
+   "label": "宅建に受かったら何が変わる？",
+   "match": [
+    "受かったら"
+   ],
+   "url": "https://youtu.be/0GjwirBrt-8",
+   "yt_title": "【宅建】受かったら何が変わる？｜宅建士だけの3つの仕事・資格手当の相場・年収・不動産以外での使い道"
+  },
+  {
+   "key": "R8_menjo",
+   "label": "5問免除（登録講習）完全ガイド",
+   "match": [
+    "5問免除"
+   ]
+  },
+  {
+   "key": "R8_kenri",
+   "label": "権利関係 問1〜問14 解答解説",
+   "match": [
+    "権利関係",
+    "問1"
+   ],
+   "url": "https://youtu.be/O-CPIyizphA",
+   "yt_title": "【2026年 宅建 解答解説】権利関係 問1〜問14｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_horei",
+   "label": "法令上の制限 問15〜問22 解答解説",
+   "match": [
+    "法令上の制限",
+    "問15"
+   ],
+   "url": "https://youtu.be/EtIyq64dBYs",
+   "yt_title": "【2026年 宅建 解答解説】法令上の制限 問15〜問22｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_zei",
+   "label": "税・その他 問23〜25・問46〜50 解答解説",
+   "match": [
+    "税",
+    "問23"
+   ],
+   "url": "https://youtu.be/5j4rSH1O0A4",
+   "yt_title": "【2026年 宅建 解答解説】税・その他 問23〜25・問46〜50｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_gyoho",
+   "label": "宅建業法 問26〜問45 解答解説",
+   "match": [
+    "宅建業法",
+    "問26"
+   ],
+   "url": "https://youtu.be/jIJCqT3l2Fs",
+   "yt_title": "【2026年 宅建 解答解説】宅建業法 問26〜問45 全20問｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_full",
+   "label": "令和8年度 解答速報 全50問",
+   "match": [
+    "解答速報",
+    "合格点数"
+   ],
+   "url": "https://youtu.be/TCha9TdbU9w",
+   "yt_title": "令和8年度宅建士試験解答速報　合格点数31点か30点"
+  },
+  {
+   "key": "PTyLS-G7e7Q",
+   "label": "【2026年宅建】建築基準法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "yt_title": "【2026年宅建】建築基準法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "url": "https://youtu.be/PTyLS-G7e7Q",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "4dtxr5zO16Q",
+   "label": "【2026年宅建】都市計画法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "yt_title": "【2026年宅建】都市計画法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "url": "https://youtu.be/4dtxr5zO16Q",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "XzyLpMVJGI4",
+   "label": "看護師を目指すならどの学校？大学・専門・短大の違いと選び方",
+   "yt_title": "看護師を目指すならどの学校？大学・専門・短大の違いと選び方",
+   "url": "https://youtu.be/XzyLpMVJGI4",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "k0y_Pgv1ry4",
+   "label": "看護師給料いくらか1年目〜10年目までの手取りを全公開！",
+   "yt_title": "看護師給料いくらか1年目〜10年目までの手取りを全公開！",
+   "url": "https://youtu.be/k0y_Pgv1ry4",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "azoyc4BTOcA",
+   "label": "【2025年最新版】日本の看護師になるには？国家試験・職場のリアル・将来性まで徹",
+   "yt_title": "【2025年最新版】日本の看護師になるには？国家試験・職場のリアル・将来性まで徹底解説！",
+   "url": "https://youtu.be/azoyc4BTOcA",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "_2XrR0HLzj4",
+   "label": "【シニア住宅の真実】実は過酷？シルバータウンの現実と後悔の声",
+   "yt_title": "【シニア住宅の真実】実は過酷？シルバータウンの現実と後悔の声",
+   "url": "https://youtu.be/_2XrR0HLzj4",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "A2qTZ-Jy0Yw",
+   "label": "2025年4月から、すべての企業に「65歳までの雇用確保」が義務化されます！",
+   "yt_title": "2025年4月から、すべての企業に「65歳までの雇用確保」が義務化されます！",
+   "url": "https://youtu.be/A2qTZ-Jy0Yw",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "N09_8vzFdso",
+   "label": "【速報】1人2万円支給は本当？2025年からの現金給付の全貌をわかりやすく解説！",
+   "yt_title": "【速報】1人2万円支給は本当？2025年からの現金給付の全貌をわかりやすく解説！",
+   "url": "https://youtu.be/N09_8vzFdso",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "YrrYluLI6lY",
+   "label": "日本年金、こう変わる！2025年からの3つの重要ポイント【最新版】",
+   "yt_title": "日本年金、こう変わる！2025年からの3つの重要ポイント【最新版】",
+   "url": "https://youtu.be/YrrYluLI6lY",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "430Va3MKT5g",
+   "label": "宅建2026 自己採点32点は受かる？｜合格点予想と比べると #宅建 #shor",
+   "yt_title": "宅建2026 自己採点32点は受かる？｜合格点予想と比べると #宅建 #shorts",
+   "url": "https://youtube.com/shorts/430Va3MKT5g",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "1HBpXyXYABY",
+   "label": "宅建2026 自己採点31点は受かる？｜合格点予想と比べると #宅建 #shor",
+   "yt_title": "宅建2026 自己採点31点は受かる？｜合格点予想と比べると #宅建 #shorts",
+   "url": "https://youtube.com/shorts/1HBpXyXYABY",
+   "short": true,
+   "auto": true
+  }
+ ],
+ "fetched_at": "2026-10-29 14:07"
 }
