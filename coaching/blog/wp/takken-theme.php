@@ -65,7 +65,7 @@ add_action('wp_body_open', function () {
 <div class="ym-header"><div class="ym-header-in">
   <a class="ym-brand" href="<?php echo esc_url(home_url('/')); ?>">
     <span class="ym-brand-en">宅建<span>ノート</span></span>
-    <span class="ym-brand-kr">宅建ノート｜行政手続き・申請ガイド</span>
+    <span class="ym-brand-kr">宅建ノート｜宅建士試験の解説・暗記ノート</span>
   </a>
   <nav class="ym-nav" aria-label="메인">
     <a href="<?php echo esc_url(home_url('/')); ?>" class="<?php echo is_front_page() ? 'ym-on' : ''; ?>">ホーム</a>
@@ -116,7 +116,7 @@ add_action('wp_body_open', function () {
         $latest = get_posts(array('numberposts' => 3, 'post_status' => 'publish'));
         ?>
 <section class="ym-hero"><div class="ym-hero-in">
-  <p class="ym-eyebrow">宅建ノート · 行政手続き・申請ガイド</p>
+  <p class="ym-eyebrow">宅建ノート · YouTube「NIPPONリアル」の解説ノート</p>
   <h1 class="ym-h1">過去問は、解きっぱなしにしない。</h1>
   <p class="ym-sub">年度別の過去問解説、分野別の要点整理、解説PDFのダウンロードまで。宅建士試験の独学を支える復習ノートです。</p>
   <?php if ($cats) : ?>
@@ -136,7 +136,7 @@ add_action('wp_body_open', function () {
     </ul>
   </div>
   <?php endif; ?>
-  <p class="ym-stats">全<strong><?php echo esc_html($total); ?></strong>件のガイド 手続き・申請ガイド</p>
+  <p class="ym-stats">全<strong><?php echo esc_html($total); ?></strong>件の記事</p>
 </div></section>
         <?php
     }
@@ -272,19 +272,20 @@ body.admin-bar .ym-header{top:32px}
 .ym-catcard em{font-style:normal;font-size:12px;color:var(--ym-blue);font-weight:700;margin-top:4px}
 
 /* 카드 그리드 */
-.ym-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:start}
-.ym-card{background:#fff;border:1px solid #e6e8eb;border-radius:12px;overflow:hidden;transition:transform .15s,box-shadow .15s}
-.ym-card:hover{transform:translateY(-4px);box-shadow:0 8px 22px rgba(16,28,51,.1)}
-.ym-thumb{display:block;line-height:0;background:var(--ym-navy)}
-.ym-thumb img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
-.ym-noimg{display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;color:var(--ym-gold);font-weight:900;letter-spacing:.16em;font-size:15px}
-.ym-cbody{padding:14px 16px 18px}
+/* 행 형식: 썸네일(16:9) | 제목・날짜・설명 */
+.ym-grid{display:flex;flex-direction:column;gap:14px}
+.ym-card{display:grid;grid-template-columns:300px minmax(0,1fr);column-gap:20px;align-items:center;background:#fff;border:1px solid #e6e8eb;border-radius:14px;padding:14px;transition:transform .15s,box-shadow .15s}
+.ym-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(16,28,51,.1)}
+.ym-thumb{display:block;line-height:0;background:var(--ym-navy);border-radius:10px;overflow:hidden}
+.ym-thumb img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
+.ym-noimg{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;color:var(--ym-gold);font-weight:900;letter-spacing:.16em;font-size:15px}
+.ym-cbody{padding:0}
 .ym-cat{display:inline-block;background:#d94f46;color:#fff;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px}
 .ym-ctitle{font-size:16.5px !important;font-weight:700 !important;line-height:1.5 !important;margin:8px 0 0 !important}
 .ym-ctitle a{color:#1a5f9e;text-decoration:none}
 .ym-ctitle a:hover{text-decoration:underline}
 .ym-date{display:block;font-size:12px;color:#8a929b;margin-top:4px}
-.ym-cdesc{font-size:13.5px;line-height:1.7;color:#5b6570;margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ym-cdesc{font-size:14px;line-height:1.7;color:#5b6570;margin:8px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* 페이지네이션 */
 .ym-pager{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;margin:28px 0 8px;background:#fff;border-radius:12px;padding:16px}
@@ -328,7 +329,7 @@ body:is(.single,.page) .wp-block-group.has-small-font-size{margin-bottom:18px !i
 <?php echo file_get_contents(__DIR__ . '/takken-content.css'); ?>
 
 /* ===== 모바일 ===== */
-@media(max-width:900px){.ym-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-catgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.ym-card{grid-template-columns:220px minmax(0,1fr)}.ym-catgrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){
   body{overflow-x:hidden}
   .ym-header-in{padding:10px 12px;gap:8px}
@@ -346,10 +347,10 @@ body:is(.single,.page) .wp-block-group.has-small-font-size{margin-bottom:18px !i
   .ym-catgrid{grid-template-columns:1fr 1fr;gap:10px}
   .ym-catcard{padding:13px}
   .ym-grid{display:block}
-  .ym-card{display:grid;grid-template-columns:104px minmax(0,1fr);column-gap:12px;align-items:start;padding:10px;margin-bottom:10px;border-radius:12px}
+  .ym-card{display:grid;grid-template-columns:132px minmax(0,1fr);column-gap:12px;align-items:start;padding:10px;margin-bottom:10px;border-radius:12px}
   .ym-card:hover{transform:none}
   .ym-thumb{grid-row:1/span 1;border-radius:9px;overflow:hidden}
-  .ym-thumb img,.ym-noimg{width:104px !important;height:104px !important;aspect-ratio:1/1;font-size:11px}
+  .ym-thumb img,.ym-noimg{width:132px !important;height:auto !important;aspect-ratio:16/9;font-size:11px}
   .ym-cbody{padding:0}
   .ym-ctitle{font-size:14px !important;line-height:1.45 !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px !important}
   .ym-cat{font-size:10.5px;padding:2px 8px}
