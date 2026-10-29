@@ -20,6 +20,8 @@ a{color:#1a3d7c}
 <nav class="sn">
   <span class="brand">NIPPONリアル スタジオ</span>
   <a href="{{ url_for('studio.index') }}" {% if request.endpoint == 'studio.index' or request.endpoint == 'studio.edit' %}class="on"{% endif %}>動画</a>
+  <a href="{{ url_for('studio.style_page') }}" {% if request.endpoint == 'studio.style_page' %}class="on"{% endif %}>字幕スタイル</a>
+  <a href="{{ url_for('studio.registry_page') }}" {% if request.endpoint == 'studio.registry_page' %}class="on"{% endif %}>URL台帳</a>
   <a href="{{ url_for('studio.bench') }}" {% if request.endpoint == 'studio.bench' %}class="on"{% endif %}>ベンチマーク</a>
   {% if session.get('authed') %}<a class="sp" href="{{ url_for('logout') }}">ログアウト</a>{% endif %}
 </nav>

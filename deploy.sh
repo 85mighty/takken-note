@@ -6,8 +6,10 @@ cd "$(dirname "$0")"
 
 # 1) VPS에서 쌓인 오답 기록(takken_db.json)을 먼저 커밋해 두고 pull (기록 유실 방지)
 #    スタジオ(/studio)で直した動画の定義(coaching/yt/specs)も同じく先にコミット
-if ! git diff --quiet -- takken_db.json coaching/yt/specs; then
-  git add takken_db.json coaching/yt/specs
+#    スタジオで作ったもの（台本・テーマ候補・URL台帳・字幕スタイル・イラスト・ブログ原稿）も同じく
+KEEP="takken_db.json coaching/yt/specs coaching/yt/topics.json coaching/yt/videos.json coaching/yt/sub_style.json coaching/yt/illust coaching/blog"
+git add -A -- $KEEP 2>/dev/null || true
+if ! git diff --cached --quiet; then
   git commit -m "VPS 오답 기록・スタジオ編集 $(date +%F_%H%M)"
 fi
 git pull --rebase --autostash

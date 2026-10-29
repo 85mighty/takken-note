@@ -1,0 +1,45 @@
+{% extends "studio_base.html" %}
+{% block title %}URL台帳｜スタジオ{% endblock %}
+{% block body %}
+<style>
+.w{max-width:1100px;margin:0 auto}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
+th,td{border-bottom:1px solid #eee;padding:6px;text-align:left;vertical-align:middle}
+th{background:#0f1b33;color:#fff}
+input{width:100%;border:1px solid #ddd;border-radius:5px;padding:4px 6px;font-size:13px}
+button{padding:7px 12px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;cursor:pointer}
+button.pri{background:#1a3d7c;color:#fff}
+.hint{font-size:12px;color:#777}
+.job{background:#0f1b33;color:#dfe6f3;border-radius:8px;padding:10px;font:12px/1.45 monospace;white-space:pre-wrap;max-height:200px;overflow:auto;display:none;margin:8px 0}
+.auto td{color:#888}
+</style>
+<div class="w">
+<h2>URL台帳（動画のURL・関連動画リンク）</h2>
+<p class="hint">ここに URL がある動画は、YouTube 概要欄の「関連動画」とブログに自動でリンクされます。「チャンネルから取得」は チャンネル {{ reg.channel }} の動画一覧からタイトルで照合して URL を埋めます（最終取得: {{ reg.fetched_at or "まだ" }}）。</p>
+<p><button class="pri" onclick="fetchCh()">チャンネルから取得</button> <button onclick="saveAll()">保存</button> <span id="msg" class="hint"></span></p>
+<div class="job" id="job"></div>
+<table><tr><th style="width:18%">key</th><th style="width:32%">名前</th><th>URL</th><th style="width:18%">照合語（空白区切り）</th></tr>
+{% for v in reg.videos %}
+<tr class="{{ 'auto' if v.auto }}" data-key="{{ v.key }}"><td>{{ v.key }}{% if v.short %} <span class="hint">ショート</span>{% endif %}</td>
+<td><input data-f="label" value="{{ v.label or v.yt_title or '' }}"></td>
+<td><input data-f="url" value="{{ v.url or '' }}" placeholder="https://youtu.be/..."></td>
+<td><input data-f="match" value="{{ (v.match or [])|join(' ') }}"></td></tr>
+{% endfor %}
+</table>
+</div>
+<script>
+async function saveAll(){
+  const videos = [...document.querySelectorAll("tr[data-key]")].map(tr => ({key: tr.dataset.key,
+    label: tr.querySelector('[data-f="label"]').value, url: tr.querySelector('[data-f="url"]').value, match: tr.querySelector('[data-f="match"]').value}));
+  const r = await fetch("/studio/api/registry", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({videos})});
+  document.getElementById("msg").textContent = (await r.json()).ok ? "保存しました" : "失敗しました";
+}
+async function fetchCh(){
+  const r = await fetch("/studio/api/registry", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({op:"fetch"})});
+  const d = await r.json(); if (!d.ok){ alert(d.error); return; }
+  const el = document.getElementById("job"); el.style.display = "block";
+  const t = setInterval(async () => { const j = await (await fetch("/studio/api/job")).json();
+    el.textContent = j.log; if (!j.running){ clearInterval(t); if (j.rc === 0) location.reload(); } }, 2000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{
+ "channel": "https://www.youtube.com/@nippon-real",
+ "videos": [
+  {"key": "R8_goukaku", "label": "合格点予想まとめ 第1弾", "match": ["合格点予想まとめ", "各社"]},
+  {"key": "R8_goukaku2", "label": "合格点予想まとめ 第2弾", "match": ["合格点予想まとめ", "第2弾"]},
+  {"key": "R8_keikou", "label": "令和7年と令和8年で試験は何が変わったのか", "match": ["令和7年と令和8年"]},
+  {"key": "R8_happyou", "label": "合格発表の日に何をどう見るか", "match": ["合格発表の日"]},
+  {"key": "R8_q33", "label": "割れ問「問33」正解は1か4か", "match": ["問33"]},
+  {"key": "R8_merit", "label": "宅建に受かったら何が変わる？", "match": ["受かったら"]},
+  {"key": "R8_menjo", "label": "5問免除（登録講習）完全ガイド", "match": ["5問免除"]},
+  {"key": "R8_kenri", "label": "権利関係 問1〜問14 解答解説", "match": ["権利関係", "問1"]},
+  {"key": "R8_horei", "label": "法令上の制限 問15〜問22 解答解説", "match": ["法令上の制限", "問15"]},
+  {"key": "R8_zei", "label": "税・その他 問23〜25・問46〜50 解答解説", "match": ["税", "問23"]},
+  {"key": "R8_gyoho", "label": "宅建業法 問26〜問45 解答解説", "match": ["宅建業法", "問26"]},
+  {"key": "R8_full", "label": "令和8年度 解答速報 全50問", "match": ["解答速報", "合格点数"]}
+ ]
+}

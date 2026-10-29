@@ -148,21 +148,34 @@ def band_png(text, name, outdir, width=W, font=46):
         y += lh
     im.save(png); return png
 
-def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name):
-    """スクロール動画 + 文ごとの字幕帯 (mark 時刻で切替)"""
+SUB_STYLE = None   # spec ごとの字幕スタイル上書き（build_spec が設定）
+
+def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name, width=W, height=H):
+    """スクロール動画 + 字幕。字幕は文を自然な位置で区切り（subs.chunk）、1枚ずつ切り替える。
+    字幕は1本の映像トラック（concat）にまとめて重ねる → 画像を何枚重ねても速い"""
+    import subs
     if not HIGHLIGHT or not sents:
         return encode(png, None, mp3, expr, total, out)
-    bands = [band_png(s, f"{name}_b{i}", outdir) for i, s in enumerate(sents)]
-    sp = spans(tp, len(sents), total)
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-framerate", str(FPS), "-i", png, "-i", mp3]
-    for b in bands: cmd += ["-loop", "1", "-framerate", str(FPS), "-i", b]
-    fc = f"[0:v]crop={W}:{H}:0:'{expr}'[v0]"
-    for i, (t0, t1) in enumerate(sp):
-        fc += f";[v{i}][{i+2}:v]overlay=0:{H-BAND}:enable='between(t,{t0:.3f},{t1:.3f})'[v{i+1}]"
-    fc += f";[v{len(sp)}]format=yuv420p[v];[1:a]apad=whole_dur={total:.2f}[a]"
-    cmd += ["-filter_complex", fc, "-map", "[v]", "-map", "[a]", "-t", f"{total:.2f}", "-r", str(FPS),
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-tune", "stillimage",
-            "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", out]
+    st = subs.load_style(SUB_STYLE)
+    items = subs.timed_chunks(sents, spans(tp, len(sents), total), int(st.get("max_chars", 20)))
+    bh = subs.band_height(st); y = height - int(st.get("bottom", 56)) - bh
+    blank = os.path.join(outdir, f"_blank_{width}x{bh}.png")
+    if not os.path.exists(blank): Image.new("RGBA", (width, bh), (0, 0, 0, 0)).save(blank)
+    entries, t = [], 0.0
+    for k, (text, t0, t1) in enumerate(items):
+        if t0 > t + 0.01: entries.append((blank, t0 - t))
+        entries.append((subs.render(text, os.path.join(outdir, f"{name}_c{k}.png"), width, st), t1 - t0)); t = t1
+    if total > t + 0.01: entries.append((blank, total - t))
+    lst = os.path.join(outdir, f"{name}_subs.txt")
+    with open(lst, "w") as f:
+        for p_, d_ in entries: f.write(f"file '{os.path.abspath(p_)}'\nduration {max(d_, 0.04):.3f}\n")
+        f.write(f"file '{os.path.abspath(entries[-1][0])}'\n")
+    fc = (f"[0:v]fps={FPS},crop={width}:{height}:0:'{expr}'[bg];[2:v]fps={FPS},format=rgba[sub];"
+          f"[bg][sub]overlay=0:{y}:eof_action=pass,format=yuv420p[v];[1:a]apad=whole_dur={total:.2f}[a]")
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-framerate", "2", "-i", png, "-i", mp3,
+           "-f", "concat", "-safe", "0", "-i", lst, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
+           "-t", f"{total:.2f}", "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-tune", "stillimage",
+           "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", out]
     subprocess.run(cmd, check=True)
 
 # ---------------- 画面内ハイライト (問題動画: 読んでいる肢の行を黄色に) ----------------

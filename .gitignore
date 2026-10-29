@@ -19,3 +19,9 @@ coaching/yt/__pycache__/
 coaching/yt/specs/.history/
 .studio_password
 .studio_secret_key
+.anthropic_api_key
+.gemini_api_key
+.openai_api_key
+coaching/yt/illust/_blank.png
+coaching/yt/illust/*.json
+coaching/yt/sub_style.json.tmp

@@ -1,32 +1,125 @@
 {% extends "studio_base.html" %}
-{% block title %}スタジオ｜動画の検収{% endblock %}
+{% block title %}スタジオ｜NIPPONリアル{% endblock %}
 {% block body %}
 <style>
-.st-wrap{max-width:980px;margin:0 auto}
-.st-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border:1px solid #ddd;border-radius:10px;margin:10px 0;background:#fff}
-.st-card a.t{font-weight:bold;font-size:17px;text-decoration:none;color:#1a3d7c}
-.st-meta{color:#666;font-size:13px}
-.st-bench{display:block;padding:16px;border-radius:10px;background:#0f1b33;color:#fff;text-decoration:none;margin:14px 0}
-.st-bench b{color:#ffd166}
-.st-note{background:#fff3c4;border-left:6px solid #e0a800;padding:10px 14px;border-radius:6px;font-size:14px}
-code{background:#f2f2f2;padding:1px 5px;border-radius:4px}
+.w{max-width:1100px;margin:0 auto}
+.card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:14px 16px;margin:10px 0}
+h2{margin:18px 0 6px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:#1a3d7c;color:#fff}
+.btn:disabled{opacity:.5}
+.small{font-size:12px;color:#666}
+.tp{display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid #eee;padding:10px 0}
+.tp:first-child{border-top:0}
+.tp .t{font-weight:bold}
+.src{font-size:11px;padding:1px 7px;border-radius:9px;background:#eef;color:#335;margin-right:6px}
+.src.ai{background:#e8f6ee;color:#1f7a45}.src.chat{background:#fff3c4;color:#7a5a00}
+.steps{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.steps span{font-size:11px;padding:2px 8px;border-radius:9px;background:#eee;color:#888}
+.steps span.on{background:#1a3d7c;color:#fff}
+.vid{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0}
+.vid:first-child{border-top:0}
+.vid a.t{font-weight:bold;font-size:16px;text-decoration:none}
+input[type=text],textarea,select{border:1px solid #ccc;border-radius:6px;padding:6px 8px;font-size:14px}
+.job{background:#0f1b33;color:#dfe6f3;border-radius:8px;padding:10px 12px;font:12px/1.45 monospace;white-space:pre-wrap;max-height:220px;overflow:auto;display:none}
+.warn{background:#fff3c4;border-left:6px solid #e0a800;padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0}
+details summary{cursor:pointer;color:#1a3d7c}
 </style>
-<div class="st-wrap">
-<h2>スタジオ（動画の検収・修正）</h2>
-{% if bench %}
-<a class="st-bench" href="{{ url_for('studio.bench') }}"><b>宅建 YouTube ベンチマーク分析</b>　テーマ別・タイトルの型別に、何が再生されているかを見る →</a>
-{% else %}
-<div class="st-note">ベンチマーク分析はまだありません。VPS で <code>bash coaching/bench/run_bench.sh</code> を実行すると、ここに表示されます。</div>
-{% endif %}
-<h3>スライド型の動画</h3>
-{% for it in items %}
-<div class="st-card">
-  <div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a>
-    <div class="st-meta">{{ it.name }}・{{ it.n }}枚{% if it.total %}・{{ (it.total//60)|int }}分{{ (it.total%60)|int }}秒・書き出し {{ it.built_at }}{% else %}・未書き出し{% endif %}</div></div>
-  <a href="{{ url_for('studio.edit', name=it.name) }}">開く →</a>
+<div class="w">
+{% if not keys.claude or not keys.tts or keys.illust == 'none' or not keys.wp %}
+<div class="warn">
+  {% if not keys.tts %}・音声（Google TTS）のキー <code>.google_api_key</code> がありません。<br>{% endif %}
+  {% if not keys.claude %}・AI（台本づくり・テーマ候補）には Claude のキー <code>.anthropic_api_key</code> が必要です。チャットでテーマを決めて台本を作る場合は不要です。<br>{% endif %}
+  {% if keys.illust == 'none' %}・イラストを自動で作るには <code>.gemini_api_key</code>（おすすめ）か <code>.openai_api_key</code> / <code>.anthropic_api_key</code> が必要です。<br>{% endif %}
+  {% if not keys.wp %}・ブログ発行には <code>.wp_user</code> と <code>.wp_app_password</code> が必要です。{% endif %}
 </div>
+{% endif %}
+
+<h2>① 作る動画を選ぶ</h2>
+<div class="card">
+  <div class="row">
+    <input type="text" id="nt" placeholder="テーマを書いて追加（例: 登録実務講習はいつ申し込む？）" style="flex:1;min-width:240px">
+    <select id="nm"><option value="6">6分</option><option value="8">8分</option><option value="10" selected>10分</option><option value="12">12分</option><option value="15">15分</option></select>
+    <button class="btn" onclick="addTopic()">追加</button>
+    <button class="btn pri" onclick="suggest()" {% if not keys.claude %}disabled title="Claude のキーが必要"{% endif %}>伸びているテーマからAIで候補を出す</button>
+    {% if bench %}<a class="btn" href="{{ url_for('studio.bench') }}">ベンチマークを見る</a>{% endif %}
+  </div>
+  <p class="small">チャットで決めたテーマも、ここに並びます。「台本を作る」で AI が台本・YouTube文面・ブログ情報まで作り、下の一覧に出ます。</p>
+  <div id="topics"></div>
+  <div class="job" id="job"></div>
+</div>
+
+<h2>② 作っている動画</h2>
+<div class="card">
+{% for it in items %}
+  <div class="vid">
+    <div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a>
+      <div class="small">{{ it.n }}枚{% if it.total %}・{{ (it.total//60)|int }}分{{ (it.total%60)|int }}秒{% endif %}{% if it.created %}・作成 {{ it.created }}{% endif %}</div>
+      <div class="steps">{% set ns = namespace(on=true) %}{% for k, lab in steps %}<span class="{{ 'on' if ns.on else '' }}">{{ lab }}</span>{% if k == it.status %}{% set ns.on = false %}{% endif %}{% endfor %}</div>
+    </div>
+    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">開く →</a>
+  </div>
 {% else %}
-<div class="st-note">まだ動画がありません。新しく作るスライド型の動画から、ここに並びます。</div>
+  <p class="small">まだありません。上でテーマを選んで「台本を作る」を押すか、チャットで作った台本が入るとここに出ます。</p>
 {% endfor %}
 </div>
+
+<h2>過去の動画（ショート切り出し用）</h2>
+<div class="card">
+  <details><summary>{{ archived|length }}本 — 開いてスライドを選ぶと、宣伝用ショートを作れます</summary>
+  {% for it in archived %}
+  <div class="vid"><div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a><div class="small">{{ it.n }}枚</div></div>
+    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">ショートを作る →</a></div>
+  {% endfor %}
+  </details>
+</div>
+{% if bench_missing %}<div class="warn">ベンチマーク分析はまだありません。VPS で <code>bash coaching/bench/run_bench.sh</code> を実行すると表示されます。</div>{% endif %}
+</div>
+<script>
+let TOPICS = {{ topics|tojson }};
+const esc = s => (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SRC = {ai:"AI提案", chat:"チャット", manual:"手入力"};
+function draw(){
+  const box = document.getElementById("topics");
+  const list = TOPICS.filter(t => t.status !== "skip");
+  box.innerHTML = list.length ? "" : '<p class="small">候補はまだありません。</p>';
+  list.forEach(t => {
+    const d = document.createElement("div"); d.className = "tp";
+    d.innerHTML = `<div><span class="src ${t.source}">${SRC[t.source]||t.source}</span><span class="t">${esc(t.title)}</span>
+        <span class="small">・約${t.minutes||10}分</span>
+        ${t.why ? `<div class="small">${esc(t.why)}</div>` : ""}${t.notes ? `<details><summary class="small">方針メモ</summary><div class="small">${esc(t.notes)}</div></details>` : ""}</div>
+      <div class="row">${t.status === "done" && t.spec ? `<a class="btn" href="/studio/v/${t.spec}">台本を開く</a>`
+          : t.status === "making" ? `<span class="small">台本づくり中…</span>`
+          : `<button class="btn pri" data-op="make" {% if not keys.claude %}disabled{% endif %}>台本を作る</button>`}
+        <button class="btn" data-op="skip">見送る</button></div>`;
+    d.querySelector('[data-op="make"]')?.addEventListener("click", () => call({op:"make", id:t.id}));
+    d.querySelector('[data-op="skip"]').addEventListener("click", () => call({op:"update", id:t.id, status:"skip"}));
+    box.appendChild(d);
+  });
+}
+async function call(body){
+  const r = await fetch("/studio/api/topics", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+  const d = await r.json(); if (!d.ok){ alert(d.error); return; }
+  if (d.topics){ TOPICS = d.topics; draw(); } else { TOPICS = (await (await fetch("/studio/api/topics",{method:"POST",headers:{"Content-Type":"application/json"},body:'{"op":"list"}'})).json()).topics; draw(); poll(); }
+}
+function addTopic(){ const t = document.getElementById("nt").value.trim(); if (!t) return;
+  call({op:"add", title:t, minutes:+document.getElementById("nm").value}); document.getElementById("nt").value = ""; }
+function suggest(){ call({op:"suggest"}); }
+let timer = null;
+async function poll(){
+  const el = document.getElementById("job");
+  const tick = async () => {
+    const j = await (await fetch("/studio/api/job")).json();
+    if (!j.name){ return; }
+    el.style.display = "block";
+    el.textContent = (j.running ? `${j.label} 実行中… ${j.elapsed}秒\n` : (j.rc === 0 ? `${j.label} 完了\n` : `${j.label} 失敗（コード ${j.rc}）\n`)) + j.log;
+    el.scrollTop = el.scrollHeight;
+    if (!j.running && timer){ clearInterval(timer); timer = null; if (["script","suggest"].includes(j.kind)) location.reload(); }
+  };
+  await tick(); if (!timer) timer = setInterval(tick, 3000);
+}
+draw();
+fetch("/studio/api/job").then(r => r.json()).then(j => { if (j.running && ["script","suggest"].includes(j.kind)) poll(); });
+</script>
 {% endblock %}

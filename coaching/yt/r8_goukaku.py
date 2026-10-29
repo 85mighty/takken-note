@@ -2,7 +2,7 @@
 """令和8年度 宅建 合格点予想まとめ 動画 (1920x1080, スライド＋ナレーション)
   python3 r8_goukaku.py [--only N]
 """
-import argparse, html, os, subprocess, sys
+import argparse, html, os, re, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import vkit as V
 from vkit import tts, dur, scroll_expr, speakable, W, H, FPS
@@ -35,6 +35,10 @@ ul { margin: 0 0 20px; padding-left: 44px; } li { margin: 8px 0; }
 .cover h3 { font-size: 50px; font-weight: normal; margin: 0 0 50px; }
 .cover p { font-size: 32px; color: #666; }
 .steps li { margin: 14px 0; font-size: 34px; }
+.ill-top { text-align: center; margin: 0 0 24px; }
+.ill-right { float: right; width: 540px; margin: 0 0 24px 40px; } .ill-right img { width: 100%; }
+.ill-cover { text-align: center; margin: 10px 0 0; } .ill-cover + .cover { padding-top: 10px; } .ill-cover + .cover h2 { margin-bottom: 18px; } .ill-cover + .cover h3 { margin-bottom: 26px; }
+.ill-top + .cover { padding-top: 20px; } .ill-right + .cover { padding-top: 120px; text-align: left; }
 """
 def E(s): return html.escape(s)
 
@@ -187,8 +191,14 @@ slide("まとめ", """
 def _render_once(head, body, name, scale):
     """ページ幅を W/scale にして描き、解像度を scale 倍にして W px の画像にする → 文字が scale 倍になる"""
     pw = W / scale
-    ph_mm = 3000 if scale == 1.0 else (H * 1.3 / scale) / 96 * 25.4   # 拡大時は収まるか見るだけなので短いページで十分 (速い)
+    ph_mm = 1100 if scale == 1.0 else (H * 1.3 / scale) / 96 * 25.4   # 拡大時は収まるか見るだけなので短いページで十分 (速い)
     css = CSS.replace("size: 508mm 3000mm", f"size: {pw/96*25.4:.2f}mm {ph_mm:.1f}mm").replace("width: 1920px", f"width: {pw:.0f}px")
+    try:
+        import subs
+        ff, fam = subs.slide_font_css(subs.load_style(V.SUB_STYLE).get("slide_font"))
+        css = ff + css.replace('"Noto Sans CJK JP"', fam)
+    except Exception:
+        pass
     pdf = os.path.join(OUT, name + ".pdf"); png = os.path.join(OUT, name + ".png")
     HTML(string=f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{css}</style></head><body>{head}{body}</body></html>").write_pdf(pdf)
     subprocess.run(["pdftoppm", "-f", "1", "-l", "1", "-r", f"{96*scale:.3f}", "-png", "-singlefile", pdf, png[:-4]], check=True)
@@ -198,32 +208,101 @@ def _render_once(head, body, name, scale):
     content_h = (bbox[3] if bbox else 0)
     return im, content_h, png
 
-def render(body, title, sub, name):
+def _sub_area():
+    """字幕が占める下端の高さ (スタイル設定から)"""
+    try:
+        import subs
+        st = subs.load_style(V.SUB_STYLE)
+        return subs.band_height(st) + int(st.get("bottom", 56))
+    except Exception:
+        return V.BAND
+
+RENDER_VER = 2      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
+ILL_RE = re.compile(r"<div class='ill ill-(\w+)'>(<img [^>]*>)</div>")
+ILL_MIN, ILL_MAX = 200, 340
+
+def _place(head, body, name, avail):
+    """イラストの置き方を決める。表や2列がある本文は「上に中央寄せ」（空きに合わせた大きさ）、
+    文章・箇条書きは「右に置いて本文を左」を先に試す。どちらも入らなければ絵なし。指定 (top/right) があればそれに従う"""
+    m = ILL_RE.search(body)
+    if not m: return body
+    pos, img = m.group(1), m.group(2)
+    nob = body.replace(m.group(0), "", 1)
+    def top():
+        _i, ch0, _p = _render_once(head, nob, name, 1.0)
+        free = avail - ch0 - 30
+        if free < ILL_MIN and pos == "auto": return None
+        hpx = max(ILL_MIN, min(ILL_MAX, free))
+        sized = img.replace("<img ", "<img style='height:%dpx' " % hpx, 1)
+        return f"<div class='ill {'ill-cover' if pos == 'cover' else 'ill-top'}'>{sized}</div>" + nob
+    def right():
+        b = f"<div class='ill ill-right'>{img}</div>" + nob
+        if pos == "right": return b
+        _i, c, _p = _render_once(head, b, name, 1.0)
+        return b if c <= avail else None
+    if pos in ("top", "cover"): return top()
+    if pos == "right": return right()
+    wide = "<table" in nob or "class='two'" in nob
+    for f in ((top,) if wide else (right, top)):
+        b = f()
+        if b: return b
+    return nob
+
+def placement(title, sub, body):
+    """そのスライドで絵がどこに入るか (top / right / cover / none)。絵を作る前の判定に使う"""
     head = f"<h1>{E(title)}<small>{E(sub)}</small></h1>" if title else ""
-    avail = H - (V.BAND if V.HIGHLIGHT else 0) - 70        # 字幕帯と下余白を除いた高さ
+    avail = H - (_sub_area() if V.HIGHLIGHT else 0) - 40
+    b = _place(head, body, "_place", avail)
+    m = re.search(r"class='ill ill-(\w+)'", b)
+    return m.group(1) if m else "none"
+
+def render(body, title, sub, name):
+    """スライド1枚を PNG に。内容が同じなら前回の画像を再利用（下書き→完成で描き直さない）"""
+    import hashlib, shutil
+    head = f"<h1>{E(title)}<small>{E(sub)}</small></h1>" if title else ""
+    area = _sub_area() if V.HIGHLIGHT else 0
+    avail = H - area - 40                                   # 字幕と下余白を除いた高さ
+    try:
+        import subs
+        fsig = subs.load_style(V.SUB_STYLE).get("slide_font", "")
+    except Exception:
+        fsig = ""
+    ck = hashlib.md5(repr((head, body, CSS, avail, W, H, fsig, RENDER_VER)).encode()).hexdigest()
+    cdir = os.path.join(OUT, "_rc"); os.makedirs(cdir, exist_ok=True)
+    cpng, cmeta = os.path.join(cdir, ck + ".png"), os.path.join(cdir, ck + ".txt")
+    png = os.path.join(OUT, name + ".png")
+    if os.path.exists(cpng) and os.path.exists(cmeta):
+        shutil.copy(cpng, png); return png, int(open(cmeta).read())
+    body = _place(head, body, name, avail)
     im, ch, png = _render_once(head, body, name, 1.0)
-    if 0 < ch < avail * 0.85:                               # 下が空くなら文字を大きくして埋める (最大1.6倍)
-        best = (im, ch, png)
-        scale = min(1.6, avail / ch)
-        for _ in range(5):                                  # 折り返しで高さが非線形に変わるので、収まるまで少しずつ下げる
-            if scale < 1.08: break
-            im2, ch2, png2 = _render_once(head, body, name, scale)
-            if ch2 <= avail: best = (im2, ch2, png2); break
-            scale = max(1.0, min(scale - 0.06, scale * avail / ch2))
-        im, ch, png = best
-        if png != best[2] or ch > avail: im, ch, png = _render_once(head, body, name, 1.0)
+    if 0 < ch < avail * 0.85:                               # 下が空くなら文字を大きくして埋める (最大1.6倍・試すのは3回まで)
+        lo, hi, best = 1.0, min(1.6, avail / ch), None
+        for k in range(4):
+            if hi - lo < 0.04: break
+            sc = hi if k == 0 else (lo + hi) / 2
+            im2, ch2, _p = _render_once(head, body, name, sc)
+            if ch2 <= avail: best, lo = (im2, ch2), sc
+            else: hi = sc
+            if best is not None and best[1] >= avail * 0.9: break
+        if best: im, ch = best
+        else: im, ch, png = _render_once(head, body, name, 1.0)
     bottom = max(H, min(im.size[1], ch + 90))
     im = im.crop((0, 0, W, bottom))
-    if V.HIGHLIGHT:   # 字幕帯のぶん下に余白を足す
-        pad = V.BAND - 90
+    if V.HIGHLIGHT and area > 90:   # 字幕のぶん下に余白を足す
+        pad = area - 90
         bg = Image.new('RGB', (W, bottom + pad), 'white'); bg.paste(im, (0, 0)); im = bg; bottom += pad
-    im.save(png)
+    im.save(png); shutil.copy(png, cpng); open(cmeta, "w").write(str(bottom))
     return png, bottom
 
 def slide_key(title, sub, body, speech):
     """スライド内容 + 描画設定のハッシュ。同じなら書き出し済みの動画を再利用する"""
     import hashlib
-    return hashlib.md5(repr((title, sub, body, speech, V.HIGHLIGHT, CSS)).encode()).hexdigest()
+    try:
+        import subs
+        sig = subs.signature(subs.load_style(V.SUB_STYLE))
+    except Exception:
+        sig = ""
+    return hashlib.md5(repr((title, sub, body, speech, V.HIGHLIGHT, CSS, sig, RENDER_VER)).encode()).hexdigest()
 
 def build(only=None, name="R8_goukaku"):
     """内容アドレス方式のキャッシュ: c_<key>.mp4 があれば再利用。挿入・削除・並べ替えでも変わったスライドだけ作り直す。
