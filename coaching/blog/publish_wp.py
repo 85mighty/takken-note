@@ -57,23 +57,35 @@ def fill_youtube(content, youtube=""):
         content = re.sub(r"<!-- wp:paragraph -->\s*<p>動画でも解説しています。</p>\s*<!-- /wp:paragraph -->\s*", "", content)
     return content
 
-def upload_media(path, site=SITE, au=None):
-    """画像をメディアライブラリに上げて URL を返す (同じファイル名があればそれを使う)"""
+def upload_media(path, site=SITE, au=None, want_id=False):
+    """画像・音声・PDF をメディアライブラリに上げて URL を返す (同じファイル名があればそれを使う)。want_id なら (id, URL)"""
     au = au or auth()
     fn = os.path.basename(path)
     found = call(site, "media?" + urllib.parse.urlencode({"search": os.path.splitext(fn)[0], "per_page": 5}), au)
     for m in found or []:
-        if os.path.splitext(fn)[0] in (m.get("source_url") or ""): return m["source_url"]
+        if os.path.splitext(fn)[0] in (m.get("source_url") or ""): return (m["id"], m["source_url"]) if want_id else m["source_url"]
     ctype = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp",
              "mp3": "audio/mpeg", "pdf": "application/pdf"}[fn.rsplit(".", 1)[-1].lower()]
     res = call(site, "media", au, "POST", raw=open(path, "rb").read(), timeout=600,
                headers={"Content-Type": ctype, "Content-Disposition": f'attachment; filename="{fn}"'})
-    return res["source_url"]
+    return (res["id"], res["source_url"]) if want_id else res["source_url"]
 
-def publish(content, title, slug, excerpt="", youtube="", draft=False, site=SITE, au=None):
-    """同じスラッグがあれば更新、なければ新規。(記事URL, 新規作成/更新, 状態, 実際のスラッグ) を返す"""
+def featured_image(youtube="", text_lines=None, name="post", au=None, site=SITE):
+    """アイキャッチのメディア ID。動画があればその YouTube サムネイル、なければ文字サムネイル"""
+    import thumbs
+    path = thumbs.youtube_thumb(youtube) if youtube else None
+    if not path and text_lines: path = thumbs.text_thumb(text_lines, name)
+    if not path: return None
+    try: return upload_media(path, site, au, want_id=True)[0]
+    except Exception as e:
+        print("  ✗ 썸네일 업로드 실패:", e, flush=True); return None
+
+def publish(content, title, slug, excerpt="", youtube="", draft=False, site=SITE, au=None, featured=None):
+    """同じスラッグがあれば更新、なければ新規。(記事URL, 新規作成/更新, 状態, 実際のスラッグ) を返す。featured=アイキャッチのメディア ID"""
     au = au or auth()
-    post = {"title": title, "content": fill_youtube(content, youtube), "slug": slug, "excerpt": excerpt, "status": "draft" if draft else "publish"}
+    post = {"title": title, "content": fill_youtube(content, youtube), "slug": slug, "excerpt": excerpt, "status": "draft" if draft else "publish",
+            "comment_status": "closed", "ping_status": "closed"}
+    if featured: post["featured_media"] = featured
     found = call(site, "posts?" + urllib.parse.urlencode({"slug": slug, "status": "publish,draft,pending,future,private", "context": "edit"}), au)
     if found:
         res = call(site, f"posts/{found[0]['id']}", au, "POST", post); action = "갱신"

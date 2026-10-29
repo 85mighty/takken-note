@@ -78,6 +78,12 @@ if [ -n "$ENGINE" ] && [ -z "$(git status --porcelain -- static/audio)" ]; then
   fi
 fi
 
+# 4.6) takken.ekunblog.com (이 서버의 WordPress) 조정 플러그인 — 코멘트 없음·목록 행 형식
+WPD=/var/www/takken.ekunblog.com/html/wp-content
+if [ -d "$WPD" ]; then
+  mkdir -p "$WPD/mu-plugins" && cp coaching/blog/wp/takken-tweaks*.php "$WPD/mu-plugins/" && echo "takken-tweaks 플러그인 반영"
+fi
+
 # 5) PM2 기동/재기동
 pm2 startOrRestart ecosystem.config.js
 pm2 save

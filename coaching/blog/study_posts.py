@@ -29,17 +29,17 @@ R8 = [("kenri", "権利関係", "問1〜問14", list(range(1, 15)), "R8_kenri"),
 def posts():
     out = []
     for key, name, rng, nums, vkey in R8:
-        out.append({"slug": f"takken-r8-{key}", "kind": "r8", "nums": nums, "video": vkey,
+        out.append({"slug": f"takken-r8-{key}", "kind": "r8", "nums": nums, "video": vkey, "thumb": ["令和8年度 宅建", name.split("（")[0], rng + " 解説"],
                     "title": f"【令和8年度 宅建】{name} {rng} 解答解説（全選択肢の○×と理由）",
                     "excerpt": f"令和8年度（2026年10月18日実施）宅建士試験の{name}（{rng}）を1問ずつ解説。正解と、4つの選択肢すべての○×の理由をまとめています。"})
     out.append({"slug": "takken-toshi-anki", "kind": "anki", "subj": "toshi",
-                "title": "【宅建 法令上の制限】都市計画法 暗記ノート（全13章・聞き流し音声つき）",
+                "title": "【宅建 法令上の制限】都市計画法 暗記ノート（全13章・聞き流し音声つき）", "thumb": ["都市計画法", "暗記ノート", "全13章・音声つき"],
                 "excerpt": "宅建の問15・16（都市計画法）で問われるポイントを13章にまとめた暗記ノート。章ごとの聞き流し音声とPDFつき。"})
     out.append({"slug": "takken-kenki-anki", "kind": "anki", "subj": "kenki",
-                "title": "【宅建 法令上の制限】建築基準法 暗記ノート（全12章・聞き流し音声つき）",
+                "title": "【宅建 法令上の制限】建築基準法 暗記ノート（全12章・聞き流し音声つき）", "thumb": ["建築基準法", "暗記ノート", "全12章・音声つき"],
                 "excerpt": "宅建の問17・18（建築基準法）で問われるポイントを12章にまとめた暗記ノート。章ごとの聞き流し音声とPDFつき。"})
     out.append({"slug": "takken-kenki-100", "kind": "q100", "subj": "kenki",
-                "title": "【宅建】建築基準法 一問一答100問（答え・解説つき）",
+                "title": "【宅建】建築基準法 一問一答100問（答え・解説つき）", "thumb": ["建築基準法", "一問一答", "100問"],
                 "excerpt": "宅建の建築基準法（問17・18）対策の4択100問。タップすると正解と解説が開きます。"})
     return out
 
@@ -156,9 +156,31 @@ def youtube(p):
     import registry
     return (registry.get(registry.load(), p["video"]) or {}).get("url", "")
 
+# 動画の概要欄に足すブログへの誘導（動画の台帳 key → この記事たち）
+VIDEO_LINKS = {"R8_kenri": ["takken-r8-kenri"], "R8_zei": ["takken-r8-zei"], "R8_gyoho": ["takken-r8-gyoho"],
+               "R8_horei": ["takken-r8-horei", "takken-toshi-anki", "takken-kenki-anki", "takken-kenki-100"],
+               "R8_full": ["takken-r8-kenri", "takken-r8-horei", "takken-r8-zei", "takken-r8-gyoho"]}
+LINK_LABEL = {"takken-r8-kenri": "権利関係 問1〜14 の問題と全選択肢の解説", "takken-r8-horei": "法令上の制限 問15〜22 の問題と全選択肢の解説",
+              "takken-r8-zei": "税・その他 問23〜25・46〜50 の問題と全選択肢の解説", "takken-r8-gyoho": "宅建業法 問26〜45 の問題と全選択肢の解説",
+              "takken-toshi-anki": "都市計画法 暗記ノート（音声つき）", "takken-kenki-anki": "建築基準法 暗記ノート（音声つき）", "takken-kenki-100": "建築基準法 一問一答100問"}
+
+def yt_lines():
+    """{動画 key: 概要欄に貼る文}"""
+    out = {}
+    for vkey, slugs in VIDEO_LINKS.items():
+        out[vkey] = "▼ブログで読む（文字で復習）\n" + "\n".join(f"・{LINK_LABEL[s]}\n{url_of(s)}" for s in slugs)
+    return out
+
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--list", action="store_true"); ap.add_argument("--dry", action="store_true"); ap.add_argument("--only")
+    ap = argparse.ArgumentParser(); ap.add_argument("--list", action="store_true"); ap.add_argument("--dry", action="store_true"); ap.add_argument("--only"); ap.add_argument("--yt", action="store_true")
     a = ap.parse_args()
+    if a.yt:
+        import registry
+        reg = registry.load()
+        for k, t in yt_lines().items():
+            v = registry.get(reg, k) or {}
+            print(f"===== {v.get('label') or k}  {v.get('url', '')}\n{t}\n")
+        return
     st = state()
     todo = [p for p in posts() if not a.only or p["slug"] == a.only]
     if a.list:
@@ -181,7 +203,8 @@ def main():
         print(f"… {p['title']}", flush=True)
         content = build(p, media)
         yt = youtube(p)
-        link, action, status, slug = publish_wp.publish(content, p["title"], p["slug"], p["excerpt"], yt, au=au)
+        fid = publish_wp.featured_image(yt, p.get("thumb"), p["slug"], au=au)
+        link, action, status, slug = publish_wp.publish(content, p["title"], p["slug"], p["excerpt"], yt, au=au, featured=fid)
         st[p["slug"]] = {"url": link, "title": p["title"], "at": time.strftime("%Y-%m-%d %H:%M"), "youtube": yt}
         json.dump(st, open(STATE, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
         print(f"✓ {action} ({status}): {link}" + ("" if yt or not p.get("video") else "  ※ 영상 URL 미등록이라 임베드 없음 (URL 대장에 넣고 다시 발행)"), flush=True)

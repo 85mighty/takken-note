@@ -119,7 +119,8 @@ def publish(spec_path, draft=False, log=print):
     save_html(spec, content)
     yt = youtube_url(spec)
     if not yt: log("※ YouTube URL 이 아직 없어 영상 임베드 없이 발행합니다 (URL 을 넣고 다시 누르면 임베드됩니다)")
-    link, action, status, slug = publish_wp.publish(content, blog["title"], blog["slug"], blog.get("excerpt", ""), yt, draft, au=au)
+    fid = publish_wp.featured_image(yt, [spec.get("label", "")[:12]], blog["slug"], au=au)    # 動画のサムネイルをアイキャッチに
+    link, action, status, slug = publish_wp.publish(content, blog["title"], blog["slug"], blog.get("excerpt", ""), yt, draft, au=au, featured=fid)
     log(f"블로그 {action} 완료 ({status}): {link}")
     sp = json.load(open(spec_path, encoding="utf-8"))          # 発行中に編集されていてもよいように読み直す
     sp.setdefault("blog", {}).update({"slug": slug or blog["slug"], "title": blog["title"], "url": link})
