@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}スタジオ{% endblock %}</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;background:#f5f6f8;color:#111}
+nav.sn{background:#0f1b33;color:#fff;display:flex;align-items:center;gap:6px;padding:10px 16px;flex-wrap:wrap}
+nav.sn .brand{font-weight:bold;margin-right:14px;color:#ffd166}
+nav.sn a{color:#dfe6f3;text-decoration:none;padding:6px 10px;border-radius:6px}
+nav.sn a.on,nav.sn a:hover{background:#1a3d7c;color:#fff}
+nav.sn .sp{margin-left:auto;font-size:12px;color:#9fb0cc}
+main{padding:16px}
+a{color:#1a3d7c}
+</style>
+</head>
+<body>
+<nav class="sn">
+  <span class="brand">NIPPONリアル スタジオ</span>
+  <a href="{{ url_for('studio.index') }}" {% if request.endpoint == 'studio.index' or request.endpoint == 'studio.edit' %}class="on"{% endif %}>動画</a>
+  <a href="{{ url_for('studio.bench') }}" {% if request.endpoint == 'studio.bench' %}class="on"{% endif %}>ベンチマーク</a>
+  {% if session.get('authed') %}<a class="sp" href="{{ url_for('logout') }}">ログアウト</a>{% endif %}
+</nav>
+<main>
+{% block body %}{% endblock %}
+</main>
+</body>
+</html>

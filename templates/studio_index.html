@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "studio_base.html" %}
 {% block title %}スタジオ｜動画の検収{% endblock %}
 {% block body %}
 <style>
@@ -26,7 +26,7 @@ code{background:#f2f2f2;padding:1px 5px;border-radius:4px}
   <a href="{{ url_for('studio.edit', name=it.name) }}">開く →</a>
 </div>
 {% else %}
-<p>specs がありません。</p>
+<div class="st-note">まだ動画がありません。新しく作るスライド型の動画から、ここに並びます。</div>
 {% endfor %}
 </div>
 {% endblock %}

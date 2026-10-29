@@ -21,11 +21,6 @@ import parse_takken
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
-
-# 検収パネル (/studio): スライド型動画の確認・修正・書き出し + 宅建ベンチマーク
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "coaching", "yt"))
-from studio import bp as studio_bp  # noqa: E402
-app.register_blueprint(studio_bp)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=90)
 

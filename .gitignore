@@ -17,3 +17,5 @@ coaching/yt/__pycache__/
 .wp_user
 .wp_app_password
 coaching/yt/specs/.history/
+.studio_password
+.studio_secret_key

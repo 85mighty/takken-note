@@ -19,4 +19,4 @@ if ! git diff --cached --quiet; then
   git commit -q -m "宅建ベンチマーク更新 $(date +%F)"
   git push -q 2>/dev/null && echo "→ GitHub に送信しました" || echo "→ コミットだけしました（GitHub への送信はできませんでした。結果はスタジオで見られます）"
 fi
-echo "結果: http://<VPSのアドレス>:8788/studio/bench"
+echo "結果: http://<VPSのアドレス>:8789/studio/bench"
