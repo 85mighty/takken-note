@@ -54,8 +54,8 @@ def _raster(path):
     from weasyprint import HTML
     with tempfile.TemporaryDirectory() as td:
         pdf = os.path.join(td, "a.pdf")
-        HTML(string=f"<html><head><style>@page{{size:800px 600px;margin:0}}body{{margin:0}}</style></head>"
-                    f"<body><img src='file://{path}' style='width:800px;height:600px'></body></html>").write_pdf(pdf)
+        HTML(string=f"<html><head><style>@page{{size:800px 450px;margin:0}}body{{margin:0}}</style></head>"
+                    f"<body><img src='file://{path}' style='width:800px;height:450px'></body></html>").write_pdf(pdf)
         subprocess.run(["pdftoppm", "-singlefile", "-png", "-r", "96", pdf, png[:-4]], check=True)
     return png
 

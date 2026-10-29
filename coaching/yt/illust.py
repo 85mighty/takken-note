@@ -23,13 +23,38 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 DIR = os.path.join(HERE, "illust"); os.makedirs(DIR, exist_ok=True)
 
-STYLE = ("Flat illustration in the style of Japanese free clip-art 'irasutoya': simple rounded shapes, soft pastel colors, "
-         "thin dark-brown outlines, cute characters with round faces and small dot eyes, plain white background, "
-         "lots of empty space around the subject, 4:3 composition. "
-         "Absolutely no text, letters, numbers, signs or writing anywhere in the image.")
-CAST = ("Main character (when a person is needed): a Japanese office worker in his late 20s with short black hair, "
-        "white shirt and navy tie, studying for the real-estate license exam (宅建). "
-        "Other people: simple clerks, examiners, customers as needed.")
+# 画像生成のプロンプト（{theme} にスライドのテーマが入る）
+TEMPLATE = """以下のテーマに基づいて、日本の教育資料や解説ブログで使われるような、親しみやすい2Dイラストを1枚生成してください。
+
+【テーマ】
+{theme}
+
+【イラストスタイル】
+・日本のフリー素材サイトで見かけるような、親しみやすくシンプルな2Dイラスト
+・かわいらしいデフォルメ人物
+・丸みのある輪郭、自然で豊かな表情
+・柔らかいパステルカラー
+・手描き風の温かみがあるデジタルイラスト
+・シンプルで清潔感のあるフラットデザイン
+・軽い水彩風の質感と控えめな陰影
+・複雑すぎない構図で、一目でテーマが伝わる
+
+【構図】
+・中央にテーマに関連する人物を配置
+・周囲に内容を象徴する小物やアイコンを2〜4個配置
+・人物の感情が表情やポーズから伝わるようにする
+・背景は白、または非常に薄い単色
+・余白を十分に確保する
+・ブログ記事の冒頭や解説動画のスライドに適した構図
+
+【重要条件】
+・文字や文章を入れない
+・ロゴや透かしを入れない
+・写実的、3D、写真風にしない
+・過度に派手な装飾を避ける
+・複数の画像を並べたコラージュにしない
+・横長16:9の高解像度画像
+・シリーズ全体で統一感のあるデザイン"""
 
 def _key(name, env):
     if os.environ.get(env): return os.environ[env].strip()
@@ -53,15 +78,14 @@ def plain(htm):
     return re.sub(r"\n\s*\n+", "\n", t).strip()
 
 def describe(s):
-    """スライドから絵の説明を作る（指定があればそれ）"""
+    """スライドからテーマを作る（指定があればそれ）"""
     if s.get("illust"): return s["illust"].strip()
-    txt = (s.get("title", "") + "\n" + plain(s.get("body", ""))).strip()
-    return "このスライドの内容を表す場面:\n" + txt[:500]
+    title = (s.get("title") or "").replace("｜", "：").strip()
+    body = plain(s.get("body", "")).replace("\n", " ")
+    return (f"宅建（宅地建物取引士）試験の解説動画「{title}」の場面。内容: {body}" if title else f"宅建（宅地建物取引士）試験の解説動画の表紙。内容: {body}")[:300]
 
 def prompt_for(s):
-    return (f"{STYLE}\n{CAST}\n\nDraw ONE simple scene that helps viewers understand the following slide of a Japanese "
-            f"宅建 exam study video. Show the idea with 1-3 characters and a few simple objects (houses, documents, "
-            f"calendars, money, checklists, etc.). Do not draw the slide text itself.\n\n{describe(s)}")
+    return TEMPLATE.format(theme=describe(s))
 
 def key_for(s):
     return hashlib.md5(repr((prompt_for(s), s.get("illust_seed", 0))).encode()).hexdigest()[:16]
@@ -89,7 +113,7 @@ def gen_gemini(prompt, out):
         parts.append({"inline_data": {"mime_type": "image/png", "data": base64.b64encode(open(ref, "rb").read()).decode()}})
     d = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
               {"contents": [{"parts": parts}],
-               "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": "4:3"}}},
+               "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": "16:9"}}},
               {"x-goog-api-key": _key(".gemini_api_key", "GEMINI_API_KEY")})
     for c in d.get("candidates", []):
         for p in c.get("content", {}).get("parts", []):
@@ -106,7 +130,7 @@ def gen_openai(prompt, out):
 
 SVG_SYSTEM = ("You draw illustrations as standalone SVG code. Style: Japanese free clip-art 'irasutoya' — flat pastel fills, "
               "thin dark-brown (#5a4636) outlines with round joins, cute characters with round heads and dot eyes, soft blush, "
-              "simple props. Transparent background. viewBox='0 0 800 600'. Never draw any text, letters or numbers. "
+              "simple props. Transparent background. viewBox='0 0 1600 900'. Never draw any text, letters or numbers. "
               "Reply with only the <svg>...</svg> element.")
 
 def gen_claude(prompt, out):
@@ -151,7 +175,7 @@ def placement(s):
     if s.get("illust_off") or s.get("illust_pos") == "none": return "none"
     if not os.path.exists(BLANK):
         from PIL import Image
-        Image.new("RGB", (800, 600), "white").save(BLANK)
+        Image.new("RGB", (800, 450), "white").save(BLANK)
     import r8_goukaku as G
     return G.placement(s.get("title", ""), s.get("sub", ""), _ill_html(s, s.get("body", ""), BLANK))
 
@@ -177,7 +201,7 @@ def inject(s, body):
     if not p: return body
     return _ill_html(s, body, p)
 
-BLANK = os.path.join(DIR, "_blank.png")
+BLANK = os.path.join(DIR, "_blank169.png")
 
 def _ill_html(s, body, p):
     pos = s.get("illust_pos") or "auto"
