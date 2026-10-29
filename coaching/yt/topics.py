@@ -16,10 +16,10 @@ def save(d):
     with open(PATH + ".tmp", "w", encoding="utf-8") as f: json.dump(d, f, ensure_ascii=False, indent=1)
     os.replace(PATH + ".tmp", PATH)
 
-def add(title, why="", source="manual", minutes=10, notes=""):
+def add(title, why="", source="manual", minutes=10, notes="", refs=None):
     d = load()
     t = {"id": uuid.uuid4().hex[:8], "title": title.strip(), "why": why, "source": source, "minutes": int(minutes or 10),
-         "notes": notes, "status": "idea", "spec": "", "created": time.strftime("%Y-%m-%d %H:%M")}
+         "notes": notes, "status": "idea", "spec": "", "created": time.strftime("%Y-%m-%d %H:%M"), "refs": refs or []}
     d["topics"].insert(0, t); save(d); return t
 
 def update(tid, **kw):
@@ -38,30 +38,69 @@ SUGGEST_TOOL = {
     "eager_input_streaming": True,
     "input_schema": {"type": "object", "additionalProperties": False, "required": ["topics"], "properties": {
         "topics": {"type": "array", "items": {"type": "object", "additionalProperties": False,
-                   "required": ["title", "why", "minutes", "notes"],
+                   "required": ["title", "why", "minutes", "notes", "refs"],
                    "properties": {"title": {"type": "string", "description": "動画のテーマ（日本語・具体的に）"},
                                   "why": {"type": "string", "description": "なぜ今これか（検索・時期・ベンチマークの根拠）"},
                                   "minutes": {"type": "integer"},
-                                  "notes": {"type": "string", "description": "台本で押さえる点"}}}}}},
+                                  "notes": {"type": "string", "description": "台本で押さえる点"},
+                                  "refs": {"type": "array", "items": {"type": "string"},
+                                           "description": "参考にしたベンチマーク動画の番号（V1 など）。1〜3個。なければ空"}}}}}},
 }
+
+def bench_videos(limit=120):
+    """ベンチマークで伸びている動画（チャンネル中央値に対する倍率が高い順）。番号 V1.. をつけて Claude に見せ、
+    提案の根拠として番号で返してもらう → 本物のタイトル・再生数・URL に置き換える（URL を AI に書かせない）"""
+    import glob, statistics
+    rows = []
+    for p in glob.glob(os.path.join(ROOT, "coaching", "bench", "out", "videos_*.json")):
+        try: ch = json.load(open(p, encoding="utf-8"))
+        except ValueError: continue
+        if ch.get("self"): continue
+        vs = [v for v in ch.get("videos", []) if v.get("view_count")]
+        if len(vs) < 5: continue
+        med = statistics.median(v["view_count"] for v in vs) or 1
+        for v in vs:
+            rows.append({"channel": ch.get("name", ""), "title": v.get("title", ""), "views": v["view_count"],
+                         "ratio": round(v["view_count"] / med, 1), "date": v.get("upload_date") or "",
+                         "url": f"https://www.youtube.com/watch?v={v['id']}"})
+    rows.sort(key=lambda r: (r["ratio"], r["views"]), reverse=True)
+    top = rows[:limit]
+    for r in sorted(rows, key=lambda r: r["views"], reverse=True)[:40]:   # 再生数そのものが多い動画も入れる
+        if r not in top: top.append(r)
+    for i, r in enumerate(top, 1): r["id"] = f"V{i}"
+    return top
+
+def _fmt_views(n):
+    return f"{n/10000:.1f}万回" if n >= 10000 else f"{n}回"
+
+def _refs(ids, table):
+    by = {r["id"]: r for r in table}
+    out = []
+    for i in ids or []:
+        r = by.get(str(i).strip())
+        if r and r not in out: out.append({k: r[k] for k in ("channel", "title", "views", "ratio", "date", "url")})
+    return out[:3]
 
 def suggest(n=8, log=print):
     import registry, scriptgen
     reg = registry.load()
     made = "\n".join(f"- {v.get('yt_title') or v.get('label')}" for v in reg["videos"])[:4000]
-    bench = open(BENCH, encoding="utf-8").read()[:6000] if os.path.exists(BENCH) else "（ベンチマーク未取得）"
+    bench = open(BENCH, encoding="utf-8").read()[:5000] if os.path.exists(BENCH) else "（ベンチマーク未取得）"
+    table = bench_videos()
+    vlist = "\n".join(f"{r['id']} | {r['channel']} | {_fmt_views(r['views'])} | 中央値の{r['ratio']}倍 | {r['date']} | {r['title']}" for r in table) or "（なし）"
     queued = "\n".join(f"- {t['title']}" for t in load()["topics"])[:2000]
     user = (f"今日: {time.strftime('%Y-%m-%d')}\nチャンネル「NIPPONリアル」（宅建）の次の動画テーマを {n} 個提案してください。\n"
             f"時期（試験・合格発表・登録講習・申込みの日程）と、他の宅建チャンネルで伸びている傾向を踏まえて。"
             f"必要なら web_search で今の話題や日程を確認する。すでに作った動画・候補と重ならないこと。\n\n"
-            f"■ ベンチマーク（伸びている動画の傾向）\n{bench}\n\n■ 作成済みの動画\n{made}\n\n■ すでにある候補\n{queued}")
+            f"各候補の refs には、根拠にした下の「伸びている動画」の番号（V1 など）を1〜3個入れる。\n\n"
+            f"■ ベンチマーク（伸びている動画の傾向）\n{bench}\n\n■ 伸びている動画（番号 | チャンネル | 再生数 | そのチャンネルの中央値の何倍か | 投稿日 | タイトル）\n{vlist}\n\n■ 作成済みの動画\n{made}\n\n■ すでにある候補\n{queued}")
     if not scriptgen.api_key(False):                        # キーがなければ Claude Code CLI で
         def check(o):
             ts = o.get("topics") if isinstance(o, dict) else None
             return None if isinstance(ts, list) and ts and all(isinstance(t, dict) and isinstance(t.get("title"), str) for t in ts) else "topics が不正です"
         items = scriptgen.cli_json(user, "あなたは宅建 YouTube チャンネルの企画担当です。", SUGGEST_TOOL["input_schema"], check, log)["topics"]
         for t in reversed(items):
-            add(t["title"], t.get("why", ""), "ai", t.get("minutes") or 10, t.get("notes", "")); log(f"  ＋ {t['title']}")
+            add(t["title"], t.get("why", ""), "ai", t.get("minutes") or 10, t.get("notes", ""), _refs(t.get("refs"), table)); log(f"  ＋ {t['title']}")
         return len(items)
     import anthropic
     client = anthropic.Anthropic(api_key=scriptgen.api_key())
@@ -89,7 +128,7 @@ def suggest(n=8, log=print):
             messages.append({"role": "user", "content": [{"type": "tool_result", "tool_use_id": calls[0].id, "is_error": True, "content": "INVALID_INPUT: topics が不正です"}]})
             continue
         for t in reversed(items):
-            add(t["title"], t.get("why", ""), "ai", t.get("minutes") or 10, t.get("notes", ""))
+            add(t["title"], t.get("why", ""), "ai", t.get("minutes") or 10, t.get("notes", ""), _refs(t.get("refs"), table))
             log(f"  ＋ {t['title']}")
         return len(items)
     raise RuntimeError("후보를 저장하지 못했습니다")

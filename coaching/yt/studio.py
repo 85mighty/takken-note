@@ -94,7 +94,7 @@ def _job_state():
     return {"running": running, "name": j["name"], "kind": j["kind"], "label": j["label"], "rc": rc, "log": tail,
             "elapsed": int((end if not running else time.time()) - j["started"]), "topic": j.get("topic")}
 
-def _start(name, kind, label, argv, topic=None):
+def _start(name, kind, label, argv, topic=None, raw=False):
     import shlex
     with LOCK:
         st = _job_state()
@@ -104,7 +104,7 @@ def _start(name, kind, label, argv, topic=None):
         if os.path.exists(log + ".rc"): os.remove(log + ".rc")
         # 裏で切り離して動かす（スタジオが再起動・再デプロイされても作業は止まらない）
         q = shlex.quote
-        cmd = f"( {shlex.join([PY, '-u'] + argv)}; echo $? > {q(log + '.rc')} ) > {q(log)} 2>&1 < /dev/null & echo $!"
+        cmd = f"( {shlex.join(argv if raw else [PY, '-u'] + argv)}; echo $? > {q(log + '.rc')} ) > {q(log)} 2>&1 < /dev/null & echo $!"
         r = subprocess.run(["sh", "-c", cmd], capture_output=True, text=True, env=_env(), cwd=HERE, start_new_session=True)
         _write(CUR, {"pid": int(r.stdout.strip()), "name": name, "kind": kind, "label": label, "log": log, "started": time.time(), "topic": topic})
     return jsonify(ok=True)
@@ -132,7 +132,15 @@ def _list(d):
 def index():
     import topics
     items = sorted(_list(SPECS), key=lambda x: x["created"], reverse=True)
-    return render_template("studio_index.html", items=items, archived=_list(ARCH), topics=topics.load()["topics"],
+    import glob
+    bfiles = glob.glob(os.path.join(BENCH, "videos_*.json"))
+    bench_at = time.strftime("%Y-%m-%d %H:%M", time.localtime(max(os.path.getmtime(f) for f in bfiles))) if bfiles else ""
+    sys.path.insert(0, os.path.join(ROOT, "coaching", "blog"))
+    import study_posts
+    st = study_posts.state()
+    study = [{"slug": p["slug"], "title": p["title"], "url": (st.get(p["slug"]) or {}).get("url", ""), "at": (st.get(p["slug"]) or {}).get("at", "")}
+             for p in study_posts.posts()]
+    return render_template("studio_index.html", items=items, bench_at=bench_at, study=study, archived=_list(ARCH), topics=topics.load()["topics"],
                            steps=STEPS, keys=_keys_status(), bench=os.path.exists(os.path.join(BENCH, "summary.html")))
 
 @bp.route("/v/<name>")
@@ -275,6 +283,8 @@ def api_topics():
     elif op == "update": topics.update(a["id"], **{k: a.get(k) for k in ("title", "why", "minutes", "notes", "status")})
     elif op == "delete": topics.delete(a["id"])
     elif op == "suggest": return _start("topics", "suggest", "AI 주제 후보 찾기", ["topics.py", "--suggest"])
+    elif op == "study": return _start("study", "study", "학습 자료 블로그 발행", [os.path.join(ROOT, "coaching", "blog", "study_posts.py")])
+    elif op == "bench": return _start("bench", "bench", "벤치마크 수집·분석", ["bash", os.path.join(ROOT, "coaching", "bench", "run_bench.sh")], raw=True)
     elif op == "make":
         t = next((x for x in topics.load()["topics"] if x["id"] == a.get("id")), None)
         if not t: abort(404)

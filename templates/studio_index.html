@@ -15,6 +15,7 @@ h2{margin:18px 0 6px}
 .tp .t{font-weight:bold}
 .src{font-size:11px;padding:1px 7px;border-radius:9px;background:#eef;color:#335;margin-right:6px}
 .src.ai{background:#e8f6ee;color:#1f7a45}.src.chat{background:#fff3c4;color:#7a5a00}
+.refs{margin:6px 0;padding:6px 10px;background:#f7f9fc;border-radius:6px;font-size:13px}.refs a{color:#1a3d7c}
 .steps{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
 .steps span{font-size:11px;padding:2px 8px;border-radius:9px;background:#eee;color:#888}
 .steps span.on{background:#1a3d7c;color:#fff}
@@ -44,6 +45,8 @@ details summary{cursor:pointer;color:#1a3d7c}
     <button class="btn" onclick="addTopic()">추가</button>
     <button class="btn pri" onclick="suggest()" {% if not keys.claude %}disabled title="Claude 키가 필요합니다"{% endif %}>잘 되는 주제에서 AI로 후보 뽑기</button>
     {% if bench %}<a class="btn" href="{{ url_for('studio.bench') }}">벤치마크 보기</a>{% endif %}
+    <button class="btn" onclick="call({op:'bench'})" title="경쟁 채널 영상 목록·조회수를 새로 모읍니다 (수 분)">벤치마크 다시 수집</button>
+    <span class="small">{% if bench_at %}수집: {{ bench_at }}{% else %}벤치마크 데이터 없음 — 먼저 「벤치마크 다시 수집」{% endif %}</span>
   </div>
   <p class="small">채팅에서 정한 주제도 여기에 나옵니다. 「대본 만들기」를 누르면 AI가 대본·YouTube 문구·블로그 정보까지 만들어 아래 목록에 나옵니다.</p>
   <div id="topics"></div>
@@ -65,6 +68,14 @@ details summary{cursor:pointer;color:#1a3d7c}
 {% endfor %}
 </div>
 
+<h2>학습 자료 → 블로그 (takken.ekunblog.com)</h2>
+<div class="card">
+  <p class="small">학습 사이트(:8788)의 자료를 블로그 글로 올립니다. 영상에서 들어온 사람이 보는 용도라 보기 편한 형태로 만들었습니다. 오답 횟수·이유 같은 개인 기록은 올리지 않습니다.
+  같은 글이 있으면 갱신하므로 몇 번 눌러도 글은 1개씩입니다. 해설 영상 URL 이 URL 대장에 들어가 있으면 글에 영상이 임베드됩니다.</p>
+  {% for p in study %}<div class="vid"><div>{% if p.url %}<a class="t" href="{{ p.url }}" target="_blank" style="font-size:14px">{{ p.title }}</a><div class="small">발행 {{ p.at }}</div>{% else %}<span style="font-size:14px">{{ p.title }}</span><div class="small">미발행</div>{% endif %}</div></div>{% endfor %}
+  <p><button class="btn pri" onclick="if(confirm('학습 자료 글 {{ study|length }}개를 블로그에 발행(갱신)할까요? 음성·PDF 업로드 때문에 몇 분 걸립니다.')) call({op:'study'})">전부 발행·갱신</button></p>
+</div>
+
 <h2>지난 영상 (쇼츠 잘라내기용)</h2>
 <div class="card">
   <details><summary>{{ archived|length }}편 — 열어서 슬라이드를 고르면 홍보용 쇼츠를 만들 수 있습니다</summary>
@@ -79,6 +90,7 @@ details summary{cursor:pointer;color:#1a3d7c}
 <script>
 let TOPICS = {{ topics|tojson }}, JOB = null;
 const esc = s => (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtV = n => n >= 10000 ? (n/10000).toFixed(1).replace(/\.0$/, "") + "만 회" : n + "회";
 const SRC = {ai:"AI 제안", chat:"채팅", manual:"직접 입력"};
 function draw(){
   const box = document.getElementById("topics");
@@ -88,7 +100,10 @@ function draw(){
     const d = document.createElement("div"); d.className = "tp";
     d.innerHTML = `<div><span class="src ${t.source}">${SRC[t.source]||t.source}</span><span class="t">${esc(t.title)}</span>
         <span class="small">・약 ${t.minutes||10}분</span>
-        ${t.why ? `<div class="small">${esc(t.why)}</div>` : ""}${t.notes ? `<details><summary class="small">방침 메모</summary><div class="small">${esc(t.notes)}</div></details>` : ""}</div>
+        ${t.why ? `<div class="small">${esc(t.why)}</div>` : ""}
+        ${(t.refs||[]).length ? `<div class="refs"><b>참고 영상</b>${t.refs.map(r => `<div>・<a href="${esc(r.url)}" target="_blank" rel="noopener">[${esc(r.channel)}] ${esc(r.title)}</a>
+            <span class="small">조회수 ${fmtV(r.views)} · 그 채널 평소의 ${r.ratio}배${r.date ? " · " + r.date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3") : ""}</span></div>`).join("")}</div>`
+          : (t.source === "ai" ? `<div class="small" style="color:#999">참고 영상 기록 없음 (출처 표시 전에 뽑은 후보)</div>` : "")}${t.notes ? `<details><summary class="small">방침 메모</summary><div class="small">${esc(t.notes)}</div></details>` : ""}</div>
       <div class="row">${t.status === "done" && t.spec ? `<a class="btn" href="/studio/v/${t.spec}">대본 열기</a>`
           : t.status === "making" && JOB && JOB.running && JOB.topic === t.id ? `<span class="small">대본 만드는 중… ${JOB.elapsed}초</span>`
           : t.status === "making" ? `<span class="small" style="color:#c0392b">중단됨</span> <button class="btn pri" data-op="make">다시 만들기</button>`
@@ -102,7 +117,7 @@ function draw(){
 async function call(body){
   const r = await fetch("/studio/api/topics", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
   const d = await r.json(); if (!d.ok){ alert(d.error); return; }
-  if (d.topics && body.op !== "make" && body.op !== "suggest"){ TOPICS = d.topics; draw(); } else { TOPICS = (await (await fetch("/studio/api/topics",{method:"POST",headers:{"Content-Type":"application/json"},body:'{"op":"list"}'})).json()).topics; draw(); poll(true); }
+  if (d.topics && !["make","suggest","bench","study"].includes(body.op)){ TOPICS = d.topics; draw(); } else { TOPICS = (await (await fetch("/studio/api/topics",{method:"POST",headers:{"Content-Type":"application/json"},body:'{"op":"list"}'})).json()).topics; draw(); poll(true); }
 }
 function addTopic(){ const t = document.getElementById("nt").value.trim(); if (!t) return;
   call({op:"add", title:t, minutes:+document.getElementById("nm").value}); document.getElementById("nt").value = ""; }
@@ -118,7 +133,7 @@ async function poll(kick){
     el.textContent = (j.running ? `${j.label} 실행 중… ${j.elapsed}초\n` : (j.rc === 0 ? `${j.label} 완료\n` : `${j.label} 실패 (코드 ${j.rc})\n`)) + j.log;
     el.scrollTop = el.scrollHeight;
     if (j.running) seen = true;
-    if (!j.running && timer){ clearInterval(timer); timer = null; if (seen && ["script","suggest"].includes(j.kind)) location.reload(); }
+    if (!j.running && timer){ clearInterval(timer); timer = null; if (seen && ["script","suggest","bench","study"].includes(j.kind)) location.reload(); }
   };
   await tick(); if (!timer && (JOB.running || kick)) timer = setInterval(tick, 3000);
 }

@@ -24,13 +24,13 @@ def secret(env, fname):
     if os.path.exists(p): return open(p, encoding="utf-8").read().strip()
     raise WPError(f"{env} 가 설정되지 않았습니다. {p} 에 저장하거나 환경변수로 넘겨주세요.")
 
-def call(site, path, auth, method="GET", data=None, raw=None, headers=None):
+def call(site, path, auth, method="GET", data=None, raw=None, headers=None, timeout=60):
     url = site.rstrip("/") + "/wp-json/wp/v2/" + path
     body = raw if raw is not None else (json.dumps(data).encode() if data is not None else None)
     req = urllib.request.Request(url, data=body, method=method, headers={
         "Authorization": "Basic " + auth, "Content-Type": "application/json", "User-Agent": "takken-note-publisher", **(headers or {})})
     try:
-        with urllib.request.urlopen(req, timeout=60) as r: return json.loads(r.read())
+        with urllib.request.urlopen(req, timeout=timeout) as r: return json.loads(r.read())
     except urllib.error.HTTPError as e:
         msg = e.read().decode("utf-8", "replace")[:500]
         hint = ""
@@ -64,8 +64,9 @@ def upload_media(path, site=SITE, au=None):
     found = call(site, "media?" + urllib.parse.urlencode({"search": os.path.splitext(fn)[0], "per_page": 5}), au)
     for m in found or []:
         if os.path.splitext(fn)[0] in (m.get("source_url") or ""): return m["source_url"]
-    ctype = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}[fn.rsplit(".", 1)[-1].lower()]
-    res = call(site, "media", au, "POST", raw=open(path, "rb").read(),
+    ctype = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp",
+             "mp3": "audio/mpeg", "pdf": "application/pdf"}[fn.rsplit(".", 1)[-1].lower()]
+    res = call(site, "media", au, "POST", raw=open(path, "rb").read(), timeout=600,
                headers={"Content-Type": ctype, "Content-Disposition": f'attachment; filename="{fn}"'})
     return res["source_url"]
 
