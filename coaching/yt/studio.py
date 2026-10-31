@@ -274,6 +274,26 @@ def api_preview(name, i):
     info = json.loads(r.stdout.strip().splitlines()[-1])
     return jsonify(ok=True, png=info["png"], page_h=info["page_h"], t=int(time.time()))
 
+@bp.route("/api/illust_gen/<name>/<int:i>", methods=["POST"])
+def api_illust_gen(name, i):
+    """配置エディタから絵を1枚作る（その場で待つ。10〜40秒）。作った絵は overlay(img) として置く"""
+    import illust
+    p = _spec_path(name); sp = _load(name); a = request.get_json(force=True) or {}
+    if illust.provider() == "none": return jsonify(ok=False, error="일러스트 키가 없습니다 (.gemini_api_key 등)"), 400
+    if i < 1 or i > len(sp["slides"]): abort(404)
+    s = dict(sp["slides"][i - 1]); s.pop("illust_off", None); s.pop("illust_pos", None)
+    s["illust"] = str(a.get("prompt") or s.get("illust") or "").strip()
+    if a.get("new"): s["illust_seed"] = int(time.time())
+    try:
+        path = illust.ensure(s)
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)[:400]), 500
+    if not path: return jsonify(ok=False, error="그림이 만들어지지 않았습니다"), 500
+    sl = sp["slides"][i - 1]; sl["illust"] = s["illust"]
+    if "illust_seed" in s: sl["illust_seed"] = s["illust_seed"]
+    _write(p, sp)
+    return jsonify(ok=True, path=path, file=os.path.basename(path), prompt=s["illust"])
+
 @bp.route("/api/explode/<name>/<int:i>", methods=["POST"])
 def api_explode(name, i):
     """自動レイアウトの要素を1つずつ動かせる overlay にばらす（保存はしない。返ったスライドをエディタで使う）"""

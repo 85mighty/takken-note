@@ -174,6 +174,10 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   <div>
     <div id="cvwrap" onmousedown="cvDown(event)"></div>
     <div class="edbar">
+      <input type="text" id="ill_prompt" placeholder="그림 설명 (일본어) 예: 2週間のカレンダーに勉強の予定を書き込む受験生" style="width:360px;font-size:12px;padding:4px 6px">
+      <button onclick="genIll(false)" id="ill_btn" {% if keys.illust == 'none' %}disabled title="일러스트 키가 없습니다"{% endif %}>+그림 만들기</button>
+      <button onclick="genIll(true)" {% if keys.illust == 'none' %}disabled{% endif %} title="같은 설명으로 다른 그림">다른 그림</button>
+      <span style="border-left:1px solid #ccc;height:22px"></span>
       <button onclick="addOv('text')">+텍스트</button><button onclick="addOv('box')">+상자</button><button onclick="addOv('yellow')">+노란 강조</button><button onclick="addOv('arrow')">+화살표</button>
       <button style="background:#c0392b;color:#fff;border-color:#c0392b" onclick="delOv()">선택 삭제</button>
       <span style="border-left:1px solid #ccc;height:22px"></span>
@@ -184,7 +188,7 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
       <span style="flex:1"></span>
       <button onclick="edPreview()">미리보기</button><button class="pri" onclick="edSave()">저장</button><button onclick="edClose()">닫기</button>
     </div>
-    <p class="hint">열면 자동 레이아웃이 요소로 분해됩니다(AI 안 씀). 드래그=이동, 오른쪽아래 파란점=크기, 더블클릭=글 편집, 방향키=2px 이동(Shift=20px), Delete=삭제. 「미리보기」는 완성 그림을 보여주고, 화면을 클릭하면 편집으로 돌아옵니다. 「저장」을 누르기 전에는 아무것도 바뀌지 않습니다.</p>
+    <p class="hint">열면 자동 레이아웃이 요소로 분해됩니다(AI 안 씀). 그림은 설명을 쓰고 「+그림 만들기」→ 끌어서 배치. 드래그=이동, 오른쪽아래 파란점=크기, 더블클릭=글 편집, 방향키=2px 이동(Shift=20px), Delete=삭제. 「미리보기」는 완성 그림을 보여주고, 화면을 클릭하면 편집으로 돌아옵니다. 「저장」을 누르기 전에는 아무것도 바뀌지 않습니다.</p>
   </div>
   <div id="props"></div>
 </div></div>
@@ -270,13 +274,6 @@ function render(){
         <span class="badge ${ok ? "" : "chg"}">${r.edited ? "편집 중 (미저장)" : (r.state === "built" ? "완성됨" : (r.state === "draft" ? "초안 있음" : "변경 있음"))}</span>
         <span class="ops"><button data-op="pv">미리보기 이미지</button><button data-op="ed">배치 편집</button><button data-op="split" title="읽기 원고는 그대로 두고 이 슬라이드를 AI가 여러 장으로 나눕니다">AI로 나누기</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">복제</button><button data-op="del">삭제</button></span></div>
       <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">이미지 만드는 중…</div>`}
-        <div class="ill">
-          ${r.illust ? `<img src="/studio/illust/${r.illust}">` : `<div class="none">${s.illust_pos === "none" ? "그림 없음" : "미생성"}</div>`}
-          <div><textarea data-f="illust" placeholder="그림 설명 (비우면 본문에서 자동): ${esc(r.illust_auto || "")}">${esc(s.illust)}</textarea>
-            <div class="r"><select data-f="illust_pos">
-              <option value="">배치: 자동 (공간 있는 곳만)</option><option value="top">위 가운데</option><option value="right">오른쪽 (본문은 왼쪽)</option><option value="none">그림 없음</option></select>
-              <button data-op="ill" {% if keys.illust == 'none' %}disabled{% endif %}>${r.illust ? "다른 그림으로" : "이 그림 만들기"}</button></div></div>
-        </div>
         <div class="short"><input type="text" data-f="short_hook" placeholder="쇼츠 제목 (비우면 슬라이드 제목) — 일본어로" value="${esc(s.short_hook)}"><button data-op="short">쇼츠로 만들기</button></div>
       </div>
       <div>
@@ -312,7 +309,6 @@ async function op(kind, k, div){
     const sec = prompt(`#${k+1} 을 AI로 여러 장으로 나눕니다 (읽기 원고는 한 글자도 바뀌지 않고 끊는 위치와 화면만 새로 만듭니다).\n한 장의 목표 길이(초)를 넣어주세요:`, "25");
     if (!sec) return; if (dirty && !(await save())) return; run("reslice", {i:k+1, sec:+sec}); return;
   }
-  if (kind === "ill"){ if (dirty && !(await save())) return; return run("illust", {i:k+1}); }
   if (kind === "short"){ if (dirty && !(await save())) return; return run("short", {i:k+1, hook:S[k].short_hook || ""}); }
   if (kind === "up" && k > 0){ [S[k-1], S[k]] = [S[k], S[k-1]]; [R[k-1], R[k]] = [R[k], R[k-1]]; }
   else if (kind === "down" && k < S.length-1){ [S[k+1], S[k]] = [S[k], S[k+1]]; [R[k+1], R[k]] = [R[k], R[k+1]]; }
@@ -448,7 +444,21 @@ async function edOpen(k){
     }
   }
   $("#ed_restore").style.display = (sl._orig || ED.pending) ? "" : "none";
+  $("#ill_prompt").value = sl.illust || (rows[k] && rows[k].illust_auto) || "";
   edDraw(); edProps();
+}
+async function genIll(again){
+  const prompt = $("#ill_prompt").value.trim(); if (!prompt){ alert("그림 설명을 넣어주세요"); return; }
+  const b = $("#ill_btn"); b.disabled = true; b.textContent = "그림 만드는 중… (10~40초)";
+  try {
+    const d = await post(`/studio/api/illust_gen/${NAME}/${ED.k+1}`, {prompt, new: again});
+    if (!d.ok){ alert("그림 생성 실패:\n" + d.error); return; }
+    const cur = ED.ovs[ED.sel];
+    if (again && cur && cur.img){ cur.img = d.path; }                       // 選択中の絵を差し替え
+    else { ED.ovs.push({img: d.path, x: 1200, y: 300, w: 600, h: 338, opacity: 1}); ED.sel = ED.ovs.length - 1; }
+    if (ED.pending) ED.pending.illust = prompt; else spec.slides[ED.k].illust = prompt;
+    edDraw(); edProps();
+  } finally { b.disabled = false; b.textContent = "+그림 만들기"; }
 }
 function edClose(){ $("#ed").style.display = "none"; }
 const OVBASE = {x:200, y:300, w:700, h:140, size:56, bold:true, color:"#1e1e1e", bg:"transparent", border:"none", radius:0, align:"center", opacity:1, pad:10, text:""};
