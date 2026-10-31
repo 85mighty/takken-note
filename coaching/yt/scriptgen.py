@@ -234,7 +234,8 @@ def save(inp, topic, name=None, usage=None):
             "created_at": time.strftime("%Y-%m-%d %H:%M"),
             "slides": [{k: s[k] for k in ("title", "sub", "body", "speech", "illust")} for s in inp["slides"]],
             "youtube": {**inp["youtube"], "url": ""}, "blog": {**inp["blog"], "url": ""},
-            "related": inp["related"], "notes": inp["notes"]}
+            "related": inp["related"], "notes": inp["notes"],
+            "usage": {"input": usage.input_tokens, "output": usage.output_tokens, "model": MODEL} if usage else {"model": "claude-code-cli"}}
     p = os.path.join(SPECS, name + ".json")
     with open(p + ".tmp", "w", encoding="utf-8") as f: json.dump(spec, f, ensure_ascii=False, indent=1)
     os.replace(p + ".tmp", p)

@@ -166,6 +166,23 @@ def edit(name):
     return render_template("studio_edit.html", name=name, label=sp.get("label", name), steps=STEPS,
                            archived=_spec_path(name).startswith(ARCH), keys=_keys_status())
 
+@bp.route("/scripts")
+def scripts_page():
+    """AI で作った台本の一覧（トークンを使ったものを後から開き直せる）"""
+    rows = []
+    for d, arch in ((SPECS, False), (ARCH, True)):
+        for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+            if not f.endswith(".json") or f.startswith("TMP"): continue
+            sp = json.load(open(os.path.join(d, f), encoding="utf-8"))
+            u = sp.get("usage") or {}
+            rows.append({"name": sp["name"], "label": sp.get("label", sp["name"]), "topic": sp.get("topic", ""), "n": len(sp["slides"]),
+                         "chars": sum(len(x.get("speech", "")) for x in sp["slides"]), "created": sp.get("created_at", ""),
+                         "status": sp.get("status", "script"), "yt": (sp.get("youtube") or {}).get("title", ""), "url": (sp.get("youtube") or {}).get("url", ""),
+                         "tokens": (f"{u['input']:,} / {u['output']:,}" if u.get("input") else ("CLI" if u.get("model") == "claude-code-cli" else "")),
+                         "arch": arch, "notes": sp.get("notes", "")})
+    rows.sort(key=lambda r: r["created"], reverse=True)
+    return render_template("studio_scripts.html", rows=rows, steps=dict(STEPS))
+
 @bp.route("/style")
 def style_page():
     import subs

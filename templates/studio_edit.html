@@ -283,7 +283,6 @@ function render(){
         <label>읽기 원고 (내레이션 = 자막)</label><textarea class="speech" data-f="speech">${esc(s.speech)}</textarea>
         <div class="cnt">${chars}자・약 ${Math.round(chars/4.3)}초</div>
       </div>`;
-    div.querySelector('[data-f="illust_pos"]').value = s.illust_pos || "";
     div.querySelectorAll("[data-f]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
       spec.slides[k][el.dataset.f] = el.value; if (!el.value) delete spec.slides[k][el.dataset.f];
       rows[k].edited = true; setDirty(true);
@@ -394,7 +393,7 @@ async function loadThumb(){
   if (d.thumb && d.thumb.lines && !$("#th_lines").value) $("#th_lines").value = d.thumb.lines.join("\n");
   if (d.thumb && d.thumb.style) $("#th_style").value = d.thumb.style;
   if (!$("#th_lines").value){ const t = (spec.youtube||{}).title || spec.label || ""; $("#th_lines").value = t.replace(/[【】｜|]/g, "\n").split("\n").map(x => x.trim()).filter(Boolean).slice(0, 3).join("\n"); }
-  if (!$("#pub_at").value){ const t = new Date(Date.now() + 36e5 * 24); t.setMinutes(0); $("#pub_at").value = new Date(t.getTime() - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 16).replace(/T\d\d/, "T19"); }
+  if ($("#pub_at") && !$("#pub_at").value){ const t = new Date(Date.now() + 36e5 * 24); t.setMinutes(0); $("#pub_at").value = new Date(t.getTime() - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 16).replace(/T\d\d/, "T19"); }
 }
 async function makeThumb(){
   const lines = $("#th_lines").value.split("\n").map(x => x.trim()).filter(Boolean);

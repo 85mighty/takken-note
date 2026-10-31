@@ -20,6 +20,7 @@ a{color:#1a3d7c}
 <nav class="sn">
   <span class="brand">NIPPONリアル 스튜디오</span>
   <a href="{{ url_for('studio.index') }}" {% if request.endpoint == 'studio.index' or request.endpoint == 'studio.edit' %}class="on"{% endif %}>영상</a>
+  <a href="{{ url_for('studio.scripts_page') }}" {% if request.endpoint == 'studio.scripts_page' %}class="on"{% endif %}>대본</a>
   <a href="{{ url_for('studio.style_page') }}" {% if request.endpoint == 'studio.style_page' %}class="on"{% endif %}>자막 스타일</a>
   <a href="{{ url_for('studio.registry_page') }}" {% if request.endpoint == 'studio.registry_page' %}class="on"{% endif %}>URL 대장</a>
   <a href="{{ url_for('studio.bench') }}" {% if request.endpoint == 'studio.bench' %}class="on"{% endif %}>벤치마크</a>
