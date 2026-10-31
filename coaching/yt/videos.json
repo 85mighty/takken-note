@@ -62,7 +62,8 @@
    "label": "5問免除（登録講習）完全ガイド",
    "match": [
     "5問免除"
-   ]
+   ],
+   "url": "https://youtu.be/aOjRMBf75Jo?si=_JCHz6S87M4vnj9u"
   },
   {
    "key": "R8_kenri",
@@ -120,7 +121,8 @@
    "yt_title": "【2026年宅建】建築基準法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
    "url": "https://youtu.be/PTyLS-G7e7Q",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "4dtxr5zO16Q",
@@ -128,7 +130,8 @@
    "yt_title": "【2026年宅建】都市計画法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
    "url": "https://youtu.be/4dtxr5zO16Q",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "XzyLpMVJGI4",
@@ -136,7 +139,8 @@
    "yt_title": "看護師を目指すならどの学校？大学・専門・短大の違いと選び方",
    "url": "https://youtu.be/XzyLpMVJGI4",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "k0y_Pgv1ry4",
@@ -144,7 +148,8 @@
    "yt_title": "看護師給料いくらか1年目〜10年目までの手取りを全公開！",
    "url": "https://youtu.be/k0y_Pgv1ry4",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "azoyc4BTOcA",
@@ -152,7 +157,8 @@
    "yt_title": "【2025年最新版】日本の看護師になるには？国家試験・職場のリアル・将来性まで徹底解説！",
    "url": "https://youtu.be/azoyc4BTOcA",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "_2XrR0HLzj4",
@@ -160,7 +166,8 @@
    "yt_title": "【シニア住宅の真実】実は過酷？シルバータウンの現実と後悔の声",
    "url": "https://youtu.be/_2XrR0HLzj4",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "A2qTZ-Jy0Yw",
@@ -168,7 +175,8 @@
    "yt_title": "2025年4月から、すべての企業に「65歳までの雇用確保」が義務化されます！",
    "url": "https://youtu.be/A2qTZ-Jy0Yw",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "N09_8vzFdso",
@@ -176,7 +184,8 @@
    "yt_title": "【速報】1人2万円支給は本当？2025年からの現金給付の全貌をわかりやすく解説！",
    "url": "https://youtu.be/N09_8vzFdso",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "YrrYluLI6lY",
@@ -184,7 +193,8 @@
    "yt_title": "日本年金、こう変わる！2025年からの3つの重要ポイント【最新版】",
    "url": "https://youtu.be/YrrYluLI6lY",
    "short": false,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "430Va3MKT5g",
@@ -192,7 +202,8 @@
    "yt_title": "宅建2026 自己採点32点は受かる？｜合格点予想と比べると #宅建 #shorts",
    "url": "https://youtube.com/shorts/430Va3MKT5g",
    "short": true,
-   "auto": true
+   "auto": true,
+   "match": []
   },
   {
    "key": "1HBpXyXYABY",
@@ -200,7 +211,8 @@
    "yt_title": "宅建2026 自己採点31点は受かる？｜合格点予想と比べると #宅建 #shorts",
    "url": "https://youtube.com/shorts/1HBpXyXYABY",
    "short": true,
-   "auto": true
+   "auto": true,
+   "match": []
   }
  ],
  "fetched_at": "2026-10-29 14:07"
