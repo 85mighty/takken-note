@@ -94,7 +94,7 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
     <video id="vid" controls preload="metadata"></video>
     <div id="vinfo" class="hint"></div>
   </div>
-  <div class="card"><div class="job" id="job">대기 중</div></div>
+  <div class="card"><div class="job" id="job">대기 중</div><div style="margin-top:6px"><button id="stopbtn" style="display:none;background:#c0392b;color:#fff;border-color:#c0392b" onclick="stopJob()">■ 이 작업 중지</button></div></div>
 </div>
 <div>
   <div class="card">
@@ -373,9 +373,14 @@ async function saveUrl(){
 function showJob(j){
   const el = $("#job");
   if (!j || !j.name){ el.textContent = "대기 중"; return; }
-  const st = j.running ? `<b>${esc(j.label)} 실행 중…</b> ${j.elapsed}초` : (j.rc === 0 ? `<b>${esc(j.label)} 완료</b>` : `<b>${esc(j.label)} 종료 (코드 ${j.rc})</b>`);
+  const st = j.running ? `<b>${esc(j.label)} 실행 중…</b> ${j.elapsed}초` : (j.rc === 0 ? `<b>${esc(j.label)} 완료</b>` : (j.rc === -15 ? `<b>${esc(j.label)} 중지됨</b>` : `<b>${esc(j.label)} 종료 (코드 ${j.rc})</b>`));
+  $("#stopbtn").style.display = j.running ? "" : "none";
   el.innerHTML = `${st}　${esc(j.name)}\n` + esc(j.log); el.scrollTop = el.scrollHeight;
   if (j.running) startPoll();
+}
+async function stopJob(){
+  if (!confirm("진행 중인 작업을 중지할까요? (지금까지 만들어진 것은 남습니다)")) return;
+  const d = await post("/studio/api/job/stop"); if (!d.ok) alert(d.error); startPoll();
 }
 function startPoll(){
   if (poll) return;

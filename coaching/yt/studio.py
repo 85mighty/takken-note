@@ -360,6 +360,25 @@ def api_run(name, kind):
 def api_job():
     return jsonify(_job_state())
 
+@bp.route("/api/job/stop", methods=["POST"])
+def api_job_stop():
+    """実行中の作業を止める（プロセスグループごと）"""
+    import signal
+    j = _json(CUR) or {}
+    if not j: return jsonify(ok=False, error="실행 중인 작업이 없습니다"), 404
+    pid = int(j["pid"]); killed = False
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try: os.killpg(os.getpgid(pid), sig); killed = True
+        except (ProcessLookupError, PermissionError): pass
+        try: os.kill(pid, sig); killed = True
+        except (ProcessLookupError, PermissionError): pass
+        subprocess.run(["pkill", f"-{int(sig)}", "-P", str(pid)], capture_output=True)
+        time.sleep(0.5)
+        if not _alive(pid): break
+    with open(j["log"] + ".rc", "w") as f: f.write("-15")
+    with open(j["log"], "a", encoding="utf-8") as f: f.write("\n※ 사용자가 중지했습니다\n")
+    return jsonify(ok=True, killed=killed)
+
 @bp.route("/api/topics", methods=["POST"])
 def api_topics():
     import topics

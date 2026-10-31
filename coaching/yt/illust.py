@@ -110,8 +110,11 @@ def path_for(s):
         if os.path.exists(p): return p
     return None
 
-def _post(url, body, headers, timeout=300, tries=6):
-    """429（呼びすぎ）や 5xx は待ってやり直す。Retry-After があればその秒数、なければ 20s→40s→80s…"""
+class Exhausted(Exception):
+    """何度待っても 429 → この生成元は今回はもう使わない"""
+
+def _post(url, body, headers, timeout=300, tries=3):
+    """429（呼びすぎ）や 5xx は待ってやり直す（20s→40s）。それでもだめなら Exhausted。4xx は応答本文つきで失敗"""
     import time, urllib.error
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", **headers})
     for k in range(tries):
@@ -119,11 +122,17 @@ def _post(url, body, headers, timeout=300, tries=6):
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
-            if e.code not in (429, 500, 502, 503, 504) or k == tries - 1: raise
+            detail = ""
+            try: detail = json.loads(e.read().decode("utf-8", "replace")).get("error", {}).get("message", "")[:200]
+            except Exception: pass
+            if e.code not in (429, 500, 502, 503, 504): raise RuntimeError(f"HTTP {e.code}: {detail or e.reason}")
+            if k == tries - 1: raise Exhausted(f"HTTP {e.code} 가 계속됩니다 ({detail or '할당량 초과'})")
             ra = e.headers.get("Retry-After")
-            wait = int(ra) if ra and ra.isdigit() else min(20 * 2 ** k, 180)
-            print(f"    … {e.code} 잠시 대기 {wait}초 후 재시도 ({k+1}/{tries-1})", flush=True)
+            wait = int(ra) if ra and ra.isdigit() else 20 * 2 ** k
+            print(f"    … {e.code} 잠시 대기 {wait}초 후 재시도 ({k+1}/{tries-1}) {detail[:80]}", flush=True)
             time.sleep(wait)
+
+DOWN = set()   # この実行でだめだった生成元
 
 PACE = float(os.environ.get("ILLUST_PACE", "7"))     # 画像APIを続けて呼ぶ間隔（秒）。短いと 429 になる
 
@@ -146,9 +155,15 @@ def gen_gemini(prompt, out):
     raise RuntimeError("Gemini 가 이미지를 돌려주지 않았습니다: " + json.dumps(d, ensure_ascii=False)[:300])
 
 def gen_openai(prompt, out):
-    d = _post("https://api.openai.com/v1/images/generations",
-              {"model": os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1"), "prompt": prompt, "size": "1536x1024", "quality": "medium", "n": 1},
-              {"Authorization": "Bearer " + _key(".openai_api_key", "OPENAI_API_KEY")})
+    hdr = {"Authorization": "Bearer " + _key(".openai_api_key", "OPENAI_API_KEY")}
+    model = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
+    try:
+        d = _post("https://api.openai.com/v1/images/generations", {"model": model, "prompt": prompt, "size": "1536x1024", "quality": "medium", "n": 1}, hdr)
+    except RuntimeError as e:
+        if model != "dall-e-3" and "HTTP 4" in str(e):          # gpt-image が使えない鍵 → dall-e-3 で
+            print(f"    {model} 불가 ({str(e)[:100]}) → dall-e-3 로", flush=True)
+            d = _post("https://api.openai.com/v1/images/generations", {"model": "dall-e-3", "prompt": prompt[:3900], "size": "1792x1024", "response_format": "b64_json", "n": 1}, hdr)
+        else: raise
     _save_raster(base64.b64decode(d["data"][0]["b64_json"]), out); return out + ".png"
 
 SVG_SYSTEM = ("You draw illustrations as standalone SVG code. Style: Japanese free clip-art 'irasutoya' — flat pastel fills, "
@@ -189,15 +204,18 @@ def ensure(s, force=False):
     prov = provider()
     if prov not in GEN: return None
     out = os.path.join(DIR, key_for(s))
-    order = [prov] + [q for q in ("gemini", "openai", "claude") if q != prov and providers()[q]]
+    order = [q for q in [prov] + [q for q in ("gemini", "openai", "claude") if q != prov and providers()[q]] if q not in DOWN]
+    if not order: raise RuntimeError("쓸 수 있는 생성처가 없습니다 (" + ", ".join(sorted(DOWN)) + " 은 이번 작업에서 실패)")
     last = None
-    for q in order:                                   # 第一候補が何度やってもだめなら、次の作り方で
+    for q in order:                                   # 第一候補がだめなら次の作り方で。429 が続く生成元は以後飛ばす
         try:
             p = GEN[q](prompt_for(s), out)
             json.dump({"provider": q, "prompt": describe(s)}, open(out + ".json", "w", encoding="utf-8"), ensure_ascii=False)
             return p
+        except Exhausted as e:
+            DOWN.add(q); last = e; print(f"    {q}: {e} → 이번 작업에서는 {q} 를 건너뜁니다", flush=True)
         except Exception as e:
-            last = e; print(f"    {q} 실패: {str(e)[:120]}", flush=True)
+            last = e; print(f"    {q} 실패: {str(e)[:160]}", flush=True)
     raise last
 
 def placement(s):

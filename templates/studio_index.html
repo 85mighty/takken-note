@@ -50,7 +50,7 @@ details summary{cursor:pointer;color:#1a3d7c}
   </div>
   <p class="small">채팅에서 정한 주제도 여기에 나옵니다. 「대본 만들기」를 누르면 AI가 대본·YouTube 문구·블로그 정보까지 만들어 아래 목록에 나옵니다.</p>
   <div id="topics"></div>
-  <div class="job" id="job"></div>
+  <div class="job" id="job"></div><button class="btn" id="stopbtn" style="display:none;background:#c0392b;color:#fff;border-color:#c0392b;margin-top:6px" onclick="stopJob()">■ 이 작업 중지</button>
 </div>
 
 <h2>② 만들고 있는 영상</h2>
@@ -119,6 +119,8 @@ async function call(body){
   const d = await r.json(); if (!d.ok){ alert(d.error); return; }
   if (d.topics && !["make","suggest","bench","study"].includes(body.op)){ TOPICS = d.topics; draw(); } else { TOPICS = (await (await fetch("/studio/api/topics",{method:"POST",headers:{"Content-Type":"application/json"},body:'{"op":"list"}'})).json()).topics; draw(); poll(true); }
 }
+async function stopJob(){ if (!confirm("진행 중인 작업을 중지할까요?")) return;
+  const r = await fetch("/studio/api/job/stop", {method:"POST"}); const d = await r.json(); if (!d.ok) alert(d.error); poll(true); }
 function addTopic(){ const t = document.getElementById("nt").value.trim(); if (!t) return;
   call({op:"add", title:t, minutes:+document.getElementById("nm").value}); document.getElementById("nt").value = ""; }
 function suggest(){ call({op:"suggest"}); }
@@ -131,7 +133,7 @@ async function poll(kick){
     if (!j.name){ return; }
     el.style.display = "block";
     el.textContent = (j.running ? `${j.label} 실행 중… ${j.elapsed}초\n` : (j.rc === 0 ? `${j.label} 완료\n` : `${j.label} 실패 (코드 ${j.rc})\n`)) + j.log;
-    el.scrollTop = el.scrollHeight;
+    el.scrollTop = el.scrollHeight; document.getElementById("stopbtn").style.display = j.running ? "" : "none";
     if (j.running) seen = true;
     if (!j.running && timer){ clearInterval(timer); timer = null; if (seen && ["script","suggest","bench","study"].includes(j.kind)) location.reload(); }
   };
