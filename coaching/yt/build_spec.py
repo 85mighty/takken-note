@@ -15,13 +15,18 @@ SPECS = os.path.join(HERE, "specs")
 def load(path):
     return json.load(open(path, encoding="utf-8"))
 
+def compose_body(spec, s):
+    """描画に使う本文 = 本文 + イラスト + 自由配置の要素"""
+    import r8_goukaku as G, illust
+    body = s.get("body", "") if spec.get("illust_off") else illust.inject(s, s.get("body", ""))
+    return body + G.overlays_html(s.get("overlays"))
+
 def setup(spec):
     import r8_goukaku as G, vkit as V
-    import illust
     V.SUB_STYLE = spec.get("sub_style")
     G.SLIDES.clear()
     for s in spec["slides"]:
-        s["_body"] = s.get("body", "") if spec.get("illust_off") else illust.inject(s, s.get("body", ""))
+        s["_body"] = compose_body(spec, s)
         G.SLIDES.append((s.get("title", ""), s.get("sub", ""), s["_body"], s.get("speech", "")))
     G.OUT = os.path.join(V.OUT, spec["outdir"]); os.makedirs(G.OUT, exist_ok=True)
     return G
@@ -101,8 +106,7 @@ def main():
     if a.preview:
         i = a.preview
         s = json.load(open(a.slide_json, encoding="utf-8")) if a.slide_json else spec["slides"][i - 1]
-        import illust
-        body = s.get("body", "") if spec.get("illust_off") else illust.inject(s, s.get("body", ""))
+        body = compose_body(spec, s)
         png, h = G.render(body, s.get("title", ""), s.get("sub", ""), f"pv{i:02d}")
         import shutil
         key = G.slide_key(s.get("title", ""), s.get("sub", ""), body, s.get("speech", ""))

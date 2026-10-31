@@ -15,7 +15,21 @@ BENCH = os.path.join(ROOT, "coaching", "bench", "out")
 ILL = os.path.join(HERE, "illust")
 PY = sys.executable
 STEPS = [("script", "대본"), ("draft", "초안 영상"), ("voiced", "음성 완성"), ("uploaded", "YouTube"), ("blogged", "블로그")]
-SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "short_hook")
+SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "short_hook", "overlays")
+OV_KEYS = {"x": float, "y": float, "w": float, "h": float, "size": float, "radius": float, "opacity": float, "pad": float, "stroke": float,
+           "text": str, "color": str, "bg": str, "border": str, "align": str, "stroke_color": str, "bold": bool}
+
+def _clean_ov(ovs):
+    out = []
+    for o in ovs if isinstance(ovs, list) else []:
+        if not isinstance(o, dict): continue
+        c = {}
+        for k, t in OV_KEYS.items():
+            if k in o and o[k] is not None:
+                try: c[k] = t(o[k])
+                except (TypeError, ValueError): pass
+        if str(c.get("text", "")).strip(): out.append(c)
+    return out
 
 bp = Blueprint("studio", __name__, url_prefix="/studio")
 LOCK = threading.Lock()
@@ -58,8 +72,8 @@ def _keys(spec):
         V.SUB_STYLE = spec.get("sub_style")
         out = []
         for s in spec["slides"]:
-            b = s.get("body", "") if spec.get("illust_off") else illust.inject(s, s.get("body", ""))
-            out.append(G.slide_key(s.get("title", ""), s.get("sub", ""), b, s.get("speech", "")))
+            import build_spec
+            out.append(G.slide_key(s.get("title", ""), s.get("sub", ""), build_spec.compose_body(spec, s), s.get("speech", "")))
         return out
     except Exception:
         return [None] * len(spec["slides"])
@@ -209,6 +223,8 @@ def api_save(name):
             if s.get("illust_pos") in ("top", "right", "none"): c["illust_pos"] = s["illust_pos"]
             if s.get("illust_seed"): c["illust_seed"] = int(s["illust_seed"])
             if s.get("short_hook"): c["short_hook"] = str(s["short_hook"])
+            ov = _clean_ov(s.get("overlays"))
+            if ov: c["overlays"] = ov
             clean.append(c)
         sp["slides"] = clean
     meta = data.get("meta") or {}
@@ -241,8 +257,10 @@ def api_save(name):
 def api_preview(name, i):
     p = _spec_path(name)
     s = request.get_json(force=True) or {}
+    s = {k: s.get(k, "") for k in SLIDE_KEYS if k in s}
+    if "overlays" in s: s["overlays"] = _clean_ov(s["overlays"])
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
-        json.dump({k: s.get(k, "") for k in SLIDE_KEYS if k in s}, f, ensure_ascii=False); tmp = f.name
+        json.dump(s, f, ensure_ascii=False); tmp = f.name
     try:
         r = subprocess.run([PY, os.path.join(HERE, "build_spec.py"), p, "--preview", str(i), "--slide-json", tmp],
                            capture_output=True, text=True, timeout=180, env=_env(), cwd=HERE)

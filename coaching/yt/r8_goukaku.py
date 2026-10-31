@@ -12,7 +12,7 @@ from PIL import Image, ImageOps
 OUT = os.path.join(V.OUT, "goukaku"); os.makedirs(OUT, exist_ok=True)
 CSS = """
 @page { size: 508mm 3000mm; margin: 0; }
-body { width: 1920px; box-sizing: border-box; margin: 0; padding: 50px 110px 120px; font-family: "Noto Sans CJK JP", sans-serif; font-size: 34px; line-height: 1.6; color: #111; background: #fff; }
+body { position: relative; width: 1920px; box-sizing: border-box; margin: 0; padding: 50px 110px 120px; font-family: "Noto Sans CJK JP", sans-serif; font-size: 34px; line-height: 1.6; color: #111; background: #fff; }
 h1 { font-size: 54px; color: #1a3d7c; margin: 0 0 24px; padding-bottom: 12px; border-bottom: 5px solid #1a3d7c; }
 h1 small { font-size: 28px; color: #666; font-weight: normal; margin-left: 24px; }
 .key { background: #fff3c4; border-left: 14px solid #e0a800; padding: 16px 28px; margin: 0 0 26px; font-size: 38px; font-weight: bold; line-height: 1.5; }
@@ -35,6 +35,8 @@ ul { margin: 0 0 20px; padding-left: 44px; } li { margin: 8px 0; }
 .cover h3 { font-size: 50px; font-weight: normal; margin: 0 0 50px; }
 .cover p { font-size: 32px; color: #666; }
 .steps li { margin: 14px 0; font-size: 34px; }
+.ov { position: absolute; display: flex; align-items: center; box-sizing: border-box; line-height: 1.3; white-space: pre-wrap; font-weight: bold; }
+.ov.l { justify-content: flex-start; text-align: left; } .ov.c { justify-content: center; text-align: center; } .ov.r { justify-content: flex-end; text-align: right; }
 .ill-top { text-align: center; margin: 0 0 24px; }
 .ill-right { float: right; width: 540px; margin: 0 0 24px 40px; } .ill-right img { width: 100%; }
 .ill-cover { text-align: center; margin: 10px 0 0; } .ill-cover + .cover { padding-top: 10px; } .ill-cover + .cover h2 { margin-bottom: 18px; } .ill-cover + .cover h3 { margin-bottom: 26px; }
@@ -248,6 +250,20 @@ def _place(head, body, name, avail):
         if b: return b
     return nob
 
+def overlays_html(ovs):
+    """スタジオの配置エディタで置いた要素 (x,y,w,h は 1920×1080 基準の px)"""
+    out = []
+    for o in ovs or []:
+        if not isinstance(o, dict) or not str(o.get("text", "")).strip(): continue
+        st = (f"left:{float(o.get('x', 0)):.0f}px;top:{float(o.get('y', 0)):.0f}px;width:{float(o.get('w', 400)):.0f}px;height:{float(o.get('h', 100)):.0f}px;"
+              f"font-size:{float(o.get('size', 48)):.0f}px;font-weight:{'bold' if o.get('bold', True) else 'normal'};color:{o.get('color') or '#111'};"
+              f"background:{o.get('bg') or 'transparent'};border:{o.get('border') or 'none'};border-radius:{float(o.get('radius', 0)):.0f}px;"
+              f"opacity:{float(o.get('opacity', 1))};padding:{float(o.get('pad', 10)):.0f}px;")
+        if o.get("stroke"): st += f"-webkit-text-stroke:{float(o['stroke']):.0f}px {o.get('stroke_color') or '#fff'};"
+        cls = {"left": "l", "right": "r"}.get(o.get("align"), "c")
+        out.append(f"<div class='ov {cls}' style='{st}'>{E(str(o['text']))}</div>")
+    return "".join(out)
+
 def placement(title, sub, body):
     """そのスライドで絵がどこに入るか (top / right / cover / none)。絵を作る前の判定に使う"""
     head = f"<h1>{E(title)}<small>{E(sub)}</small></h1>" if title else ""
@@ -275,6 +291,7 @@ def render(body, title, sub, name):
         shutil.copy(cpng, png); return png, int(open(cmeta).read())
     body = _place(head, body, name, avail)
     im, ch, png = _render_once(head, body, name, 1.0)
+    if "class='ov" in body: ch = avail                       # 自由配置の要素があるときは座標がずれないよう拡大しない
     if 0 < ch < avail * 0.85:                               # 下が空くなら文字を大きくして埋める (最大1.6倍・試すのは3回まで)
         lo, hi, best = 1.0, min(1.6, avail / ch), None
         for k in range(4):
