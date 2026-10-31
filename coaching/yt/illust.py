@@ -66,10 +66,21 @@ def providers():
             "openai": bool(_key(".openai_api_key", "OPENAI_API_KEY")),
             "claude": bool(_key(".anthropic_api_key", "ANTHROPIC_API_KEY"))}
 
-def provider():
+SETTING = os.path.join(HERE, "illust_provider.txt")      # スタジオで選んだ生成元 (gemini / openai / claude / auto)
+
+def set_provider(name):
+    with open(SETTING, "w") as f: f.write(name if name in ("gemini", "openai", "claude", "auto") else "auto")
+
+def chosen():
     p = os.environ.get("ILLUST_PROVIDER")
     if p: return p
+    try: return open(SETTING).read().strip() or "auto"
+    except OSError: return "auto"
+
+def provider():
     av = providers()
+    c = chosen()
+    if c in av and av[c]: return c
     return next((k for k in ("gemini", "openai", "claude") if av[k]), "none")
 
 def plain(htm):

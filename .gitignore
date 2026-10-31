@@ -27,3 +27,4 @@ coaching/yt/illust/*.json
 coaching/yt/sub_style.json.tmp
 .yt_token.json
 .yt_client_secret.json
+coaching/yt/illust_provider.txt

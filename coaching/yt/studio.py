@@ -130,7 +130,7 @@ def _keys_status():
     return {"tts": bool(os.environ.get("GOOGLE_TTS_API_KEY") or os.path.exists(os.path.join(ROOT, ".google_api_key"))),
             "claude": scriptgen.available(),
             "wp": os.path.exists(os.path.join(ROOT, ".wp_app_password")) or bool(os.environ.get("WP_APP_PASSWORD")),
-            "illust": illust.provider(),
+            "illust": illust.provider(), "illust_choice": illust.chosen(), "illust_avail": illust.providers(),
             "yt": os.path.exists(os.path.join(ROOT, ".yt_token.json"))}
 
 def _list(d):
@@ -419,6 +419,12 @@ def api_shorts(name):
     return jsonify(ok=True, shorts=out)
 
 # ---------------- style / registry ----------------
+@bp.route("/api/illust_provider", methods=["POST"])
+def api_illust_provider():
+    import illust
+    illust.set_provider((request.get_json(force=True) or {}).get("provider", "auto"))
+    return jsonify(ok=True, provider=illust.provider(), choice=illust.chosen())
+
 @bp.route("/api/style", methods=["GET", "POST"])
 def api_style():
     import subs

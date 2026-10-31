@@ -101,6 +101,13 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
     <h3>영상 만들기</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="run('illust',{i:0})" {% if keys.illust == 'none' %}disabled title="일러스트 키가 없습니다"{% endif %}>일러스트 만들기 (공간 있는 곳만)</button>
+      <label style="display:inline-flex;align-items:center;gap:4px;margin:0;font-size:12px;color:#555">생성처
+        <select id="ill_prov" style="width:auto;font-size:12px;padding:3px 6px" onchange="setProv(this.value)">
+          <option value="auto" {% if keys.illust_choice == 'auto' %}selected{% endif %}>자동 (Gemini→OpenAI→Claude)</option>
+          <option value="gemini" {% if keys.illust_choice == 'gemini' %}selected{% endif %} {% if not keys.illust_avail.gemini %}disabled{% endif %}>Gemini (이라스토야 풍){% if not keys.illust_avail.gemini %} - 키 없음{% endif %}</option>
+          <option value="openai" {% if keys.illust_choice == 'openai' %}selected{% endif %} {% if not keys.illust_avail.openai %}disabled{% endif %}>OpenAI gpt-image{% if not keys.illust_avail.openai %} - 키 없음{% endif %}</option>
+          <option value="claude" {% if keys.illust_choice == 'claude' %}selected{% endif %} {% if not keys.illust_avail.claude %}disabled{% endif %}>Claude (SVG 그림){% if not keys.illust_avail.claude %} - 키 없음{% endif %}</option>
+        </select></label>
       <button class="pri" onclick="run('draft')">② 초안 영상 만들기 (음성 없음)</button>
       <button class="pri" onclick="run('build')" {% if not keys.tts %}disabled title="음성 키가 없습니다"{% endif %}>③ 음성 넣어 완성</button>
     </div>
@@ -387,6 +394,7 @@ async function copyTxt(k){
   const t = ytx[k];
   try { await navigator.clipboard.writeText(t); alert("복사했습니다"); } catch(e){ prompt("복사해 주세요", t); }
 }
+async function setProv(v){ const d = await post("/studio/api/illust_provider", {provider: v}); if (d.ok) alert("일러스트 생성처: " + d.provider + " (모든 영상에 적용)"); }
 async function loadThumb(){
   const d = await (await fetch(`/studio/api/thumb/${NAME}`)).json();
   if (d.file){ $("#th_img").src = fileUrl(d.file, d.mtime); $("#th_info").textContent = d.thumb.custom ? "내 이미지" : "자동 생성"; }
