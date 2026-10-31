@@ -541,7 +541,7 @@ document.addEventListener("keydown", e => {
 });
 function edSave(){
   if (ED.pending){ spec.slides[ED.k] = ED.pending; }
-  spec.slides[ED.k].overlays = ED.ovs.filter(o => (o.text||"").trim() || o.img); if (!spec.slides[ED.k].overlays.length) delete spec.slides[ED.k].overlays;
+  spec.slides[ED.k].overlays = ED.ovs.filter(o => (o.text||"").trim() || o.img || o.box); if (!spec.slides[ED.k].overlays.length) delete spec.slides[ED.k].overlays;
   rows[ED.k].edited = true; setDirty(true); edClose(); render(); save();
 }
 // 재생 중인 슬라이드를 노랗게

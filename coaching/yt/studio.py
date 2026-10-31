@@ -18,7 +18,7 @@ STEPS = [("script", "대본"), ("draft", "초안 영상"), ("voiced", "음성 �
 SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "short_hook", "overlays", "_orig")
 OV_KEYS = {"x": float, "y": float, "w": float, "h": float, "size": float, "radius": float, "opacity": float, "pad": float, "stroke": float, "lh": float,
            "text": str, "color": str, "bg": str, "border": str, "align": str, "stroke_color": str, "bold": bool, "img": str,
-           "border_left": str, "border_right": str, "border_top": str, "border_bottom": str}
+           "border_left": str, "border_right": str, "border_top": str, "border_bottom": str, "box": bool}
 
 def _clean_ov(ovs):
     out = []
@@ -30,7 +30,7 @@ def _clean_ov(ovs):
                 try: c[k] = t(o[k])
                 except (TypeError, ValueError): pass
         if c.get("img") and not (os.path.realpath(c["img"]).startswith(ILL) and os.path.exists(c["img"])): c.pop("img")
-        if str(c.get("text", "")).strip() or c.get("img"): out.append(c)
+        if str(c.get("text", "")).strip() or c.get("img") or c.get("box"): out.append(c)
     return out
 
 bp = Blueprint("studio", __name__, url_prefix="/studio")

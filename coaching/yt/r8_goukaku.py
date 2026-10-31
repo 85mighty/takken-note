@@ -263,7 +263,7 @@ def overlays_html(ovs):
         if o.get("img"):
             if os.path.exists(o["img"]): out.append(f"<img class='ov' src='file://{o['img']}' style='{pos}object-fit:contain;padding:0;opacity:{float(o.get('opacity', 1))}'>")
             continue
-        if not str(o.get("text", "")).strip(): continue
+        if not str(o.get("text", "")).strip() and not o.get("box"): continue
         st = (pos + f"font-size:{float(o.get('size', 48)):.0f}px;font-weight:{'bold' if o.get('bold', True) else 'normal'};color:{o.get('color') or '#111'};"
               f"background:{o.get('bg') or 'transparent'};border:{o.get('border') or 'none'};border-radius:{float(o.get('radius', 0)):.0f}px;"
               f"opacity:{float(o.get('opacity', 1))};padding:{float(o.get('pad', 10)):.0f}px;line-height:{float(o.get('lh', 1.3))};")
@@ -299,7 +299,9 @@ def _val(d):
     return float(getattr(d, "value", d) or 0)
 
 def explode(head, body, scale=1.0, illust_path=None):
-    """描いた画面の見出し・項目・表のセル・強調枠を、1つずつ動かせる要素(overlay)にする"""
+    """描いた画面の見出し・項目・表のセル・強調枠を、1つずつ動かせる要素(overlay)にする。
+    文字は「行を直接持つブロック」ごとに1要素。大きさの違う文字（<small> など）は別の要素に分ける。
+    背景や枠だけの箱（文字を直接持たない）は box 要素として先に置く"""
     doc = HTML(string=_html(head, body, scale, ph_mm=1100)).render()
     page = doc.pages[0]
     parent = {}
@@ -308,48 +310,74 @@ def explode(head, body, scale=1.0, illust_path=None):
         for c in getattr(b, "children", []) or []:
             parent[id(c)] = b; yield from walk(c)
     boxes = list(walk(page._page_box))
-    def text(b):
-        """行ごとの文字。<br> で分かれた行は改行、折り返しで分かれただけの行はつなげる"""
-        out, br = [], False
-        for lb in walk(b):
-            if type(lb).__name__ != "LineBox": continue
-            kids = list(walk(lb))
-            t = "".join(x.text for x in kids if type(x).__name__ == "TextBox")
-            if t:
-                if out and br: out.append("\n")
-                out.append(t)
-            br = any(getattr(k, "element_tag", None) == "br" for k in kids)
-        return "".join(out)
-    cands = [b for b in boxes if getattr(b, "element_tag", None) in TEXT_TAGS and type(b).__name__ in ("BlockBox", "TableCellBox") and text(b).strip()]
-    inner = []
-    for b in cands:
-        ids = {id(x) for x in walk(b)} - {id(b)}
-        if any(id(c) in ids for c in cands): continue          # 中にまだ候補がある → 外側は使わない
-        inner.append(b)
-    out = []
-    for b in inner:
-        st = b.style; tag = b.element_tag
-        x, y, w, h = b.border_box_x() * scale, b.border_box_y() * scale, b.border_width() * scale, b.border_height() * scale
-        t = text(b).strip()
-        pb = parent.get(id(b))
-        if tag == "li" and pb is not None and getattr(pb, "element_tag", None) == "li":   # 箇条書きの点・番号
-            mk = text(pb).strip()[: max(0, len(text(pb).strip()) - len(t))].strip().replace("•", "・")
-            if mk: t = mk + " " + t
-            x, w = pb.border_box_x() * scale, pb.border_width() * scale
-        o = {"text": t, "x": round(x), "y": round(y), "w": round(w) + 2, "h": round(h) + 2, "size": round(st["font_size"] * scale),
-             "bold": int(st["font_weight"]) >= 700, "color": _hex(st["color"]) or "#111111", "bg": _hex(st["background_color"]) or "transparent",
-             "border": "none", "radius": round(_val(st["border_top_left_radius"][0]) * scale) if st["border_top_left_radius"] else 0,
-             "align": {"center": "center", "right": "right", "end": "right"}.get(st["text_align_all"], "left"),
-             "opacity": 1, "pad": round(_val(st["padding_left"]) * scale), "lh": _lh(st)}
+    def tag(b): return getattr(b, "element_tag", None) or ""
+    def kids(b): return getattr(b, "children", []) or []
+    def texts(b): return [t for t in walk(b) if type(t).__name__ == "TextBox"]
+    def bb(b): return b.border_box_x() * scale, b.border_box_y() * scale, b.border_width() * scale, b.border_height() * scale
+    def align(st): return {"center": "center", "right": "right", "end": "right"}.get(st["text_align_all"], "left")
+    def borders(o, st):
         bw = {k: _val(st[f"border_{k}_width"]) for k in ("top", "right", "bottom", "left")}
         if all(v > 0 for v in bw.values()): o["border"] = f"{bw['top']*scale:.0f}px solid {_hex(st['border_top_color']) or '#333'}"
         else:
             for k, v in bw.items():
                 if v > 0: o["border_" + k] = f"{v*scale:.0f}px solid {_hex(st[f'border_{k}_color']) or '#333'}"
-        out.append(o)
+    markers = {}                                               # 箇条書きの点・番号 → それを持つ li の箱
+    for b in boxes:
+        if tag(b).endswith("::marker") and texts(b):
+            markers[id(parent.get(id(b)))] = "".join(t.text for t in texts(b)).strip().replace("•", "・")
+    boxes_out, text_out = [], []
+    for b in boxes:
+        if type(b).__name__ not in ("BlockBox", "TableCellBox", "FlexBox") or tag(b).endswith("::marker"): continue
+        lines = [c for c in kids(b) if type(c).__name__ == "LineBox"]
+        st = b.style
+        x, y, w, h = bb(b)
+        if not lines:                                          # 文字を直接持たない → 背景か枠があれば箱として
+            bw = any(_val(st[f"border_{k}_width"]) > 0 for k in ("top", "right", "bottom", "left"))
+            if (_hex(st["background_color"]) or bw) and tag(b) not in ("html", "body"):
+                o = {"text": "", "box": True, "x": round(x), "y": round(y), "w": round(w), "h": round(h), "size": 20, "bold": False, "color": "#000000",
+                     "bg": _hex(st["background_color"]) or "transparent", "border": "none", "radius": round(_val(st["border_top_left_radius"][0]) * scale) if st["border_top_left_radius"] else 0,
+                     "align": "left", "opacity": 1, "pad": 0}
+                borders(o, st); boxes_out.append(o)
+            continue
+        fs = st["font_size"]
+        main_lines, others = [], {}
+        for ln in lines:
+            cur = []
+            for t in texts(ln):
+                if abs(t.style["font_size"] - fs) < 0.5: cur.append(t.text)
+                else:
+                    key = (round(t.style["font_size"], 1), _hex(t.style["color"]) or "#111111")
+                    others.setdefault(key, []).append(t)
+            br = any(tag(k) == "br" for k in walk(ln))
+            main_lines.append(("".join(cur), br))
+        txt, prev_br = "", False
+        for t, br in main_lines:
+            if t:
+                if txt and prev_br: txt += "\n"
+                txt += t
+            prev_br = br
+        txt = txt.strip()
+        pb = parent.get(id(b))
+        mk = markers.get(id(pb)) if pb is not None and tag(pb) == "li" else None
+        if mk and txt:
+            txt = mk + " " + txt; x, w = pb.border_box_x() * scale, pb.border_width() * scale
+        if txt:
+            o = {"text": txt, "x": round(x), "y": round(y), "w": round(w) + 2, "h": round(h) + 2, "size": round(fs * scale),
+                 "bold": int(st["font_weight"]) >= 700, "color": _hex(st["color"]) or "#111111", "bg": _hex(st["background_color"]) or "transparent",
+                 "border": "none", "radius": round(_val(st["border_top_left_radius"][0]) * scale) if st["border_top_left_radius"] else 0,
+                 "align": align(st), "opacity": 1, "pad": round(_val(st["padding_left"]) * scale), "lh": _lh(st)}
+            borders(o, st); text_out.append(o)
+        for (ofs, col), ts in others.items():                 # 大きさの違う文字は別の要素に
+            x0 = min(t.position_x for t in ts) * scale; y0 = min(t.position_y for t in ts) * scale
+            x1 = max(t.position_x + t.width for t in ts) * scale; y1 = max(t.position_y + t.height for t in ts) * scale
+            t0 = ts[0].style
+            text_out.append({"text": "".join(t.text for t in ts).strip(), "x": round(x0) - 4, "y": round(y0) - 4, "w": round(x1 - x0) + 12, "h": round(y1 - y0) + 10,
+                             "size": round(ofs * scale), "bold": int(t0["font_weight"]) >= 700, "color": col, "bg": "transparent", "border": "none",
+                             "radius": 0, "align": "left", "opacity": 1, "pad": 0, "lh": 1.2})
+    out = boxes_out + text_out
     if illust_path:
         for b in boxes:
-            if getattr(b, "element_tag", None) == "img" and "Replaced" in type(b).__name__:
+            if tag(b) == "img" and "Replaced" in type(b).__name__:
                 out.append({"img": illust_path, "x": round(b.border_box_x() * scale), "y": round(b.border_box_y() * scale), "w": round(b.border_width() * scale), "h": round(b.border_height() * scale), "opacity": 1})
     return out
 
