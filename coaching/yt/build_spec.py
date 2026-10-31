@@ -77,12 +77,12 @@ def set_status(path, status):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("spec"); ap.add_argument("--preview", type=int); ap.add_argument("--preview-all", action="store_true"); ap.add_argument("--slide-json"); ap.add_argument("--draft", action="store_true")
+    ap.add_argument("spec"); ap.add_argument("--preview", type=int); ap.add_argument("--preview-all", action="store_true"); ap.add_argument("--explode", type=int); ap.add_argument("--slide-json"); ap.add_argument("--draft", action="store_true")
     ap.add_argument("--illust", type=int, help="絵だけ作る (0=ないもの全部, n=n枚目を作り直す)")
     a = ap.parse_args()
     spec = load(a.spec)
     G = setup(spec)
-    if a.illust is not None or a.draft or not (a.preview or a.preview_all):  # 絵がないスライドの絵を作る (キーがあるときだけ)
+    if a.illust is not None or a.draft or not (a.preview or a.preview_all or a.explode):  # 絵がないスライドの絵を作る (キーがあるときだけ)
         import illust
         if a.illust: spec = illust.regen(a.spec, a.illust)
         if illust.provider() == "none":
@@ -103,6 +103,20 @@ def main():
             shutil.copy(png, dst); done += 1
             print(f"미리보기 {i:02d}/{len(spec['slides'])}", flush=True)
         print(f"미리보기 이미지 {done}장 생성", flush=True); return
+    if a.explode:
+        import illust
+        i = a.explode
+        s = json.load(open(a.slide_json, encoding="utf-8")) if a.slide_json else spec["slides"][i - 1]
+        s = dict(s); s.pop("overlays", None)                        # まず自動レイアウトを描いて、その座標を読む
+        body = compose_body(spec, s)
+        G.render(body, s.get("title", ""), s.get("sub", ""), f"ex{i:02d}")
+        head = f"<h1>{G.E(s.get('title', ''))}<small>{G.E(s.get('sub', ''))}</small></h1>" if s.get("title") else ""
+        ovs = G.explode(head, body, G.LAST_SCALE, None if spec.get("illust_off") else illust.path_for(s))
+        ovs += [o for o in (json.load(open(a.slide_json, encoding="utf-8")) if a.slide_json else spec["slides"][i - 1]).get("overlays", []) or []]
+        new = {k: v for k, v in s.items() if k not in ("_body",)}
+        new.update(title="", sub="", body="", overlays=ovs, illust_off=True,
+                   _orig={k: s.get(k, "") for k in ("title", "sub", "body", "illust_pos") if k in s or k in ("title", "sub", "body")})
+        print(json.dumps(new, ensure_ascii=False)); return
     if a.preview:
         i = a.preview
         s = json.load(open(a.slide_json, encoding="utf-8")) if a.slide_json else spec["slides"][i - 1]

@@ -190,10 +190,9 @@ slide("まとめ", """
 <div class='note'>この動画は、各社の公式発表と不動産適正取引推進機構の公表資料をまとめた記事（イング資格取得ラボ、10月22日更新）をもとに構成しています。各社の予想は非公式の見込みです。</div>""",
  "最後にまとめです。今年の予想の中心は32点から34点、幅は31点から35点です。大原とLECの予想会のあとに数字が動くこともあります。各社の予想は過去5年で26件中20件が的中していますが、外れるときは実際の合格点のほうが低いことが多いです。合格点は33点から38点、合格率は13パーセントから19パーセントで推移していて、去年の33点はこの10年で最低でした。5問免除の合格点は、これまで全例で一般から5点低い数字です。自己採点は2社から3社の速報で、割れた問題は幅で持ち、分野別に集計しておきましょう。正式な合格点と正解番号が出るのは、11月25日水曜日、午前9時30分です。それまでは、合格していた場合と届かなかった場合、両方の準備を進めておいてください。ご視聴ありがとうございました。")
 
-def _render_once(head, body, name, scale):
-    """ページ幅を W/scale にして描き、解像度を scale 倍にして W px の画像にする → 文字が scale 倍になる"""
+def _html(head, body, scale, ph_mm=None):
     pw = W / scale
-    ph_mm = 1100 if scale == 1.0 else (H * 1.3 / scale) / 96 * 25.4   # 拡大時は収まるか見るだけなので短いページで十分 (速い)
+    ph_mm = ph_mm or (1100 if scale == 1.0 else (H * 1.3 / scale) / 96 * 25.4)   # 拡大時は収まるか見るだけなので短いページで十分 (速い)
     css = CSS.replace("size: 508mm 3000mm", f"size: {pw/96*25.4:.2f}mm {ph_mm:.1f}mm").replace("width: 1920px", f"width: {pw:.0f}px")
     try:
         import subs
@@ -201,8 +200,12 @@ def _render_once(head, body, name, scale):
         css = ff + css.replace('"Noto Sans CJK JP"', fam)
     except Exception:
         pass
+    return f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{css}</style></head><body>{head}{body}</body></html>"
+
+def _render_once(head, body, name, scale):
+    """ページ幅を W/scale にして描き、解像度を scale 倍にして W px の画像にする → 文字が scale 倍になる"""
     pdf = os.path.join(OUT, name + ".pdf"); png = os.path.join(OUT, name + ".png")
-    HTML(string=f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{css}</style></head><body>{head}{body}</body></html>").write_pdf(pdf)
+    HTML(string=_html(head, body, scale)).write_pdf(pdf)
     subprocess.run(["pdftoppm", "-f", "1", "-l", "1", "-r", f"{96*scale:.3f}", "-png", "-singlefile", pdf, png[:-4]], check=True)
     im = Image.open(png).convert("RGB")
     if im.size[0] != W: im = im.resize((W, int(im.size[1] * W / im.size[0])))
@@ -219,6 +222,7 @@ def _sub_area():
     except Exception:
         return V.BAND
 
+LAST_SCALE = 1.0
 RENDER_VER = 2      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
 ILL_RE = re.compile(r"<div class='ill ill-(\w+)'>(<img [^>]*>)</div>")
 ILL_MIN, ILL_MAX = 200, 340
@@ -254,15 +258,100 @@ def overlays_html(ovs):
     """スタジオの配置エディタで置いた要素 (x,y,w,h は 1920×1080 基準の px)"""
     out = []
     for o in ovs or []:
-        if not isinstance(o, dict) or not str(o.get("text", "")).strip(): continue
-        st = (f"left:{float(o.get('x', 0)):.0f}px;top:{float(o.get('y', 0)):.0f}px;width:{float(o.get('w', 400)):.0f}px;height:{float(o.get('h', 100)):.0f}px;"
-              f"font-size:{float(o.get('size', 48)):.0f}px;font-weight:{'bold' if o.get('bold', True) else 'normal'};color:{o.get('color') or '#111'};"
+        if not isinstance(o, dict): continue
+        pos = f"left:{float(o.get('x', 0)):.0f}px;top:{float(o.get('y', 0)):.0f}px;width:{float(o.get('w', 400)):.0f}px;height:{float(o.get('h', 100)):.0f}px;"
+        if o.get("img"):
+            if os.path.exists(o["img"]): out.append(f"<img class='ov' src='file://{o['img']}' style='{pos}object-fit:contain;padding:0;opacity:{float(o.get('opacity', 1))}'>")
+            continue
+        if not str(o.get("text", "")).strip(): continue
+        st = (pos + f"font-size:{float(o.get('size', 48)):.0f}px;font-weight:{'bold' if o.get('bold', True) else 'normal'};color:{o.get('color') or '#111'};"
               f"background:{o.get('bg') or 'transparent'};border:{o.get('border') or 'none'};border-radius:{float(o.get('radius', 0)):.0f}px;"
-              f"opacity:{float(o.get('opacity', 1))};padding:{float(o.get('pad', 10)):.0f}px;")
+              f"opacity:{float(o.get('opacity', 1))};padding:{float(o.get('pad', 10)):.0f}px;line-height:{float(o.get('lh', 1.3))};")
+        for side in ("left", "bottom", "top", "right"):
+            if o.get("border_" + side): st += f"border-{side}:{o['border_' + side]};"
         if o.get("stroke"): st += f"-webkit-text-stroke:{float(o['stroke']):.0f}px {o.get('stroke_color') or '#fff'};"
         cls = {"left": "l", "right": "r"}.get(o.get("align"), "c")
         out.append(f"<div class='ov {cls}' style='{st}'>{E(str(o['text']))}</div>")
     return "".join(out)
+
+# ---------------- 自動レイアウトを要素に分解（WeasyPrint のレイアウト木から座標を読む） ----------------
+TEXT_TAGS = {"h1", "h2", "h3", "p", "li", "th", "td", "div"}
+
+def _hex(c):
+    try:
+        if hasattr(c, "coordinates"): r, g, b = c.coordinates; a = c.alpha
+        else: r, g, b, a = c.red, c.green, c.blue, c.alpha
+    except Exception:
+        return None
+    if a <= 0.01: return None
+    return "#%02x%02x%02x" % tuple(max(0, min(255, round(float(v) * 255))) for v in (r, g, b))
+
+def _lh(st):
+    lh = st["line_height"]
+    try:
+        if lh == "normal": return 1.3
+        v = _val(lh)
+        return round(v / st["font_size"], 2) if getattr(lh, "unit", "px") == "px" and v > 3 else round(v, 2)
+    except Exception:
+        return 1.5
+
+def _val(d):
+    return float(getattr(d, "value", d) or 0)
+
+def explode(head, body, scale=1.0, illust_path=None):
+    """描いた画面の見出し・項目・表のセル・強調枠を、1つずつ動かせる要素(overlay)にする"""
+    doc = HTML(string=_html(head, body, scale, ph_mm=1100)).render()
+    page = doc.pages[0]
+    parent = {}
+    def walk(b):
+        yield b
+        for c in getattr(b, "children", []) or []:
+            parent[id(c)] = b; yield from walk(c)
+    boxes = list(walk(page._page_box))
+    def text(b):
+        """行ごとの文字。<br> で分かれた行は改行、折り返しで分かれただけの行はつなげる"""
+        out, br = [], False
+        for lb in walk(b):
+            if type(lb).__name__ != "LineBox": continue
+            kids = list(walk(lb))
+            t = "".join(x.text for x in kids if type(x).__name__ == "TextBox")
+            if t:
+                if out and br: out.append("\n")
+                out.append(t)
+            br = any(getattr(k, "element_tag", None) == "br" for k in kids)
+        return "".join(out)
+    cands = [b for b in boxes if getattr(b, "element_tag", None) in TEXT_TAGS and type(b).__name__ in ("BlockBox", "TableCellBox") and text(b).strip()]
+    inner = []
+    for b in cands:
+        ids = {id(x) for x in walk(b)} - {id(b)}
+        if any(id(c) in ids for c in cands): continue          # 中にまだ候補がある → 外側は使わない
+        inner.append(b)
+    out = []
+    for b in inner:
+        st = b.style; tag = b.element_tag
+        x, y, w, h = b.border_box_x() * scale, b.border_box_y() * scale, b.border_width() * scale, b.border_height() * scale
+        t = text(b).strip()
+        pb = parent.get(id(b))
+        if tag == "li" and pb is not None and getattr(pb, "element_tag", None) == "li":   # 箇条書きの点・番号
+            mk = text(pb).strip()[: max(0, len(text(pb).strip()) - len(t))].strip().replace("•", "・")
+            if mk: t = mk + " " + t
+            x, w = pb.border_box_x() * scale, pb.border_width() * scale
+        o = {"text": t, "x": round(x), "y": round(y), "w": round(w) + 2, "h": round(h) + 2, "size": round(st["font_size"] * scale),
+             "bold": int(st["font_weight"]) >= 700, "color": _hex(st["color"]) or "#111111", "bg": _hex(st["background_color"]) or "transparent",
+             "border": "none", "radius": round(_val(st["border_top_left_radius"][0]) * scale) if st["border_top_left_radius"] else 0,
+             "align": {"center": "center", "right": "right", "end": "right"}.get(st["text_align_all"], "left"),
+             "opacity": 1, "pad": round(_val(st["padding_left"]) * scale), "lh": _lh(st)}
+        bw = {k: _val(st[f"border_{k}_width"]) for k in ("top", "right", "bottom", "left")}
+        if all(v > 0 for v in bw.values()): o["border"] = f"{bw['top']*scale:.0f}px solid {_hex(st['border_top_color']) or '#333'}"
+        else:
+            for k, v in bw.items():
+                if v > 0: o["border_" + k] = f"{v*scale:.0f}px solid {_hex(st[f'border_{k}_color']) or '#333'}"
+        out.append(o)
+    if illust_path:
+        for b in boxes:
+            if getattr(b, "element_tag", None) == "img" and "Replaced" in type(b).__name__:
+                out.append({"img": illust_path, "x": round(b.border_box_x() * scale), "y": round(b.border_box_y() * scale), "w": round(b.border_width() * scale), "h": round(b.border_height() * scale), "opacity": 1})
+    return out
 
 def placement(title, sub, body):
     """そのスライドで絵がどこに入るか (top / right / cover / none)。絵を作る前の判定に使う"""
@@ -287,8 +376,11 @@ def render(body, title, sub, name):
     cdir = os.path.join(OUT, "_rc"); os.makedirs(cdir, exist_ok=True)
     cpng, cmeta = os.path.join(cdir, ck + ".png"), os.path.join(cdir, ck + ".txt")
     png = os.path.join(OUT, name + ".png")
+    global LAST_SCALE
     if os.path.exists(cpng) and os.path.exists(cmeta):
-        shutil.copy(cpng, png); return png, int(open(cmeta).read())
+        parts = open(cmeta).read().split(); LAST_SCALE = float(parts[1]) if len(parts) > 1 else 1.0
+        shutil.copy(cpng, png); return png, int(parts[0])
+    LAST_SCALE = 1.0
     body = _place(head, body, name, avail)
     im, ch, png = _render_once(head, body, name, 1.0)
     if "class='ov" in body: ch = avail                       # 自由配置の要素があるときは座標がずれないよう拡大しない
@@ -298,17 +390,17 @@ def render(body, title, sub, name):
             if hi - lo < 0.04: break
             sc = hi if k == 0 else (lo + hi) / 2
             im2, ch2, _p = _render_once(head, body, name, sc)
-            if ch2 <= avail: best, lo = (im2, ch2), sc
+            if ch2 <= avail: best, lo = (im2, ch2, sc), sc
             else: hi = sc
             if best is not None and best[1] >= avail * 0.9: break
-        if best: im, ch = best
+        if best: im, ch, LAST_SCALE = best
         else: im, ch, png = _render_once(head, body, name, 1.0)
     bottom = max(H, min(im.size[1], ch + 90))
     im = im.crop((0, 0, W, bottom))
     if V.HIGHLIGHT and area > 90:   # 字幕のぶん下に余白を足す
         pad = area - 90
         bg = Image.new('RGB', (W, bottom + pad), 'white'); bg.paste(im, (0, 0)); im = bg; bottom += pad
-    im.save(png); shutil.copy(png, cpng); open(cmeta, "w").write(str(bottom))
+    im.save(png); shutil.copy(png, cpng); open(cmeta, "w").write(f"{bottom} {LAST_SCALE}")
     return png, bottom
 
 def slide_key(title, sub, body, speech):

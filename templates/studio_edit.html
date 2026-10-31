@@ -79,6 +79,7 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
 <div class="bar">
   <h2>{{ label }}</h2>
   <button class="pri" onclick="save()">저장</button>
+  <button onclick="resliceAll()" title="읽기 원고가 긴 슬라이드를 AI가 여러 장으로 나눕니다 (원고 내용은 바뀌지 않음)">AI로 전체 더 잘게</button>
   <span id="dirty"></span>
   <a href="{{ url_for('studio.index') }}" style="margin-left:auto">← 목록</a>
 </div>
@@ -174,6 +175,8 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
     <div class="edbar">
       <button onclick="addOv('text')">+텍스트</button><button onclick="addOv('box')">+상자</button><button onclick="addOv('yellow')">+노란 강조</button><button onclick="addOv('arrow')">+화살표</button>
       <button style="background:#c0392b;color:#fff;border-color:#c0392b" onclick="delOv()">선택 삭제</button>
+      <button onclick="edExplode()" title="제목·항목·표 셀·강조 상자를 전부 개별 요소로 바꿉니다">자동 레이아웃을 요소로 분해</button>
+      <button onclick="edRestore()" id="ed_restore">원래 자동 레이아웃으로</button>
       <span style="flex:1"></span>
       <button onclick="edPreview()">미리보기</button><button class="pri" onclick="edSave()">저장</button><button onclick="edClose()">닫기</button>
     </div>
@@ -261,7 +264,7 @@ function render(){
       <div class="hd"><span class="no">#${i}</span>
         <span class="tm" data-t="${r.start ?? ""}">${r.in_video ? fmt(r.start) + "〜" + fmt(r.start + r.dur) + ` (${Math.round(r.dur)}초)` : (r.dstart != null ? "초안 " + fmt(r.dstart) : "영상에 미반영")}</span>
         <span class="badge ${ok ? "" : "chg"}">${r.edited ? "편집 중 (미저장)" : (r.state === "built" ? "완성됨" : (r.state === "draft" ? "초안 있음" : "변경 있음"))}</span>
-        <span class="ops"><button data-op="pv">미리보기 이미지</button><button data-op="ed">배치 편집</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">복제</button><button data-op="del">삭제</button></span></div>
+        <span class="ops"><button data-op="pv">미리보기 이미지</button><button data-op="ed">배치 편집</button><button data-op="split" title="읽기 원고는 그대로 두고 이 슬라이드를 AI가 여러 장으로 나눕니다">AI로 나누기</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">복제</button><button data-op="del">삭제</button></span></div>
       <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">이미지 만드는 중…</div>`}
         <div class="ill">
           ${r.illust ? `<img src="/studio/illust/${r.illust}">` : `<div class="none">${s.illust_pos === "none" ? "그림 없음" : "미생성"}</div>`}
@@ -301,6 +304,10 @@ async function op(kind, k, div){
     R[k].preview_local = d.png; R[k].pv_t = d.t; render(); return;
   }
   if (kind === "ed"){ edOpen(k); return; }
+  if (kind === "split"){
+    const sec = prompt(`#${k+1} 을 AI로 여러 장으로 나눕니다 (읽기 원고는 한 글자도 바뀌지 않고 끊는 위치와 화면만 새로 만듭니다).\n한 장의 목표 길이(초)를 넣어주세요:`, "25");
+    if (!sec) return; if (dirty && !(await save())) return; run("reslice", {i:k+1, sec:+sec}); return;
+  }
   if (kind === "ill"){ if (dirty && !(await save())) return; return run("illust", {i:k+1}); }
   if (kind === "short"){ if (dirty && !(await save())) return; return run("short", {i:k+1, hook:S[k].short_hook || ""}); }
   if (kind === "up" && k > 0){ [S[k-1], S[k]] = [S[k], S[k-1]]; [R[k-1], R[k]] = [R[k], R[k-1]]; }
@@ -321,6 +328,28 @@ async function run(kind, args){
   const d = await post(`/studio/api/run/${NAME}/${kind}`, args);
   if (!d.ok){ alert(d.error); return; }
   startPoll();
+}
+async function resliceAll(){
+  const sec = prompt("읽기 원고가 긴 슬라이드를 AI가 여러 장으로 나눕니다 (원고는 그대로, 끊는 위치와 화면만 새로).\n한 장의 목표 길이(초). 이보다 1.3배 이상 긴 슬라이드만 나눕니다:", "25");
+  if (!sec) return; if (dirty && !(await save())) return; run("reslice", {sec:+sec});
+}
+async function edExplode(){
+  if (!confirm("이 화면의 제목·항목·표 셀·강조 상자를 전부 개별 요소로 바꿉니다. 이후에는 본문(HTML) 대신 이 편집창에서 직접 고칩니다. 계속할까요?")) return;
+  const sl = {...spec.slides[ED.k], overlays: ED.ovs};
+  const d = await post(`/studio/api/explode/${NAME}/${ED.k+1}`, sl);
+  if (!d.ok){ alert("분해 실패:\n" + d.error); return; }
+  ED.pending = d.slide; ED.ovs = d.slide.overlays; ED.sel = -1; edDraw(); edProps();
+  const pv = await post(`/studio/api/preview/${NAME}/${ED.k+1}`, d.slide);
+  if (pv.ok) $("#cvwrap").style.backgroundImage = `url("${fileUrl(pv.png, pv.t)}")`;
+}
+async function edRestore(){
+  const o = spec.slides[ED.k]._orig || (ED.pending && ED.pending._orig);
+  if (!o || !confirm("자동 레이아웃으로 되돌립니다 (배치 편집 내용은 사라집니다)")) return;
+  ED.pending = {...spec.slides[ED.k], title:o.title, sub:o.sub, body:o.body, overlays:[]}; delete ED.pending._orig; delete ED.pending.illust_off;
+  if (o.illust_pos) ED.pending.illust_pos = o.illust_pos;
+  ED.ovs = []; ED.sel = -1; edDraw(); edProps();
+  const pv = await post(`/studio/api/preview/${NAME}/${ED.k+1}`, ED.pending);
+  if (pv.ok) $("#cvwrap").style.backgroundImage = `url("${fileUrl(pv.png, pv.t)}")`;
 }
 async function blog(asDraft){
   if (!$("#bl_slug").value.trim()){ alert("슬러그를 넣어주세요 (예: takken-5mon-menjo)"); return; }
@@ -399,7 +428,8 @@ async function loadShorts(){
 // ---------- 배치 편집 (seido-tube 와 같은 방식) ----------
 const ED = {k:-1, ovs:[], sel:-1, SC:0.6};
 function edOpen(k){
-  ED.k = k; ED.ovs = JSON.parse(JSON.stringify(spec.slides[k].overlays || [])); ED.sel = -1;
+  ED.k = k; ED.ovs = JSON.parse(JSON.stringify(spec.slides[k].overlays || [])); ED.sel = -1; ED.pending = null;
+  $("#ed_restore").style.display = spec.slides[k]._orig ? "" : "none";
   const r = rows[k] || {}; const img = r.preview_local ? fileUrl(r.preview_local, r.pv_t) : (r.thumb ? fileUrl(r.thumb) : "");
   const w = $("#cvwrap"); ED.SC = w.clientWidth / 1920 || 0.6; w.style.backgroundImage = img ? `url("${img}")` : "none";
   $("#ed").style.display = "flex"; edDraw(); edProps();
@@ -417,16 +447,19 @@ function addOv(t){
 function delOv(){ if (ED.sel < 0) return; ED.ovs.splice(ED.sel, 1); ED.sel = -1; edDraw(); edProps(); }
 function ovStyle(o, S){
   const j = {left:"flex-start", right:"flex-end"}[o.align] || "center";
-  return `left:${o.x*S}px;top:${o.y*S}px;width:${o.w*S}px;height:${o.h*S}px;font-size:${o.size*S}px;font-weight:${o.bold?"bold":"normal"};color:${o.color};background:${o.bg};border:${(o.border||"none").replace(/(\d+(\.\d+)?)px/, (m,n)=>(n*S)+"px")};border-radius:${(o.radius||0)*S}px;justify-content:${j};text-align:${o.align};padding:${(o.pad??10)*S}px;opacity:${o.opacity??1};${o.stroke?`-webkit-text-stroke:${o.stroke*S}px ${o.stroke_color||"#fff"};`:""}`;
+  return `left:${o.x*S}px;top:${o.y*S}px;width:${o.w*S}px;height:${o.h*S}px;font-size:${o.size*S}px;font-weight:${o.bold?"bold":"normal"};color:${o.color};background:${o.bg};border:${(o.border||"none").replace(/(\d+(\.\d+)?)px/, (m,n)=>(n*S)+"px")};border-radius:${(o.radius||0)*S}px;justify-content:${j};text-align:${o.align};padding:${(o.pad??10)*S}px;opacity:${o.opacity??1};line-height:${o.lh||1.3};${o.border_left?`border-left:${o.border_left.replace(/(\d+(\.\d+)?)px/,(m,n)=>(n*S)+"px")};`:""}${o.border_bottom?`border-bottom:${o.border_bottom.replace(/(\d+(\.\d+)?)px/,(m,n)=>(n*S)+"px")};`:""}${o.stroke?`-webkit-text-stroke:${o.stroke*S}px ${o.stroke_color||"#fff"};`:""}`;
 }
 function edDraw(){
   const S = ED.SC;
-  $("#cvwrap").innerHTML = ED.ovs.map((o,i) => `<div class="ovx ${i===ED.sel?"sel":""}" data-i="${i}" style="${ovStyle(o,S)}">${esc(o.text)}<div class="rz" data-rz="1"></div></div>`).join("");
+  $("#cvwrap").innerHTML = ED.ovs.map((o,i) => o.img
+    ? `<div class="ovx ${i===ED.sel?"sel":""}" data-i="${i}" style="left:${o.x*S}px;top:${o.y*S}px;width:${o.w*S}px;height:${o.h*S}px;padding:0;background:url('/studio/illust/${esc(o.img.split("/").pop())}') center/contain no-repeat"><div class="rz" data-rz="1"></div></div>`
+    : `<div class="ovx ${i===ED.sel?"sel":""}" data-i="${i}" style="${ovStyle(o,S)}">${esc(o.text)}<div class="rz" data-rz="1"></div></div>`).join("");
   $("#cvwrap").querySelectorAll(".ovx").forEach(el => el.addEventListener("dblclick", () => { const i = +el.dataset.i; const t = prompt("문구 (일본어)", ED.ovs[i].text); if (t !== null){ ED.ovs[i].text = t; edDraw(); edProps(); } }));
 }
 function edProps(){
   const o = ED.ovs[ED.sel], P = $("#props");
   if (!o){ P.innerHTML = "<p class='hint'>요소를 클릭하면 속성이 나옵니다. 위 버튼으로 요소를 추가하세요.</p>"; return; }
+  if (o.img){ P.innerHTML = `<p class='hint'>일러스트 (드래그로 이동·크기)</p><div class="two"><div><label>X</label><input type="number" value="${o.x}" oninput="edSet('x',this.value)"></div><div><label>Y</label><input type="number" value="${o.y}" oninput="edSet('y',this.value)"></div><div><label>W</label><input type="number" value="${o.w}" oninput="edSet('w',this.value)"></div><div><label>H</label><input type="number" value="${o.h}" oninput="edSet('h',this.value)"></div></div>`; return; }
   const f = (k, type, extra="") => `<input type="${type}" value="${esc(String(o[k] ?? ""))}" oninput="edSet('${k}', this.value)" ${extra}>`;
   P.innerHTML = `<label>텍스트</label><textarea oninput="edSet('text', this.value)" style="min-height:56px">${esc(o.text)}</textarea>
     <div class="two"><div><label>글자 크기(px)</label>${f("size","number")}</div><div><label>굵게</label><input type="checkbox" ${o.bold?"checked":""} onchange="edSet('bold', this.checked)"></div></div>
@@ -440,7 +473,7 @@ function edProps(){
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px"><button onclick="edQuick('red')">빨강 강조</button><button onclick="edQuick('yellow')">노란 말풍선</button><button onclick="edQuick('navy')">흰 글자+남색 상자</button><button onclick="edQuick('plain')">장식 없음</button></div>`;
 }
 function edSet(k, v){ const o = ED.ovs[ED.sel]; if (!o) return; o[k] = ["size","radius","opacity","x","y","w","h","pad","stroke"].includes(k) ? parseFloat(v) || 0 : v;
-  const el = $(`#cvwrap [data-i="${ED.sel}"]`); if (el){ el.style.cssText = ovStyle(o, ED.SC); el.childNodes[0].nodeValue = o.text; } }
+  if (o.img){ edDraw(); return; } const el = $(`#cvwrap [data-i="${ED.sel}"]`); if (el){ el.style.cssText = ovStyle(o, ED.SC); el.childNodes[0].nodeValue = o.text; } }
 function edQuick(t){ const o = ED.ovs[ED.sel]; if (!o) return;
   if (t === "red") Object.assign(o, {color:"#d32f2f", bold:true, bg:"transparent", border:"none", stroke:0});
   if (t === "yellow") Object.assign(o, {color:"#5a3a00", bg:"#fff3c4", border:"4px solid #e0a800", radius:12, stroke:0});
@@ -453,19 +486,20 @@ function cvDown(e){
   const sx = e.clientX, sy = e.clientY, ox = o.x, oy = o.y, ow = o.w, oh = o.h;
   const mv = ev => { const dx = (ev.clientX - sx) / S, dy = (ev.clientY - sy) / S;
     if (rz){ o.w = Math.max(40, Math.round(ow + dx)); o.h = Math.max(30, Math.round(oh + dy)); } else { o.x = Math.round(ox + dx); o.y = Math.round(oy + dy); }
-    const d = $(`#cvwrap [data-i="${ED.sel}"]`); if (d) d.style.cssText = ovStyle(o, S); };
+    const d = $(`#cvwrap [data-i="${ED.sel}"]`); if (d){ if (o.img){ d.style.left=o.x*S+"px"; d.style.top=o.y*S+"px"; d.style.width=o.w*S+"px"; d.style.height=o.h*S+"px"; } else d.style.cssText = ovStyle(o, S); } };
   const up = () => { document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); edProps(); };
   document.addEventListener("mousemove", mv); document.addEventListener("mouseup", up); e.preventDefault();
 }
 async function edPreview(){
-  const sl = {...spec.slides[ED.k], overlays: ED.ovs};
+  const sl = {...(ED.pending || spec.slides[ED.k]), overlays: ED.ovs};
   const d = await post(`/studio/api/preview/${NAME}/${ED.k+1}`, sl);
   if (!d.ok){ alert("미리보기 실패:\n" + d.error); return; }
   $("#cvwrap").style.backgroundImage = `url("${fileUrl(d.png, d.t)}")`;
   rows[ED.k].preview_local = d.png; rows[ED.k].pv_t = d.t;
 }
 function edSave(){
-  spec.slides[ED.k].overlays = ED.ovs.filter(o => (o.text||"").trim()); if (!spec.slides[ED.k].overlays.length) delete spec.slides[ED.k].overlays;
+  if (ED.pending){ spec.slides[ED.k] = ED.pending; }
+  spec.slides[ED.k].overlays = ED.ovs.filter(o => (o.text||"").trim() || o.img); if (!spec.slides[ED.k].overlays.length) delete spec.slides[ED.k].overlays;
   rows[ED.k].edited = true; setDirty(true); edClose(); render(); save();
 }
 // 재생 중인 슬라이드를 노랗게

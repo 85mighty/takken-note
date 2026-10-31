@@ -15,9 +15,10 @@ BENCH = os.path.join(ROOT, "coaching", "bench", "out")
 ILL = os.path.join(HERE, "illust")
 PY = sys.executable
 STEPS = [("script", "대본"), ("draft", "초안 영상"), ("voiced", "음성 완성"), ("uploaded", "YouTube"), ("blogged", "블로그")]
-SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "short_hook", "overlays")
-OV_KEYS = {"x": float, "y": float, "w": float, "h": float, "size": float, "radius": float, "opacity": float, "pad": float, "stroke": float,
-           "text": str, "color": str, "bg": str, "border": str, "align": str, "stroke_color": str, "bold": bool}
+SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "short_hook", "overlays", "_orig")
+OV_KEYS = {"x": float, "y": float, "w": float, "h": float, "size": float, "radius": float, "opacity": float, "pad": float, "stroke": float, "lh": float,
+           "text": str, "color": str, "bg": str, "border": str, "align": str, "stroke_color": str, "bold": bool, "img": str,
+           "border_left": str, "border_right": str, "border_top": str, "border_bottom": str}
 
 def _clean_ov(ovs):
     out = []
@@ -28,7 +29,8 @@ def _clean_ov(ovs):
             if k in o and o[k] is not None:
                 try: c[k] = t(o[k])
                 except (TypeError, ValueError): pass
-        if str(c.get("text", "")).strip(): out.append(c)
+        if c.get("img") and not (os.path.realpath(c["img"]).startswith(ILL) and os.path.exists(c["img"])): c.pop("img")
+        if str(c.get("text", "")).strip() or c.get("img"): out.append(c)
     return out
 
 bp = Blueprint("studio", __name__, url_prefix="/studio")
@@ -225,6 +227,8 @@ def api_save(name):
             if s.get("short_hook"): c["short_hook"] = str(s["short_hook"])
             ov = _clean_ov(s.get("overlays"))
             if ov: c["overlays"] = ov
+            if s.get("illust_off"): c["illust_off"] = True
+            if isinstance(s.get("_orig"), dict): c["_orig"] = {k: str(s["_orig"].get(k, "")) for k in ("title", "sub", "body", "illust_pos")}
             clean.append(c)
         sp["slides"] = clean
     meta = data.get("meta") or {}
@@ -270,6 +274,22 @@ def api_preview(name, i):
     info = json.loads(r.stdout.strip().splitlines()[-1])
     return jsonify(ok=True, png=info["png"], page_h=info["page_h"], t=int(time.time()))
 
+@bp.route("/api/explode/<name>/<int:i>", methods=["POST"])
+def api_explode(name, i):
+    """自動レイアウトの要素を1つずつ動かせる overlay にばらす（保存はしない。返ったスライドをエディタで使う）"""
+    p = _spec_path(name)
+    s = request.get_json(force=True) or {}
+    s = {k: s.get(k, "") for k in SLIDE_KEYS if k in s}
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+        json.dump(s, f, ensure_ascii=False); tmp = f.name
+    try:
+        r = subprocess.run([PY, os.path.join(HERE, "build_spec.py"), p, "--explode", str(i), "--slide-json", tmp],
+                           capture_output=True, text=True, timeout=180, env=_env(), cwd=HERE)
+    finally:
+        os.unlink(tmp)
+    if r.returncode: return jsonify(ok=False, error=(r.stderr or r.stdout)[-800:]), 500
+    return jsonify(ok=True, slide=json.loads(r.stdout.strip().splitlines()[-1]))
+
 # ---------------- jobs ----------------
 @bp.route("/api/run/<name>/<kind>", methods=["POST"])
 def api_run(name, kind):
@@ -284,6 +304,9 @@ def api_run(name, kind):
         if i < 1: abort(400)
         argv = ["shorts.py", p, str(i)] + (["--hook", str(a["hook"])] if a.get("hook") else [])
         return _start(name, kind, f"쇼츠 #{i}", argv)
+    if kind == "reslice":
+        argv = ["reslice.py", p, "--sec", str(float(a.get("sec") or 25))] + (["--slide", str(int(a["i"]))] if a.get("i") else [])
+        return _start(name, kind, f"AI로 나누기{' #'+str(a['i']) if a.get('i') else ' (전체)'}", argv)
     if kind == "upload":
         argv = ["yt_upload.py", p]
         if a.get("publish_at"): argv += ["--publish-at", str(a["publish_at"])]

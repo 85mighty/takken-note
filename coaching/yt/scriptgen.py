@@ -120,6 +120,40 @@ SAVE_TOOL = {
 }
 WEB = {"type": "web_search_20260209", "name": "web_search", "max_uses": 8}
 
+def ask_json(prompt, system, schema, check, log=print, effort="medium", tool_name="save", tool_desc="結果を保存する", web=False, max_tokens=32000):
+    """スキーマどおりの JSON を Claude からもらう（API キーがあればツール呼び出し、なければ Claude Code CLI）。check(obj) がエラー文を返したら伝えてやり直す"""
+    if not api_key(False):
+        return cli_json(prompt, system, schema, check, log)
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key())
+    tool = {"name": tool_name, "description": tool_desc + "。必ず1回呼ぶ。", "strict": True, "eager_input_streaming": True, "input_schema": schema}
+    tools = ([WEB] if web else []) + [tool]
+    messages = [{"role": "user", "content": prompt}]
+    for turn in range(6):
+        log(f"… Claude 에 요청 중 ({turn+1})")
+        try:
+            with client.messages.stream(model=MODEL, max_tokens=max_tokens, system=system + f"\n最後に必ず {tool_name} ツールで結果を保存する。",
+                                        tools=tools, output_config={"effort": effort}, messages=messages) as st:
+                msg = st.get_final_message()
+        except ValueError as e:
+            log(f"  입력을 읽지 못해 다시 시도합니다 ({e})"); continue
+        if msg.stop_reason == "refusal": raise RuntimeError("Claude 가 거절했습니다")
+        if msg.stop_reason == "pause_turn":
+            messages.append({"role": "assistant", "content": msg.content}); continue
+        if msg.stop_reason == "max_tokens": raise RuntimeError("출력이 너무 길어 중간에 끊겼습니다")
+        calls = [b for b in msg.content if b.type == "tool_use" and b.name == tool_name]
+        if not calls:
+            messages.append({"role": "assistant", "content": msg.content})
+            messages.append({"role": "user", "content": f"{tool_name} ツールで保存してください。"}); continue
+        err = check(calls[0].input)
+        if err:
+            log(f"  형식이 맞지 않아 다시 요청합니다: {err}")
+            messages.append({"role": "assistant", "content": msg.content})
+            messages.append({"role": "user", "content": [{"type": "tool_result", "tool_use_id": calls[0].id, "is_error": True, "content": json.dumps({"INVALID_INPUT": err}, ensure_ascii=False)}]})
+            continue
+        return calls[0].input
+    raise RuntimeError("올바른 결과를 받지 못했습니다 (주고받기 한도)")
+
 def _valid(inp):
     """eager_input_streaming では入力が途中で切れても気づけないので、自分で形を確かめる"""
     if not isinstance(inp, dict): return "入力がオブジェクトではありません"
