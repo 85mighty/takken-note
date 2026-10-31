@@ -99,10 +99,22 @@ def path_for(s):
         if os.path.exists(p): return p
     return None
 
-def _post(url, body, headers, timeout=300):
+def _post(url, body, headers, timeout=300, tries=6):
+    """429（呼びすぎ）や 5xx は待ってやり直す。Retry-After があればその秒数、なければ 20s→40s→80s…"""
+    import time, urllib.error
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", **headers})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.load(r)
+    for k in range(tries):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 502, 503, 504) or k == tries - 1: raise
+            ra = e.headers.get("Retry-After")
+            wait = int(ra) if ra and ra.isdigit() else min(20 * 2 ** k, 180)
+            print(f"    … {e.code} 잠시 대기 {wait}초 후 재시도 ({k+1}/{tries-1})", flush=True)
+            time.sleep(wait)
+
+PACE = float(os.environ.get("ILLUST_PACE", "7"))     # 画像APIを続けて呼ぶ間隔（秒）。短いと 429 になる
 
 def gen_gemini(prompt, out):
     model = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image")
@@ -166,9 +178,16 @@ def ensure(s, force=False):
     prov = provider()
     if prov not in GEN: return None
     out = os.path.join(DIR, key_for(s))
-    p = GEN[prov](prompt_for(s), out)
-    json.dump({"provider": prov, "prompt": describe(s)}, open(out + ".json", "w", encoding="utf-8"), ensure_ascii=False)
-    return p
+    order = [prov] + [q for q in ("gemini", "openai", "claude") if q != prov and providers()[q]]
+    last = None
+    for q in order:                                   # 第一候補が何度やってもだめなら、次の作り方で
+        try:
+            p = GEN[q](prompt_for(s), out)
+            json.dump({"provider": q, "prompt": describe(s)}, open(out + ".json", "w", encoding="utf-8"), ensure_ascii=False)
+            return p
+        except Exception as e:
+            last = e; print(f"    {q} 실패: {str(e)[:120]}", flush=True)
+    raise last
 
 def placement(s):
     """このスライドに絵が入るか（空きがあるか）を、白紙の絵で試して判定する: top / right / cover / none"""
@@ -189,10 +208,12 @@ def ensure_spec(spec, only=None, log=print):
         if not only and placement(s) == "none":
             log(f"일러스트 {i:02d} – 공간이 없어 그림 없음  {s.get('title') or 'はじめに'}"); continue
         try:
+            import time
+            if n: time.sleep(PACE)                   # 続けて呼ぶと 429 になるので間を空ける
             p = ensure(s)
             if p: n += 1; log(f"일러스트 {i:02d} ✓ {os.path.basename(p)}  {s.get('title') or 'はじめに'}")
         except Exception as e:
-            log(f"illust {i:02d} ✗ {e}")
+            log(f"일러스트 {i:02d} ✗ {str(e)[:200]}")
     return n
 
 def inject(s, body):

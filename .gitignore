@@ -25,3 +25,5 @@ coaching/yt/specs/.history/
 coaching/yt/illust/_blank*.png
 coaching/yt/illust/*.json
 coaching/yt/sub_style.json.tmp
+.yt_token.json
+.yt_client_secret.json

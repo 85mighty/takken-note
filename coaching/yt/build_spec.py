@@ -72,12 +72,12 @@ def set_status(path, status):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("spec"); ap.add_argument("--preview", type=int); ap.add_argument("--slide-json"); ap.add_argument("--draft", action="store_true")
+    ap.add_argument("spec"); ap.add_argument("--preview", type=int); ap.add_argument("--preview-all", action="store_true"); ap.add_argument("--slide-json"); ap.add_argument("--draft", action="store_true")
     ap.add_argument("--illust", type=int, help="絵だけ作る (0=ないもの全部, n=n枚目を作り直す)")
     a = ap.parse_args()
     spec = load(a.spec)
     G = setup(spec)
-    if a.illust is not None or a.draft or not a.preview:  # 絵がないスライドの絵を作る (キーがあるときだけ)
+    if a.illust is not None or a.draft or not (a.preview or a.preview_all):  # 絵がないスライドの絵を作る (キーがあるときだけ)
         import illust
         if a.illust: spec = illust.regen(a.spec, a.illust)
         if illust.provider() == "none":
@@ -87,13 +87,27 @@ def main():
         if a.illust is not None: return
     if a.draft:
         draft(spec, G); set_status(a.spec, "draft"); return
+    if a.preview_all:
+        import shutil
+        done = 0
+        for i, s in enumerate(spec["slides"], 1):
+            key = G.slide_key(s.get("title", ""), s.get("sub", ""), s["_body"], s.get("speech", ""))
+            dst = os.path.join(G.OUT, f"p_{key}.png")
+            if os.path.exists(dst) or os.path.exists(os.path.join(G.OUT, f"c_{key}.png")): continue
+            png, h = G.render(s["_body"], s.get("title", ""), s.get("sub", ""), f"pv{i:02d}")
+            shutil.copy(png, dst); done += 1
+            print(f"미리보기 {i:02d}/{len(spec['slides'])}", flush=True)
+        print(f"미리보기 이미지 {done}장 생성", flush=True); return
     if a.preview:
         i = a.preview
         s = json.load(open(a.slide_json, encoding="utf-8")) if a.slide_json else spec["slides"][i - 1]
         import illust
         body = s.get("body", "") if spec.get("illust_off") else illust.inject(s, s.get("body", ""))
         png, h = G.render(body, s.get("title", ""), s.get("sub", ""), f"pv{i:02d}")
-        print(json.dumps({"png": os.path.basename(png), "page_h": h}))
+        import shutil
+        key = G.slide_key(s.get("title", ""), s.get("sub", ""), body, s.get("speech", ""))
+        shutil.copy(png, os.path.join(G.OUT, f"p_{key}.png"))
+        print(json.dumps({"png": f"p_{key}.png", "page_h": h}))
         return
     G.build(None, name=spec["name"])
     set_status(a.spec, "voiced")

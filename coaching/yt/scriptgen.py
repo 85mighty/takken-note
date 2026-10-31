@@ -217,4 +217,7 @@ if __name__ == "__main__":
         if a.topic_id: topics.update(a.topic_id, status="idea")
         raise
     if a.topic_id: topics.update(a.topic_id, status="done", spec=name)
+    import subprocess
+    print("… 슬라이드 미리보기 이미지를 만듭니다", flush=True)
+    subprocess.run([sys.executable, os.path.join(HERE, "build_spec.py"), os.path.join(SPECS, name + ".json"), "--preview-all"])
     print("→ 스튜디오 목록에 「대본」으로 올라왔습니다. 열어서 슬라이드를 확인해 주세요", flush=True)

@@ -114,7 +114,8 @@ def _keys_status():
     return {"tts": bool(os.environ.get("GOOGLE_TTS_API_KEY") or os.path.exists(os.path.join(ROOT, ".google_api_key"))),
             "claude": scriptgen.available(),
             "wp": os.path.exists(os.path.join(ROOT, ".wp_app_password")) or bool(os.environ.get("WP_APP_PASSWORD")),
-            "illust": illust.provider()}
+            "illust": illust.provider(),
+            "yt": os.path.exists(os.path.join(ROOT, ".yt_token.json"))}
 
 def _list(d):
     items = []
@@ -182,7 +183,7 @@ def api_spec(name):
     for i, (s, k) in enumerate(zip(sp["slides"], keys), 1):
         m = built.get(k) if k else None
         d = drafted.get(k) if k else None
-        thumb = f"c_{k}.png" if k and os.path.exists(os.path.join(out, f"c_{k}.png")) else None
+        thumb = f"c_{k}.png" if k and os.path.exists(os.path.join(out, f"c_{k}.png")) else (f"p_{k}.png" if k and os.path.exists(os.path.join(out, f"p_{k}.png")) else None)
         ip = illust.path_for(s)
         rows.append({"state": "built" if (k and os.path.exists(os.path.join(out, f"c_{k}.mp4"))) else ("draft" if d else "changed"),
                      "in_video": bool(m), "start": m["start"] if m else None, "dur": m["dur"] if m else None,
@@ -265,6 +266,15 @@ def api_run(name, kind):
         if i < 1: abort(400)
         argv = ["shorts.py", p, str(i)] + (["--hook", str(a["hook"])] if a.get("hook") else [])
         return _start(name, kind, f"쇼츠 #{i}", argv)
+    if kind == "upload":
+        argv = ["yt_upload.py", p]
+        if a.get("publish_at"): argv += ["--publish-at", str(a["publish_at"])]
+        elif a.get("privacy"): argv += ["--privacy", str(a["privacy"])]
+        return _start(name, kind, "YouTube 업로드", argv)
+    if kind == "publish":
+        argv = ["yt_upload.py", p] + (["--publish-at", str(a["publish_at"])] if a.get("publish_at") else ["--publish"])
+        return _start(name, kind, "YouTube 공개 설정", argv)
+    if kind == "ytupdate": return _start(name, kind, "YouTube 정보 갱신", ["yt_upload.py", p, "--update"])
     if kind == "blog": return _start(name, kind, "블로그 발행", ["blogify.py", p, "--publish"] + (["--draft"] if a.get("draft") else []))
     abort(404)
 
@@ -292,6 +302,27 @@ def api_topics():
         return _start("topics", "script", f"대본 만들기: {t['title'][:20]}", topic=t["id"], argv=
                       ["scriptgen.py", t["title"], "--minutes", str(t.get("minutes") or 10), "--notes", t.get("notes", "") + ("\n" + t["why"] if t.get("why") else ""), "--topic-id", t["id"]])
     return jsonify(ok=True, topics=topics.load()["topics"])
+
+# ---------------- thumbnail ----------------
+@bp.route("/api/thumb/<name>", methods=["GET", "POST"])
+def api_thumb(name):
+    p = _spec_path(name); sp = _load(name); out = _outdir(sp); tp = os.path.join(out, "thumbnail.png")
+    if request.method == "POST":
+        if "file" in request.files:                                   # 自分で作った画像を使う (ChatGPT など)
+            from PIL import Image
+            im = Image.open(request.files["file"].stream).convert("RGB")
+            im = im.resize((1280, round(im.height * 1280 / im.width))) if im.width != 1280 else im
+            os.makedirs(out, exist_ok=True); im.save(tp)
+            sp.setdefault("thumb", {})["custom"] = True; _write(p, sp)
+        else:
+            import thumb
+            a = request.get_json(force=True) or {}
+            lines = [str(x) for x in (a.get("lines") or []) if str(x).strip()]
+            if not lines: return jsonify(ok=False, error="문구를 넣어주세요"), 400
+            sp["thumb"] = {"lines": lines, "style": a.get("style") or "navy"}; _write(p, sp)
+            thumb.make(sp, lines, sp["thumb"]["style"], tp)
+    if not os.path.exists(tp): return jsonify(ok=True, file=None, thumb=sp.get("thumb") or {})
+    return jsonify(ok=True, file="thumbnail.png", mtime=int(os.path.getmtime(tp)), thumb=sp.get("thumb") or {})
 
 # ---------------- YouTube / shorts ----------------
 @bp.route("/api/ytext/<name>")

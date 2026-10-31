@@ -110,6 +110,35 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   </div>
 
   <div class="card">
+    <h3>썸네일 · YouTube 업로드</h3>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:10px;align-items:start">
+      <div><img id="th_img" style="width:200px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:6px;background:#eee" alt=""><div class="hint" id="th_info">썸네일 없음</div></div>
+      <div>
+        <label style="margin-top:0">썸네일 문구 (줄마다 한 줄, 2~3줄 · 일본어)</label><textarea id="th_lines" style="min-height:66px;font-size:13px"></textarea>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">
+          <select id="th_style" style="width:auto"><option value="navy">남색</option><option value="red">빨강</option><option value="white">흰색</option></select>
+          <button onclick="makeThumb()">썸네일 만들기</button>
+          <label style="margin:0;display:inline"><input type="file" id="th_file" accept="image/*" style="display:none" onchange="uploadThumb(this)"><button onclick="$('#th_file').click()">내 이미지 올리기</button></label>
+        </div>
+        <p class="hint">표지 슬라이드에 일러스트가 있으면 오른쪽에 같이 들어갑니다. ChatGPT 등으로 만든 이미지는 「내 이미지 올리기」로.</p>
+      </div>
+    </div>
+    {% if keys.yt %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
+      <button class="pri" onclick="upload('unlisted')">① 비공개(링크 공개)로 업로드</button>
+      <input type="datetime-local" id="pub_at" style="width:auto">
+      <button onclick="schedule()">② 이 시각(일본시간)에 공개 예약</button>
+      <button onclick="publishNow()">지금 공개</button>
+      <button onclick="run('ytupdate')">제목·설명·태그·썸네일만 갱신</button>
+    </div>
+    <p class="hint">업로드하면 URL 이 자동으로 저장되어 설명란·블로그·관련 영상 링크에 쓰입니다. 올린 뒤 YouTube 스튜디오에서 확인하고 「공개 예약」을 누르세요. 설명란은 위 「④ YouTube 에 올릴 문구」 그대로 들어갑니다(목차·블로그·관련 영상 URL 포함).</p>
+    {% else %}
+    <div class="warn">YouTube 업로드는 처음 한 번 인증이 필요합니다. VPS 에서: <code>cd ~/takken-note && .venv/bin/python3 coaching/yt/yt_upload.py --auth</code><br>
+    (Google Cloud 의 OAuth 클라이언트 JSON 이 <code>.yt_client_secret.json</code> 에 있거나, seido-tube 의 것을 자동으로 씁니다)</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
     <h3>⑤ 블로그 (takken.ekunblog.com)</h3>
     <label>슬러그 (URL 끝부분・영문 소문자와 하이픈)</label><input type="text" id="bl_slug">
     <label>글 제목</label><input type="text" id="bl_title">
@@ -143,7 +172,22 @@ async function load(){
   const d = await (await fetch(`/studio/api/spec/${NAME}`)).json();
   spec = d.spec; rows = d.rows; video = d.video; draft = d.draft;
   if (!REG) REG = await (await fetch("/studio/api/registry")).json();
-  setDirty(false); render(); fillMeta(); stepper(); showTab(tab || (video ? "final" : "draft")); showJob(d.job); loadYtext(); loadShorts();
+  setDirty(false); render(); fillMeta(); stepper(); showTab(tab || (video ? "final" : "draft")); showJob(d.job); loadYtext(); loadShorts(); loadThumb();
+  autoPreview();
+}
+let pvBusy = false;
+async function autoPreview(){            // 画像がないスライドは開いたときに順に描く（ボタンを押さなくてよい）
+  if (pvBusy) return; pvBusy = true;
+  try {
+    for (let k = 0; k < spec.slides.length; k++){
+      const r = rows[k]; if (!r || r.thumb || r.preview_local || r.edited) continue;
+      const d = await post(`/studio/api/preview/${NAME}/${k+1}`, spec.slides[k]);
+      if (!d.ok) continue;
+      r.preview_local = d.png; r.pv_t = d.t;
+      const img = $(`#slides .sl:nth-child(${k+1}) .img, #slides .sl:nth-child(${k+1}) .noimg`);
+      if (img){ const el = document.createElement("img"); el.className = "img"; el.src = fileUrl(d.png, d.t); img.replaceWith(el); }
+    }
+  } finally { pvBusy = false; }
 }
 function stepper(){
   const order = STEPS.map(s => s[0]), cur = order.indexOf(spec.status || "script");
@@ -192,7 +236,7 @@ function render(){
         <span class="tm" data-t="${r.start ?? ""}">${r.in_video ? fmt(r.start) + "〜" + fmt(r.start + r.dur) + ` (${Math.round(r.dur)}초)` : (r.dstart != null ? "초안 " + fmt(r.dstart) : "영상에 미반영")}</span>
         <span class="badge ${ok ? "" : "chg"}">${r.edited ? "편집 중 (미저장)" : (r.state === "built" ? "완성됨" : (r.state === "draft" ? "초안 있음" : "변경 있음"))}</span>
         <span class="ops"><button data-op="pv">미리보기 이미지</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">복제</button><button data-op="del">삭제</button></span></div>
-      <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">이미지 없음 (미리보기 이미지를 누르세요)</div>`}
+      <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">이미지 만드는 중…</div>`}
         <div class="ill">
           ${r.illust ? `<img src="/studio/illust/${r.illust}">` : `<div class="none">${s.illust_pos === "none" ? "그림 없음" : "미생성"}</div>`}
           <div><textarea data-f="illust" placeholder="그림 설명 (비우면 본문에서 자동): ${esc(r.illust_auto || "")}">${esc(s.illust)}</textarea>
@@ -287,6 +331,38 @@ async function copyTxt(k){
   const t = ytx[k];
   try { await navigator.clipboard.writeText(t); alert("복사했습니다"); } catch(e){ prompt("복사해 주세요", t); }
 }
+async function loadThumb(){
+  const d = await (await fetch(`/studio/api/thumb/${NAME}`)).json();
+  if (d.file){ $("#th_img").src = fileUrl(d.file, d.mtime); $("#th_info").textContent = d.thumb.custom ? "내 이미지" : "자동 생성"; }
+  else { $("#th_img").removeAttribute("src"); $("#th_info").textContent = "썸네일 없음"; }
+  if (d.thumb && d.thumb.lines && !$("#th_lines").value) $("#th_lines").value = d.thumb.lines.join("\n");
+  if (d.thumb && d.thumb.style) $("#th_style").value = d.thumb.style;
+  if (!$("#th_lines").value){ const t = (spec.youtube||{}).title || spec.label || ""; $("#th_lines").value = t.replace(/[【】｜|]/g, "\n").split("\n").map(x => x.trim()).filter(Boolean).slice(0, 3).join("\n"); }
+  if (!$("#pub_at").value){ const t = new Date(Date.now() + 36e5 * 24); t.setMinutes(0); $("#pub_at").value = new Date(t.getTime() - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 16).replace(/T\d\d/, "T19"); }
+}
+async function makeThumb(){
+  const lines = $("#th_lines").value.split("\n").map(x => x.trim()).filter(Boolean);
+  const d = await post(`/studio/api/thumb/${NAME}`, {lines, style: $("#th_style").value});
+  if (!d.ok){ alert(d.error); return; } loadThumb();
+}
+async function uploadThumb(inp){
+  if (!inp.files[0]) return; const fd = new FormData(); fd.append("file", inp.files[0]);
+  const d = await (await fetch(`/studio/api/thumb/${NAME}`, {method:"POST", body: fd})).json();
+  if (!d.ok){ alert(d.error); return; } loadThumb();
+}
+async function upload(privacy){
+  if (!video){ alert("완성 영상이 아직 없습니다. 먼저 「음성 넣어 완성」을 해주세요."); return; }
+  if ((spec.youtube||{}).url && !confirm("이미 URL 이 있는 영상입니다 (" + spec.youtube.url + "). 그래도 새로 올릴까요?")) return;
+  if (!confirm("YouTube 에 비공개(링크 공개)로 업로드할까요? 수 분 걸립니다.")) return;
+  run("upload", {privacy});
+}
+function schedule(){
+  const at = $("#pub_at").value; if (!at){ alert("공개 시각을 넣어주세요"); return; }
+  if (!(spec.youtube||{}).url){ alert("먼저 업로드해 주세요"); return; }
+  if (!confirm(`${at.replace("T", " ")} (일본시간) 에 공개 예약할까요?`)) return;
+  run("publish", {publish_at: at});
+}
+function publishNow(){ if ((spec.youtube||{}).url && confirm("지금 바로 공개할까요?")) run("publish"); }
 async function loadShorts(){
   const d = await (await fetch(`/studio/api/shorts/${NAME}`)).json();
   if (!d.shorts.length) return;
