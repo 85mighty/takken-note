@@ -186,9 +186,10 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
       <button onclick="edExplode()" title="제목·항목·표 셀·강조 상자를 전부 개별 요소로 바꿉니다">다시 분해</button>
       <button onclick="edRestore()" id="ed_restore">원래 자동 레이아웃으로</button>
       <span style="flex:1"></span>
+      <button id="ed_undo" onclick="edUndo()" title="되돌리기 (⌘Z / Ctrl+Z)" disabled>↶ 되돌리기</button><button id="ed_redo" onclick="edRedo()" title="다시 실행 (⇧⌘Z / Ctrl+Y)" disabled>↷ 다시</button>
       <button onclick="edPreview()">미리보기</button><button class="pri" onclick="edSave()">저장</button><button onclick="edClose()">닫기</button>
     </div>
-    <p class="hint">열면 자동 레이아웃이 요소로 분해됩니다(AI 안 씀). 그림은 설명을 쓰고 「+그림 만들기」→ 끌어서 배치. 드래그=이동, 오른쪽아래 파란점=크기, 더블클릭=글 편집, 방향키=2px 이동(Shift=20px), Delete=삭제. 「미리보기」는 완성 그림을 보여주고, 화면을 클릭하면 편집으로 돌아옵니다. 「저장」을 누르기 전에는 아무것도 바뀌지 않습니다.</p>
+    <p class="hint">열면 자동 레이아웃이 요소로 분해됩니다(AI 안 씀). 그림은 설명을 쓰고 「+그림 만들기」→ 끌어서 배치. 드래그=이동, 오른쪽아래 파란점=크기, 더블클릭=글 편집, 방향키=2px 이동(Shift=20px), Delete=삭제, ⌘Z=되돌리기(⇧⌘Z=다시). 「미리보기」는 완성 그림을 보여주고, 화면을 클릭하면 편집으로 돌아옵니다. 「저장」을 누르기 전에는 아무것도 바뀌지 않습니다.</p>
   </div>
   <div id="props"></div>
 </div></div>
@@ -337,7 +338,7 @@ async function edExplode(){
   const sl = {...spec.slides[ED.k], overlays: ED.ovs};
   const d = await post(`/studio/api/explode/${NAME}/${ED.k+1}`, sl);
   if (!d.ok){ alert("분해 실패:\n" + d.error); return; }
-  ED.pending = d.slide; ED.ovs = d.slide.overlays; ED.sel = -1; $("#cvwrap").style.backgroundImage = "none"; edDraw(); edProps();
+  mark(); ED.lastMark = 0; ED.pending = d.slide; ED.ovs = d.slide.overlays; ED.sel = -1; $("#cvwrap").style.backgroundImage = "none"; edDraw(); edProps();
   $("#ed_restore").style.display = "";
 }
 async function edRestore(){
@@ -345,7 +346,7 @@ async function edRestore(){
   if (!o || !confirm("자동 레이아웃으로 되돌립니다 (배치 편집 내용은 사라집니다)")) return;
   ED.pending = {...spec.slides[ED.k], title:o.title, sub:o.sub, body:o.body, overlays:[]}; delete ED.pending._orig; delete ED.pending.illust_off;
   if (o.illust_pos) ED.pending.illust_pos = o.illust_pos;
-  ED.ovs = []; ED.sel = -1; edDraw(); edProps();
+  mark(); ED.lastMark = 0; ED.ovs = []; ED.sel = -1; edDraw(); edProps();
   const pv = await post(`/studio/api/preview/${NAME}/${ED.k+1}`, ED.pending);
   if (pv.ok) $("#cvwrap").style.backgroundImage = `url("${fileUrl(pv.png, pv.t)}")`;
   $("#ed_restore").style.display = "none";
@@ -425,9 +426,19 @@ async function loadShorts(){
     <a class="btn" href="${fileUrl(s.file, s.mtime)}&dl=1">다운로드</a><pre>${esc(s.text)}</pre></div>`).join("");
 }
 // ---------- 배치 편집 (seido-tube 와 같은 방식) ----------
-const ED = {k:-1, ovs:[], sel:-1, SC:0.6};
+const ED = {k:-1, ovs:[], sel:-1, SC:0.6, undo:[], redo:[]};
+function snap(){ return JSON.stringify(ED.ovs); }
+function mark(){                                   // 変更の前に呼ぶ: いまの状態を履歴に積む（連続入力は 400ms まとめる）
+  const now = Date.now(); const cur = snap();
+  if (ED.undo.length && ED.undo[ED.undo.length-1] === cur) return;
+  if (ED.lastMark && now - ED.lastMark < 400 && ED.undo.length){ return; }
+  ED.undo.push(cur); if (ED.undo.length > 100) ED.undo.shift(); ED.redo = []; ED.lastMark = now; undoBtns();
+}
+function undoBtns(){ const u = $("#ed_undo"), r = $("#ed_redo"); if (u){ u.disabled = !ED.undo.length; r.disabled = !ED.redo.length; } }
+function edUndo(){ if (!ED.undo.length) return; ED.redo.push(snap()); ED.ovs = JSON.parse(ED.undo.pop()); ED.sel = Math.min(ED.sel, ED.ovs.length-1); ED.lastMark = 0; edDraw(); edProps(); undoBtns(); }
+function edRedo(){ if (!ED.redo.length) return; ED.undo.push(snap()); ED.ovs = JSON.parse(ED.redo.pop()); ED.sel = Math.min(ED.sel, ED.ovs.length-1); ED.lastMark = 0; edDraw(); edProps(); undoBtns(); }
 async function edOpen(k){
-  ED.k = k; ED.sel = -1; ED.pending = null; ED.pv = false;
+  ED.k = k; ED.sel = -1; ED.pending = null; ED.pv = false; ED.undo = []; ED.redo = []; ED.lastMark = 0;
   const sl = spec.slides[k], w = $("#cvwrap"); ED.SC = w.clientWidth / 1920 || 0.6;
   w.classList.remove("pv"); w.style.backgroundImage = "none"; w.innerHTML = "<p class='hint' style='padding:20px'>요소로 분해하는 중…</p>";
   $("#ed").style.display = "flex"; $("#props").innerHTML = "";
@@ -444,7 +455,7 @@ async function edOpen(k){
   }
   $("#ed_restore").style.display = (sl._orig || ED.pending) ? "" : "none";
   $("#ill_prompt").value = sl.illust || (rows[k] && rows[k].illust_auto) || "";
-  edDraw(); edProps();
+  edDraw(); edProps(); undoBtns();
 }
 async function genIll(again){
   const prompt = $("#ill_prompt").value.trim(); if (!prompt){ alert("그림 설명을 넣어주세요"); return; }
@@ -452,7 +463,7 @@ async function genIll(again){
   try {
     const d = await post(`/studio/api/illust_gen/${NAME}/${ED.k+1}`, {prompt, new: again});
     if (!d.ok){ alert("그림 생성 실패:\n" + d.error); return; }
-    const cur = ED.ovs[ED.sel];
+    const cur = ED.ovs[ED.sel]; mark(); ED.lastMark = 0;
     if (again && cur && cur.img){ cur.img = d.path; }                       // 選択中の絵を差し替え
     else { ED.ovs.push({img: d.path, x: 1200, y: 300, w: 600, h: 338, opacity: 1}); ED.sel = ED.ovs.length - 1; }
     if (ED.pending) ED.pending.illust = prompt; else spec.slides[ED.k].illust = prompt;
@@ -467,9 +478,9 @@ function addOv(t){
   if (t === "box") Object.assign(o, {text:"ポイント", bg:"#ffffff", border:"6px solid #1a3d7c", radius:14, color:"#1a3d7c"});
   if (t === "yellow") Object.assign(o, {text:"ここが重要", bg:"#fff3c4", border:"4px solid #e0a800", radius:10, color:"#7a4a00", size:50});
   if (t === "arrow") Object.assign(o, {text:"➜", size:120, color:"#d32f2f", w:200, h:200, pad:0});
-  ED.ovs.push(o); ED.sel = ED.ovs.length - 1; edDraw(); edProps();
+  mark(); ED.lastMark = 0; ED.ovs.push(o); ED.sel = ED.ovs.length - 1; edDraw(); edProps();
 }
-function delOv(){ if (ED.sel < 0) return; ED.ovs.splice(ED.sel, 1); ED.sel = -1; edDraw(); edProps(); }
+function delOv(){ if (ED.sel < 0) return; mark(); ED.lastMark = 0; ED.ovs.splice(ED.sel, 1); ED.sel = -1; edDraw(); edProps(); }
 function ovStyle(o, S){
   const j = {left:"flex-start", right:"flex-end"}[o.align] || "center";
   return `left:${o.x*S}px;top:${o.y*S}px;width:${o.w*S}px;height:${o.h*S}px;font-size:${o.size*S}px;font-weight:${o.bold?"bold":"normal"};color:${o.color};background:${o.bg};border:${(o.border||"none").replace(/(\d+(\.\d+)?)px/, (m,n)=>(n*S)+"px")};border-radius:${(o.radius||0)*S}px;justify-content:${j};text-align:${o.align};padding:${(o.pad??10)*S}px;opacity:${o.opacity??1};line-height:${o.lh||1.3};${o.border_left?`border-left:${o.border_left.replace(/(\d+(\.\d+)?)px/,(m,n)=>(n*S)+"px")};`:""}${o.border_bottom?`border-bottom:${o.border_bottom.replace(/(\d+(\.\d+)?)px/,(m,n)=>(n*S)+"px")};`:""}${o.stroke?`-webkit-text-stroke:${o.stroke*S}px ${o.stroke_color||"#fff"};`:""}`;
@@ -479,7 +490,7 @@ function edDraw(){
   $("#cvwrap").innerHTML = ED.ovs.map((o,i) => o.img
     ? `<div class="ovx ${i===ED.sel?"sel":""}" data-i="${i}" style="left:${o.x*S}px;top:${o.y*S}px;width:${o.w*S}px;height:${o.h*S}px;padding:0;background:url('/studio/illust/${esc(o.img.split("/").pop())}') center/contain no-repeat"><div class="rz" data-rz="1"></div></div>`
     : `<div class="ovx ${i===ED.sel?"sel":""}" data-i="${i}" style="${ovStyle(o,S)}">${esc(o.text)}<div class="rz" data-rz="1"></div></div>`).join("");
-  $("#cvwrap").querySelectorAll(".ovx").forEach(el => el.addEventListener("dblclick", () => { const i = +el.dataset.i; const t = prompt("문구 (일본어)", ED.ovs[i].text); if (t !== null){ ED.ovs[i].text = t; edDraw(); edProps(); } }));
+  $("#cvwrap").querySelectorAll(".ovx").forEach(el => el.addEventListener("dblclick", () => { const i = +el.dataset.i; const t = prompt("문구 (일본어)", ED.ovs[i].text); if (t !== null){ mark(); ED.lastMark = 0; ED.ovs[i].text = t; edDraw(); edProps(); } }));
 }
 function edProps(){
   const o = ED.ovs[ED.sel], P = $("#props");
@@ -497,9 +508,9 @@ function edProps(){
     <div class="two"><div><label>X</label>${f("x","number")}</div><div><label>Y</label>${f("y","number")}</div><div><label>W</label>${f("w","number")}</div><div><label>H</label>${f("h","number")}</div></div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px"><button onclick="edQuick('red')">빨강 강조</button><button onclick="edQuick('yellow')">노란 말풍선</button><button onclick="edQuick('navy')">흰 글자+남색 상자</button><button onclick="edQuick('plain')">장식 없음</button></div>`;
 }
-function edSet(k, v){ const o = ED.ovs[ED.sel]; if (!o) return; o[k] = ["size","radius","opacity","x","y","w","h","pad","stroke"].includes(k) ? parseFloat(v) || 0 : v;
+function edSet(k, v){ const o = ED.ovs[ED.sel]; if (!o) return; mark(); o[k] = ["size","radius","opacity","x","y","w","h","pad","stroke"].includes(k) ? parseFloat(v) || 0 : v;
   if (o.img){ edDraw(); return; } const el = $(`#cvwrap [data-i="${ED.sel}"]`); if (el){ el.style.cssText = ovStyle(o, ED.SC); el.childNodes[0].nodeValue = o.text; } }
-function edQuick(t){ const o = ED.ovs[ED.sel]; if (!o) return;
+function edQuick(t){ const o = ED.ovs[ED.sel]; if (!o) return; mark(); ED.lastMark = 0;
   if (t === "red") Object.assign(o, {color:"#d32f2f", bold:true, bg:"transparent", border:"none", stroke:0});
   if (t === "yellow") Object.assign(o, {color:"#5a3a00", bg:"#fff3c4", border:"4px solid #e0a800", radius:12, stroke:0});
   if (t === "navy") Object.assign(o, {color:"#ffffff", bg:"#1a3d7c", border:"none", radius:12, stroke:0});
@@ -509,11 +520,12 @@ function cvDown(e){
   if (edBackToEdit()) return;
   const el = e.target.closest(".ovx"); if (!el){ ED.sel = -1; edDraw(); edProps(); return; }
   ED.sel = +el.dataset.i; edDraw(); edProps(); const o = ED.ovs[ED.sel], S = ED.SC, rz = !!e.target.dataset.rz;
+  mark(); ED.lastMark = 0; const before = snap();
   const sx = e.clientX, sy = e.clientY, ox = o.x, oy = o.y, ow = o.w, oh = o.h;
   const mv = ev => { const dx = (ev.clientX - sx) / S, dy = (ev.clientY - sy) / S;
     if (rz){ o.w = Math.max(40, Math.round(ow + dx)); o.h = Math.max(30, Math.round(oh + dy)); } else { o.x = Math.round(ox + dx); o.y = Math.round(oy + dy); }
     const d = $(`#cvwrap [data-i="${ED.sel}"]`); if (d){ if (o.img){ d.style.left=o.x*S+"px"; d.style.top=o.y*S+"px"; d.style.width=o.w*S+"px"; d.style.height=o.h*S+"px"; } else d.style.cssText = ovStyle(o, S); } };
-  const up = () => { document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); edProps(); };
+  const up = () => { document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); if (snap() === before){ ED.undo.pop(); undoBtns(); } edProps(); };
   document.addEventListener("mousemove", mv); document.addEventListener("mouseup", up); e.preventDefault();
 }
 async function edPreview(){
@@ -526,18 +538,22 @@ async function edPreview(){
 }
 function edBackToEdit(){ const w = $("#cvwrap"); if (!ED.pv) return false; ED.pv = false; w.classList.remove("pv"); w.style.backgroundImage = ED.bgEdit || "none"; return true; }
 function edAlign(how){
-  const o = ED.ovs[ED.sel]; if (!o) return;
+  const o = ED.ovs[ED.sel]; if (!o) return; mark(); ED.lastMark = 0;
   if (how === "h" || how === "c") o.x = Math.round((1920 - o.w) / 2);
   if (how === "v" || how === "c") o.y = Math.round((1080 - o.h) / 2);
   if (how === "l") o.x = 110; if (how === "r") o.x = 1920 - 110 - o.w;
   edDraw(); edProps();
 }
 document.addEventListener("keydown", e => {
-  if ($("#ed").style.display !== "flex" || ED.sel < 0 || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-  const o = ED.ovs[ED.sel], st = e.shiftKey ? 20 : 2; let hit = true;
-  if (e.key === "ArrowLeft") o.x -= st; else if (e.key === "ArrowRight") o.x += st; else if (e.key === "ArrowUp") o.y -= st; else if (e.key === "ArrowDown") o.y += st;
-  else if (e.key === "Delete" || e.key === "Backspace"){ delOv(); return; } else hit = false;
-  if (hit){ e.preventDefault(); edDraw(); edProps(); }
+  if ($("#ed").style.display !== "flex") return;
+  const inField = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !inField){ e.preventDefault(); e.shiftKey ? edRedo() : edUndo(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "y" && !inField){ e.preventDefault(); edRedo(); return; }
+  if (ED.sel < 0 || inField) return;
+  if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); delOv(); return; }
+  const d = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]}[e.key]; if (!d) return;   // 扱うキーのときだけ履歴に積む
+  const o = ED.ovs[ED.sel], st = e.shiftKey ? 20 : 2; mark();
+  o.x += d[0] * st; o.y += d[1] * st; e.preventDefault(); edDraw(); edProps();
 });
 function edSave(){
   if (ED.pending){ spec.slides[ED.k] = ED.pending; }
