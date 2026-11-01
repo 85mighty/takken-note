@@ -90,7 +90,9 @@ pm2 save
 
 # 5.5) 채팅에서 쓴 대본 중 "auto" 표시가 있는 것은 자동으로 일러스트→음성→완성까지 (뒤에서 돌고, 스튜디오 작업란에 진행 표시)
 if grep -lq '"auto": \[' coaching/yt/specs/*.json 2>/dev/null; then
-  nohup .venv/bin/python3 coaching/yt/autobuild.py >> coaching/yt/out/_jobs/autobuild.log 2>&1 &
+  mkdir -p coaching/yt/out/_jobs
+  # 9>&- : autodeploy のロック(fd 9)を子に持たせない（持たせると自動制作が終わるまで次のデプロイが止まる）
+  setsid nohup .venv/bin/python3 coaching/yt/autobuild.py >> coaching/yt/out/_jobs/autobuild.log 2>&1 9>&- < /dev/null &
   echo "자동 제작 예약됨 (스튜디오에서 진행 확인)"
 fi
 

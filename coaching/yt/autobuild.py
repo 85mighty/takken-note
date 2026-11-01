@@ -36,9 +36,9 @@ def run(name, steps):
     if os.path.exists(log + ".rc"): os.remove(log + ".rc")
     cmd = f"( {chain}; echo $? > {q(log + '.rc')} ) > {q(log)} 2>&1 < /dev/null & echo $!"
     r = subprocess.run(["sh", "-c", cmd], capture_output=True, text=True, env=env(), cwd=HERE, start_new_session=True)
-    json.dump({"pid": int(r.stdout.strip()), "name": name, "kind": "auto", "label": "자동 제작 (" + "→".join(steps) + ")", "log": log, "started": time.time()},
-              open(CUR, "w"))
-    while busy(): time.sleep(10)
+    pid = int(r.stdout.strip())
+    json.dump({"pid": pid, "name": name, "kind": "auto", "label": "자동 제작 (" + "→".join(steps) + ")", "log": log, "started": time.time()}, open(CUR, "w"))
+    while _alive(pid) and not os.path.exists(log + ".rc"): time.sleep(10)      # 自分が始めた作業だけ待つ
 
 def main():
     for f in sorted(os.listdir(SPECS)) if os.path.isdir(SPECS) else []:
@@ -51,6 +51,7 @@ def main():
         for _ in range(360):                                                      # 最大1時間、ほかの作業が終わるのを待つ
             if not busy(): break
             time.sleep(10)
+        print(time.strftime("%F %T"), f"자동 제작 대기 끝 (busy={busy()})", flush=True)
         print(f"자동 제작 시작: {sp['name']} {steps}", flush=True)
         run(sp["name"], steps)
 
