@@ -136,7 +136,9 @@ def _list(d):
     items = []
     for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
         if not f.endswith(".json") or f.startswith("TMP"): continue
-        sp = json.load(open(os.path.join(d, f), encoding="utf-8"))
+        try: sp = json.load(open(os.path.join(d, f), encoding="utf-8"))
+        except Exception as e:                                      # 壊れた spec は印を付けて並べる（一覧全体は落とさない）
+            items.append({"name": f[:-5], "label": f"⚠ {f} 읽기 실패: {e}", "n": 0, "status": "script", "total": None, "built_at": None, "created": "", "blog": "", "broken": True}); continue
         man = _manifest(sp)
         items.append({"name": sp["name"], "label": sp.get("label", sp["name"]), "n": len(sp["slides"]), "status": sp.get("status", "script"),
                       "total": man["total"] if man else None, "built_at": man["built_at"] if man else None,

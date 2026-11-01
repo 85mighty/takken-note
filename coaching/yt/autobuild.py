@@ -43,7 +43,9 @@ def run(name, steps):
 def main():
     for f in sorted(os.listdir(SPECS)) if os.path.isdir(SPECS) else []:
         if not f.endswith(".json"): continue
-        p = os.path.join(SPECS, f); sp = json.load(open(p, encoding="utf-8"))
+        p = os.path.join(SPECS, f)
+        try: sp = json.load(open(p, encoding="utf-8"))
+        except Exception as e: print(f"{f}: 읽기 실패 → 건너뜀 ({e})", flush=True); continue
         steps = sp.get("auto")
         if not steps: continue
         sp.pop("auto"); sp["auto_done"] = time.strftime("%Y-%m-%d %H:%M")      # 二度始めないよう先に印を消す
