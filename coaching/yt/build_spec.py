@@ -17,8 +17,9 @@ def load(path):
 
 def compose_body(spec, s):
     """描画に使う本文 = 本文 + イラスト + 自由配置の要素"""
-    import r8_goukaku as G, illust
-    body = s.get("body", "") if spec.get("illust_off") else illust.inject(s, s.get("body", ""))
+    import r8_goukaku as G, illust, imgsearch
+    body = imgsearch.resolve_tokens(s.get("body", ""), lambda m: print(m, flush=True))   # {{img:会社名 ロゴ}} → 実際のロゴ
+    body = body if spec.get("illust_off") else illust.inject(s, body)
     return body + G.overlays_html(s.get("overlays"))
 
 def setup(spec):

@@ -52,6 +52,20 @@ def _table(m):
     body = "".join(out) + ("</tbody>" if heads else "")
     return f"<div class='tk-tbl-wrap'><table class='tk-tbl'>{body}</table></div>"
 
+def _web_imgs(body, image_url):
+    """本文の {{img:…}}（会社ロゴなど）→ 上げた画像の <img>。上げられない時は消す"""
+    import imgsearch
+    if "{{img:" not in (body or ""): return body
+    def rep(m):
+        q = m.group(1).strip(); opts = dict(kv.split("=", 1) for kv in (m.group(2) or "").split(",") if "=" in kv)
+        try:
+            p = imgsearch.resolve(q, opts.get("kind", "logo"))
+            u = image_url(p) if (p and image_url) else None
+        except Exception as e:
+            print("  로고 이미지를 올리지 못했습니다:", q, e, flush=True); u = None
+        return f"<img src=\"{u}\" alt=\"{html.escape(q)}\" style=\"height:{int(opts.get('h', 36))}px;vertical-align:middle;margin-right:8px\"/>" if u else ""
+    return imgsearch.TOKEN.sub(rep, body)
+
 def _convert(body):
     """スライドの HTML をブログ用に。見た目は takken-tweaks.php の CSS（tk-*）で整える"""
     b = body or ""
@@ -102,7 +116,7 @@ def build(spec, image_url=None):
                 parts.append(f"<!-- wp:image {{\"align\":\"center\",\"width\":\"420px\"}} -->\n<figure class=\"wp-block-image aligncenter is-resized\"><img src=\"{u}\" alt=\"\" style=\"width:420px\"/></figure>\n<!-- /wp:image -->")
             except Exception as e:
                 print("  일러스트를 올리지 못했습니다:", e, flush=True)
-        c = _convert(s.get("body", ""))
+        c = _convert(_web_imgs(s.get("body", ""), image_url))
         if c: parts.append(c)
         parts += _speech_paras(s.get("speech", ""))
     parts.append("<!--YOUTUBE_LINK-->")

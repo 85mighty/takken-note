@@ -130,7 +130,8 @@ def _keys_status():
     return {"tts": bool(os.environ.get("GOOGLE_TTS_API_KEY") or os.path.exists(os.path.join(ROOT, ".google_api_key"))),
             "claude": scriptgen.available(),
             "wp": os.path.exists(os.path.join(ROOT, ".wp_app_password")) or bool(os.environ.get("WP_APP_PASSWORD")),
-            "illust": illust.provider(), "illust_choice": illust.chosen(), "illust_avail": illust.providers()}
+            "illust": illust.provider(), "illust_choice": illust.chosen(), "illust_avail": illust.providers(),
+            "img": __import__("imgsearch").providers()}
 
 def _list(d):
     items = []
@@ -311,6 +312,28 @@ def api_illust_gen(name, i):
     if "illust_seed" in s: sl["illust_seed"] = s["illust_seed"]
     _write(p, sp)
     return jsonify(ok=True, path=path, file=os.path.basename(path), prompt=s["illust"])
+
+@bp.route("/api/imgsearch")
+def api_imgsearch():
+    """実在の画像（ロゴ・写真）の候補。?q=住友不動産 ロゴ&kind=logo"""
+    import imgsearch
+    q = (request.args.get("q") or "").strip(); kind = request.args.get("kind") or "logo"
+    if not q: return jsonify(ok=False, error="검색어가 없습니다"), 400
+    msgs = []
+    try: res = imgsearch.search(q, kind, 8, msgs.append)
+    except Exception as e: return jsonify(ok=False, error=str(e)[:300]), 500
+    return jsonify(ok=True, results=res, providers=imgsearch.providers(), warn=" / ".join(msgs))
+
+@bp.route("/api/imgpick", methods=["POST"])
+def api_imgpick():
+    """候補の1つを取ってきて PNG に。{q, url} → {path, file}。q があれば本文の {{img:q}} もこの画像になる"""
+    import imgsearch
+    a = request.get_json(force=True) or {}; url = a.get("url") or ""; q = (a.get("q") or "").strip()
+    if not url: return jsonify(ok=False, error="url 이 없습니다"), 400
+    msgs = []; path = imgsearch.fetch(url, msgs.append)
+    if not path: return jsonify(ok=False, error="이미지를 받지 못했습니다: " + " / ".join(msgs)), 500
+    if q: imgsearch.pick(q, path)
+    return jsonify(ok=True, path=path, file=os.path.basename(path))
 
 @bp.route("/api/explode/<name>/<int:i>", methods=["POST"])
 def api_explode(name, i):

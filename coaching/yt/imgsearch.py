@@ -1,0 +1,179 @@
+# -*- coding: utf-8 -*-
+"""実在の画像（会社ロゴ・写真）をウェブから取ってきてスライドに使う。
+  候補の出どころ（上から順に、鍵がある物だけ使う）
+    brave    … Brave Image Search  (.brave_api_key / BRAVE_API_KEY)
+    serpapi  … Google 画像検索 via SerpAPI (.serpapi_api_key / SERPAPI_KEY)
+    wiki     … Wikidata のロゴ(P154) と Wikipedia(ja) の代表画像。鍵いらず。ロゴはほぼこれで足りる
+  本文の書き方:  {{img:住友不動産 ロゴ}}   {{img:三井不動産 ロゴ|h=48}}   → <img> に置き換わる（高さ px、既定 44）
+  取った画像は illust/web_<md5>.png に保存（同じ URL は二度取らない）。
+  スタジオで選び直した画像は illust/web_pick.json に 検索語→ファイル で覚える。
+"""
+import hashlib, io, json, os, re, sys, tempfile, time, urllib.parse, urllib.request
+HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(os.path.dirname(HERE))
+DIR = os.path.join(HERE, "illust"); os.makedirs(DIR, exist_ok=True)
+PICK = os.path.join(DIR, "web_pick.json")          # 検索語 → 選んだファイル
+CACHE = os.path.join(DIR, "web_search.json")       # (provider, q, kind) → 候補（1日）
+UA = "takken-studio/1.0 (+https://takken.ekunblog.com)"
+TOKEN = re.compile(r"\{\{img:([^}|]+?)(?:\|([^}]*))?\}\}")
+
+def _key(name, env):
+    v = os.environ.get(env, "").strip()
+    if v: return v
+    p = os.path.join(ROOT, name)
+    return open(p).read().strip() if os.path.exists(p) else ""
+
+def providers():
+    out = []
+    if _key(".brave_api_key", "BRAVE_API_KEY"): out.append("brave")
+    if _key(".serpapi_api_key", "SERPAPI_KEY"): out.append("serpapi")
+    out.append("wiki")
+    return out
+
+def _get(url, headers=None, timeout=30, binary=False):
+    req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        data = r.read()
+        return data if binary else json.loads(data.decode("utf-8", "replace"))
+
+def _jload(p, default):
+    try: return json.load(open(p, encoding="utf-8"))
+    except Exception: return default
+
+def _jsave(p, obj):
+    with open(p + ".tmp", "w", encoding="utf-8") as f: json.dump(obj, f, ensure_ascii=False, indent=1)
+    os.replace(p + ".tmp", p)
+
+# ---------------- 候補を探す ----------------
+def _brave(q, kind, n):
+    key = _key(".brave_api_key", "BRAVE_API_KEY")
+    u = "https://api.search.brave.com/res/v1/images/search?" + urllib.parse.urlencode({"q": q, "count": n, "safesearch": "strict", "country": "JP", "search_lang": "ja"})
+    j = _get(u, {"Accept": "application/json", "X-Subscription-Token": key})
+    return [{"url": r.get("properties", {}).get("url") or r.get("thumbnail", {}).get("src"), "thumb": r.get("thumbnail", {}).get("src"),
+             "title": r.get("title", ""), "page": r.get("url", ""), "src": "brave"} for r in j.get("results", []) if r.get("properties", {}).get("url")]
+
+def _serpapi(q, kind, n):
+    key = _key(".serpapi_api_key", "SERPAPI_KEY")
+    u = "https://serpapi.com/search.json?" + urllib.parse.urlencode({"engine": "google_images", "q": q, "hl": "ja", "gl": "jp", "num": n, "api_key": key, "safe": "active"})
+    j = _get(u)
+    return [{"url": r.get("original"), "thumb": r.get("thumbnail"), "title": r.get("title", ""), "page": r.get("link", ""), "src": "serpapi"}
+            for r in j.get("images_results", [])[:n] if r.get("original")]
+
+def _name(q):
+    """「住友不動産 ロゴ」→「住友不動産」(Wikidata で探す名前)"""
+    return re.sub(r"\s*(ロゴ|logo|マーク|会社|写真|画像|本社|ビル)\s*$", "", q.strip(), flags=re.I).strip() or q.strip()
+
+def _wiki(q, kind, n):
+    name = _name(q); out = []
+    # Wikidata: 項目を探して ロゴ(P154) → だめなら 画像(P18)
+    j = _get("https://www.wikidata.org/w/api.php?" + urllib.parse.urlencode({"action": "wbsearchentities", "search": name, "language": "ja", "uselang": "ja", "format": "json", "limit": 3}))
+    for ent in j.get("search", [])[:3]:
+        c = _get("https://www.wikidata.org/w/api.php?" + urllib.parse.urlencode({"action": "wbgetclaims", "entity": ent["id"], "format": "json"}))
+        cl = c.get("claims", {})
+        props = ["P154", "P18"] if kind == "logo" else ["P18", "P154"]
+        for prop in props:
+            for st in cl.get(prop, []):
+                fn = st.get("mainsnak", {}).get("datavalue", {}).get("value")
+                if not isinstance(fn, str): continue
+                fp = "https://commons.wikimedia.org/wiki/Special:FilePath/" + urllib.parse.quote(fn.replace(" ", "_"))
+                out.append({"url": fp + "?width=1000", "thumb": fp + "?width=240", "title": f"{ent.get('label', name)}（{'ロゴ' if prop == 'P154' else '写真'}）",
+                            "page": f"https://www.wikidata.org/wiki/{ent['id']}", "src": "wiki"})
+        if out: break
+    # Wikipedia(ja) の代表画像
+    try:
+        w = _get("https://ja.wikipedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "titles": name, "prop": "pageimages", "pithumbsize": 1000, "format": "json", "redirects": 1}))
+        for pg in w.get("query", {}).get("pages", {}).values():
+            th = pg.get("thumbnail", {}).get("source")
+            if th and all(th != o["url"] for o in out):
+                out.append({"url": th, "thumb": th.replace("/1000px-", "/240px-"), "title": f"{pg.get('title', name)}（Wikipedia）", "page": f"https://ja.wikipedia.org/wiki/{urllib.parse.quote(pg.get('title', name))}", "src": "wiki"})
+    except Exception: pass
+    return out[:n]
+
+def search(q, kind="logo", n=8, log=None):
+    """候補の一覧。鍵のある出どころを順に試し、最初に見つかった所の結果を返す（1日キャッシュ）"""
+    q = q.strip(); cache = _jload(CACHE, {}); ck = f"{kind}|{q}"
+    hit = cache.get(ck)
+    if hit and time.time() - hit.get("t", 0) < 86400 and hit.get("r"): return hit["r"]
+    res, errs = [], []
+    for p in providers():
+        try:
+            res = {"brave": _brave, "serpapi": _serpapi, "wiki": _wiki}[p](q, kind, n)
+        except Exception as e:
+            errs.append(f"{p}: {str(e)[:120]}"); res = []
+        if res: break
+    if log and errs: log("이미지 검색 경고: " + " / ".join(errs))
+    if res:
+        cache[ck] = {"t": time.time(), "r": res}; _jsave(CACHE, cache)
+    return res
+
+# ---------------- 取ってきて PNG にする ----------------
+def fetch(url, log=None):
+    """URL の画像を illust/web_<md5>.png に保存して、そのパスを返す（失敗は None）"""
+    h = hashlib.md5(url.encode()).hexdigest()[:16]; out = os.path.join(DIR, f"web_{h}.png")
+    if os.path.exists(out): return out
+    try:
+        data = _get(url, {"Accept": "image/*,*/*;q=0.8", "Referer": "https://www.google.com/"}, timeout=40, binary=True)
+    except Exception as e:
+        if log: log(f"이미지 받기 실패: {url[:80]} ({str(e)[:80]})")
+        return None
+    try:
+        if data[:200].lstrip().lower().startswith((b"<svg", b"<?xml")):
+            _svg_png(data, out)
+        else:
+            from PIL import Image
+            im = Image.open(io.BytesIO(data)); im.load()
+            if im.mode not in ("RGB", "RGBA"): im = im.convert("RGBA")
+            if max(im.size) > 1600: im.thumbnail((1600, 1600))
+            im.save(out, "PNG")
+    except Exception as e:
+        if log: log(f"이미지 변환 실패: {url[:80]} ({str(e)[:80]})")
+        return None
+    return out
+
+def _svg_png(data, out):
+    from weasyprint import HTML
+    with tempfile.TemporaryDirectory() as td:
+        svg = os.path.join(td, "a.svg"); open(svg, "wb").write(data)
+        pdf = os.path.join(td, "a.pdf")
+        HTML(string=f"<html><head><style>@page{{size:1000px 600px;margin:0}}body{{margin:0}}</style></head>"
+                    f"<body><img src='file://{svg}' style='width:1000px;height:600px;object-fit:contain'></body></html>").write_pdf(pdf)
+        import subprocess
+        subprocess.run(["pdftoppm", "-singlefile", "-png", "-r", "96", pdf, out[:-4]], check=True)
+
+def picks(): return _jload(PICK, {})
+
+def pick(q, path):
+    """スタジオで選んだ画像を 検索語 に結びつける"""
+    d = picks(); d[q.strip()] = path; _jsave(PICK, d)
+
+def resolve(q, kind="logo", log=None):
+    """検索語 → ローカルの PNG（選んであればそれ、なければ候補を上から試す）。見つからなければ None"""
+    p = picks().get(q.strip())
+    if p and os.path.exists(p): return p
+    for c in search(q, kind, 6, log):
+        path = fetch(c["url"], log)
+        if path:
+            pick(q, path); return path
+    return None
+
+def resolve_tokens(body, log=None):
+    """本文の {{img:…}} を <img> に（取れなかった物は消す）"""
+    if not body or "{{img:" not in body: return body
+    def rep(m):
+        q, opts = m.group(1).strip(), dict(kv.split("=", 1) for kv in (m.group(2) or "").split(",") if "=" in kv)
+        kind = opts.get("kind", "photo" if re.search(r"写真|ビル|本社|外観|photo", q) else "logo")
+        p = resolve(q, kind, log)
+        if not p: return ""
+        h = int(opts.get("h", 44)); extra = "max-width:260px;" if kind == "logo" else ""
+        return f"<img src='file://{p}' alt='{q}' style='height:{h}px;{extra}vertical-align:middle;margin:0 10px 0 0;object-fit:contain'>"
+    return TOKEN.sub(rep, body)
+
+def tokens(body):
+    return [m.group(1).strip() for m in TOKEN.finditer(body or "")]
+
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(); ap.add_argument("q"); ap.add_argument("--kind", default="logo"); ap.add_argument("--get", action="store_true")
+    a = ap.parse_args()
+    print("providers:", providers())
+    for c in search(a.q, a.kind, 6, print): print(" ", c["src"], c["title"][:40], c["url"][:100])
+    if a.get: print("→", resolve(a.q, a.kind, print))
