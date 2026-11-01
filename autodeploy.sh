@@ -9,9 +9,11 @@ cd "$(dirname "$0")"
 exec 9>/tmp/takken-autodeploy.lock
 flock -n 9 || exit 0
 
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
+BRANCH=$(git config takken.branch || git rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" = "HEAD" ]; then BRANCH=claude/epic-mccarthy-gvvh3q; fi   # ブランチから外れていても追いかける先を固定
+git config takken.branch "$BRANCH"
 git fetch origin "$BRANCH" -q
-if [ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$BRANCH")" ]; then
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$BRANCH")" ] || [ -d .git/rebase-merge ] || ! git symbolic-ref -q HEAD >/dev/null; then
   {
     echo "=== $(date '+%F %T') 새 커밋 감지 → 배포 ==="
     ./deploy.sh

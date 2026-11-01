@@ -12,7 +12,17 @@ for p in $KEEP; do [ -e "$p" ] && git add -A -- "$p"; done   # 없いパスが�
 if ! git diff --cached --quiet; then
   git commit -m "VPS 오답 기록・スタジオ編集 $(date +%F_%H%M)"
 fi
-git pull --rebase --autostash
+# git が途中で止まっていても自力で戻す: 中断した rebase を捨てる → ブランチに戻す → 取り込む（衝突したデータファイルは VPS 側を採用）
+BR=$(git config takken.branch || echo claude/epic-mccarthy-gvvh3q)
+git rebase --abort 2>/dev/null || true
+git symbolic-ref -q HEAD >/dev/null || git checkout -q -B "$BR"
+if ! git pull --rebase --autostash -X theirs origin "$BR"; then
+  echo "※ 取り込みに失敗 → 中断して GitHub 側に合わせます（VPS 側の未送信コミットは takken-backup-$(date +%H%M) ブランチに残します）"
+  git rebase --abort 2>/dev/null || true
+  git branch "takken-backup-$(date +%H%M)" 2>/dev/null || true
+  git reset -q --hard "origin/$BR"
+fi
+git branch -q -u "origin/$BR" "$BR" 2>/dev/null || true
 
 # 2) 비밀번호 파일 확인
 if [ ! -s .takken_password ]; then
