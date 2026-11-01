@@ -55,6 +55,7 @@ def _serpapi(q, kind, n):
     key = _key(".serpapi_api_key", "SERPAPI_KEY")
     u = "https://serpapi.com/search.json?" + urllib.parse.urlencode({"engine": "google_images", "q": q, "hl": "ja", "gl": "jp", "num": n, "api_key": key, "safe": "active"})
     j = _get(u)
+    if j.get("error"): raise RuntimeError(j["error"][:160])
     return [{"url": r.get("original"), "thumb": r.get("thumbnail"), "title": r.get("title", ""), "page": r.get("link", ""), "src": "serpapi"}
             for r in j.get("images_results", [])[:n] if r.get("original")]
 
@@ -62,30 +63,52 @@ def _name(q):
     """「住友不動産 ロゴ」→「住友不動産」(Wikidata で探す名前)"""
     return re.sub(r"\s*(ロゴ|logo|マーク|会社|写真|画像|本社|ビル)\s*$", "", q.strip(), flags=re.I).strip() or q.strip()
 
+def _wd_val(cl, prop):
+    for st in cl.get(prop, []):
+        v = st.get("mainsnak", {}).get("datavalue", {}).get("value")
+        if isinstance(v, str): return v
+    return None
+
 def _wiki(q, kind, n):
     name = _name(q); out = []
     # Wikidata: 項目を探して ロゴ(P154) → だめなら 画像(P18)
     j = _get("https://www.wikidata.org/w/api.php?" + urllib.parse.urlencode({"action": "wbsearchentities", "search": name, "language": "ja", "uselang": "ja", "format": "json", "limit": 3}))
+    site = None
+    def commons(fn, label):
+        fp = "https://commons.wikimedia.org/wiki/Special:FilePath/" + urllib.parse.quote(fn.replace(" ", "_"))
+        return {"url": fp + "?width=1000", "thumb": fp + "?width=240", "title": label, "page": "https://commons.wikimedia.org/wiki/File:" + urllib.parse.quote(fn.replace(" ", "_")), "src": "wiki"}
     for ent in j.get("search", [])[:3]:
         c = _get("https://www.wikidata.org/w/api.php?" + urllib.parse.urlencode({"action": "wbgetclaims", "entity": ent["id"], "format": "json"}))
-        cl = c.get("claims", {})
-        props = ["P154", "P18"] if kind == "logo" else ["P18", "P154"]
-        for prop in props:
-            for st in cl.get(prop, []):
-                fn = st.get("mainsnak", {}).get("datavalue", {}).get("value")
-                if not isinstance(fn, str): continue
-                fp = "https://commons.wikimedia.org/wiki/Special:FilePath/" + urllib.parse.quote(fn.replace(" ", "_"))
-                out.append({"url": fp + "?width=1000", "thumb": fp + "?width=240", "title": f"{ent.get('label', name)}（{'ロゴ' if prop == 'P154' else '写真'}）",
-                            "page": f"https://www.wikidata.org/wiki/{ent['id']}", "src": "wiki"})
+        cl = c.get("claims", {}); label = ent.get("label", name)
+        site = site or _wd_val(cl, "P856")                                   # 公式サイト（アイコン用）
+        logo, photo = _wd_val(cl, "P154"), _wd_val(cl, "P18")
+        if kind == "logo":
+            if logo: out.append(commons(logo, f"{label}（ロゴ）"))
+        else:
+            if photo: out.append(commons(photo, f"{label}（写真）"))
+            if logo: out.append(commons(logo, f"{label}（ロゴ）"))
         if out: break
-    # Wikipedia(ja) の代表画像
+    # Wikipedia(ja): ロゴなら記事内の画像で名前に logo が入る物、写真なら代表画像
     try:
-        w = _get("https://ja.wikipedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "titles": name, "prop": "pageimages", "pithumbsize": 1000, "format": "json", "redirects": 1}))
-        for pg in w.get("query", {}).get("pages", {}).values():
-            th = pg.get("thumbnail", {}).get("source")
-            if th and all(th != o["url"] for o in out):
-                out.append({"url": th, "thumb": th.replace("/1000px-", "/240px-"), "title": f"{pg.get('title', name)}（Wikipedia）", "page": f"https://ja.wikipedia.org/wiki/{urllib.parse.quote(pg.get('title', name))}", "src": "wiki"})
+        if kind == "logo":
+            w = _get("https://ja.wikipedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "titles": name, "prop": "images", "imlimit": 50, "format": "json", "redirects": 1}))
+            for pg in w.get("query", {}).get("pages", {}).values():
+                for im in pg.get("images", []):
+                    fn = im.get("title", "").split(":", 1)[-1]
+                    if re.search(r"logo|ロゴ|mark|emblem", fn, re.I) and not re.search(r"wikipedia|commons|wikidata|edit|question|ambox|crystal", fn, re.I):
+                        if all(o["title"] != f"{pg.get('title', name)}（Wikipedia）" for o in out): out.append(commons(fn, f"{pg.get('title', name)}（Wikipedia）"))
+        else:
+            w = _get("https://ja.wikipedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "titles": name, "prop": "pageimages", "pithumbsize": 1000, "format": "json", "redirects": 1}))
+            for pg in w.get("query", {}).get("pages", {}).values():
+                th = pg.get("thumbnail", {}).get("source")
+                if th and all(th != o["url"] for o in out):
+                    out.append({"url": th, "thumb": th.replace("/1000px-", "/240px-"), "title": f"{pg.get('title', name)}（Wikipedia）", "page": f"https://ja.wikipedia.org/wiki/{urllib.parse.quote(pg.get('title', name))}", "src": "wiki"})
     except Exception: pass
+    # 最後の手: 公式サイトのアイコン（小さいが確実）
+    if kind == "logo" and site:
+        dom = urllib.parse.urlparse(site).netloc or site
+        fav = "https://www.google.com/s2/favicons?" + urllib.parse.urlencode({"domain": dom, "sz": 256})
+        out.append({"url": fav, "thumb": fav, "title": f"{name}（サイトのアイコン {dom}）", "page": site, "src": "wiki"})
     return out[:n]
 
 def search(q, kind="logo", n=8, log=None):
@@ -100,6 +123,7 @@ def search(q, kind="logo", n=8, log=None):
         except Exception as e:
             errs.append(f"{p}: {str(e)[:120]}"); res = []
         if res: break
+        errs.append(f"{p}: 0건")
     if log and errs: log("이미지 검색 경고: " + " / ".join(errs))
     if res:
         cache[ck] = {"t": time.time(), "r": res}; _jsave(CACHE, cache)
