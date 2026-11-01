@@ -31,19 +31,39 @@ def _speech_paras(speech):
     if cur: out.append(cur)
     return [_p(html.escape(x.strip())) for x in out]
 
+def _table(m):
+    """表 → スマホでは行ごとのカードに畳める表（各セルに data-label、幅指定は外す）"""
+    inner = m.group(1)
+    rows = re.findall(r"<tr[^>]*>([\s\S]*?)</tr>", inner)
+    heads, out = [], []
+    for ri, row in enumerate(rows):
+        cls = "now" if re.search(r"<tr class='now'", inner[inner.find(row) - 40: inner.find(row)]) else ""
+        cells = re.findall(r"<t([hd])([^>]*)>([\s\S]*?)</t[hd]>", row)
+        if ri == 0 and all(k == "h" for k, _a, _t in cells):
+            heads = [re.sub(r"<[^>]+>", "", t).strip() for _k, _a, t in cells]
+            out.append("<thead><tr>" + "".join(f"<th>{t}</th>" for _k, _a, t in cells) + "</tr></thead><tbody>"); continue
+        tds = []
+        for ci, (k, attrs, t) in enumerate(cells):
+            c = " ".join(x for x in ("hi", "lo", "c") if f"'{x}'" in attrs or f" {x}" in attrs or f"{x} " in attrs)
+            lab = heads[ci] if ci < len(heads) else ""
+            tag = "th" if k == "h" else "td"
+            tds.append(f"<{tag} class='{c}' data-label='{html.escape(lab)}'>{t}</{tag}>")
+        out.append(f"<tr class='{cls}'>" + "".join(tds) + "</tr>")
+    body = "".join(out) + ("</tbody>" if heads else "")
+    return f"<div class='tk-tbl-wrap'><table class='tk-tbl'>{body}</table></div>"
+
 def _convert(body):
-    """スライドの HTML をブログ用に (クラス → インライン、表 → 表ブロック)"""
+    """スライドの HTML をブログ用に。見た目は takken-tweaks.php の CSS（tk-*）で整える"""
     b = body or ""
-    b = re.sub(r"<div class='two'>\s*<div>", "<div>", b)
-    b = re.sub(r"</div>\s*<div>", "</div>\n<div>", b)
-    for cls, st in INLINE.items():
-        b = re.sub(rf"<(div|p) class='{cls}'>", rf"<\1 style='{st}'>", b)
-    b = re.sub(r"<small>", "<br><small>", b)
-    for cls, st in TD.items():
-        b = re.sub(rf"<(td|th) class='{cls}'>", rf"<\1 style='{st}'>", b)
-    b = re.sub(r"<tr class='now'>", "<tr style='background:#fff3c4;font-weight:bold;'>", b)
-    b = re.sub(r"<ul class='steps'>", "<ul>", b)
-    b = re.sub(r"<table>([\s\S]*?)</table>", r"<figure class='wp-block-table'><table>\1</table></figure>", b)
+    b = re.sub(r"<div class='two'>", "<div class='tk-two'>", b)
+    b = re.sub(r"<div class='key'>", "<div class='tk-key'>", b)
+    b = re.sub(r"<p class='note'>", "<p class='tk-note'>", b)
+    b = re.sub(r"<div class='big'>", "<div class='tk-big'>", b)
+    b = re.sub(r"<ul class='steps'>", "<ul class='tk-steps'>", b)
+    b = re.sub(r"<ol class='steps'>", "<ol class='tk-steps'>", b)
+    b = re.sub(r"<div class='cover'>", "<div class='tk-cover'>", b)
+    b = re.sub(r"<table>([\s\S]*?)</table>", _table, b)
+    b = re.sub(r"\s*\n\s*", "\n", b)
     return f"<!-- wp:html -->\n{b.strip()}\n<!-- /wp:html -->" if b.strip() else ""
 
 def _raster(path):
