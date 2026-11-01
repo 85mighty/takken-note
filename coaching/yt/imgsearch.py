@@ -117,7 +117,7 @@ def _rank(res, kind):
         u = (r.get("url") or "").lower(); t = (r.get("title") or "").lower(); sc = 0
         if kind == "logo":
             if "logo" in u or "logo" in t or "ロゴ" in t: sc += 5
-            if "wikimedia" in u or "wikipedia" in u: sc += 4
+            if "wikimedia" in u or "wikipedia" in u: sc += 6
             if re.search(r"\.(png|svg)(\?|$)", u): sc += 2
             if re.search(r"ogp|og-image|og_image|release|prtimes|prcdn|youtube|googleusercontent|fbcdn|twimg|instagram|banner|thumb-|_thumb", u): sc -= 4
             if re.search(r"\.jpe?g(\?|$)", u): sc -= 2
