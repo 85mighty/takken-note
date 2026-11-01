@@ -130,8 +130,7 @@ def _keys_status():
     return {"tts": bool(os.environ.get("GOOGLE_TTS_API_KEY") or os.path.exists(os.path.join(ROOT, ".google_api_key"))),
             "claude": scriptgen.available(),
             "wp": os.path.exists(os.path.join(ROOT, ".wp_app_password")) or bool(os.environ.get("WP_APP_PASSWORD")),
-            "illust": illust.provider(), "illust_choice": illust.chosen(), "illust_avail": illust.providers(),
-            "yt": os.path.exists(os.path.join(ROOT, ".yt_token.json"))}
+            "illust": illust.provider(), "illust_choice": illust.chosen(), "illust_avail": illust.providers()}
 
 def _list(d):
     items = []
@@ -344,15 +343,6 @@ def api_run(name, kind):
     if kind == "reslice":
         argv = ["reslice.py", p, "--sec", str(float(a.get("sec") or 25))] + (["--slide", str(int(a["i"]))] if a.get("i") else [])
         return _start(name, kind, f"AI로 나누기{' #'+str(a['i']) if a.get('i') else ' (전체)'}", argv)
-    if kind == "upload":
-        argv = ["yt_upload.py", p]
-        if a.get("publish_at"): argv += ["--publish-at", str(a["publish_at"])]
-        elif a.get("privacy"): argv += ["--privacy", str(a["privacy"])]
-        return _start(name, kind, "YouTube 업로드", argv)
-    if kind == "publish":
-        argv = ["yt_upload.py", p] + (["--publish-at", str(a["publish_at"])] if a.get("publish_at") else ["--publish"])
-        return _start(name, kind, "YouTube 공개 설정", argv)
-    if kind == "ytupdate": return _start(name, kind, "YouTube 정보 갱신", ["yt_upload.py", p, "--update"])
     if kind == "blog": return _start(name, kind, "블로그 발행", ["blogify.py", p, "--publish"] + (["--draft"] if a.get("draft") else []))
     abort(404)
 
