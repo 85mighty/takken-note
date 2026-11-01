@@ -223,7 +223,9 @@ def _sub_area():
         return V.BAND
 
 LAST_SCALE = 1.0
-RENDER_VER = 2      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
+NO_SCROLL = os.environ.get("YT_SCROLL", "0") != "1"   # 長いスライドは縮めて1画面に収める（YT_SCROLL=1 で従来のスクロール）
+MIN_SCALE = 0.62                                        # ここまで縮めても入らなければスクロールに戻す
+RENDER_VER = 3      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
 ILL_RE = re.compile(r"<div class='ill ill-(\w+)'>(<img [^>]*>)</div>")
 ILL_MIN, ILL_MAX = 200, 340
 
@@ -423,6 +425,19 @@ def render(body, title, sub, name):
             if best is not None and best[1] >= avail * 0.9: break
         if best: im, ch, LAST_SCALE = best
         else: im, ch, png = _render_once(head, body, name, 1.0)
+    elif ch > avail and NO_SCROLL and "class='ov" not in body:   # 入りきらないときは縮めて1画面に（スクロールしない）
+        lo, hi, best = MIN_SCALE, 1.0, None
+        for _ in range(5):
+            sc = (lo + hi) / 2
+            im2, ch2, _p = _render_once(head, body, name, sc)
+            if ch2 <= avail: best, lo = (im2, ch2, sc), sc
+            else: hi = sc
+            if best is not None and best[1] >= avail * 0.93: break
+        if best is None:
+            im2, ch2, _p = _render_once(head, body, name, MIN_SCALE)
+            if ch2 <= avail: best = (im2, ch2, MIN_SCALE)
+        if best: im, ch, LAST_SCALE = best
+        else: im, ch, png = _render_once(head, body, name, 1.0)   # 最小倍率でも入らない → 従来どおりスクロール
     bottom = max(H, min(im.size[1], ch + 90))
     im = im.crop((0, 0, W, bottom))
     if V.HIGHLIGHT and area > 90:   # 字幕のぶん下に余白を足す
@@ -440,6 +455,18 @@ def slide_key(title, sub, body, speech):
     except Exception:
         sig = ""
     return hashlib.md5(repr((title, sub, body, speech, V.HIGHLIGHT, CSS, sig, RENDER_VER)).encode()).hexdigest()
+
+def cached_tts(ssml, mp3, rate=1.0):
+    """読み上げ文が同じなら前に作った音声と時刻を使う（描き直しのたびに TTS 料金がかからない）"""
+    import hashlib, json, shutil
+    d = os.path.join(V.OUT, "_tts"); os.makedirs(d, exist_ok=True)
+    k = hashlib.md5(repr((V.fix_read(ssml), V.VOICE, rate)).encode()).hexdigest()
+    cm, cj = os.path.join(d, k + ".mp3"), os.path.join(d, k + ".json")
+    if os.path.exists(cm) and os.path.exists(cj):
+        shutil.copy(cm, mp3); return json.load(open(cj))
+    tp = tts(ssml, mp3, ssml=True, rate=rate)
+    shutil.copy(mp3, cm); json.dump(tp, open(cj, "w"))
+    return tp
 
 def build(only=None, name="R8_goukaku"):
     """内容アドレス方式のキャッシュ: c_<key>.mp4 があれば再利用。挿入・削除・並べ替えでも変わったスライドだけ作り直す。
@@ -460,7 +487,7 @@ def build(only=None, name="R8_goukaku"):
             png, h = render(body, title, sub, f"s{i:02d}")
             mp3 = os.path.join(OUT, f"s{i:02d}.mp3")
             sents = V.split_sentences(speech)
-            tp = tts(V.ssml_sentences(sents), mp3, ssml=True, rate=1.0)
+            tp = cached_tts(V.ssml_sentences(sents), mp3)
             total = dur(mp3) + 1.5
             pts = [(2.0, 0), (total - 2.0, h - H)] if h > H else []
             tmp = seg + ".part.mp4"
