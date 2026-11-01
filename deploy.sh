@@ -88,6 +88,12 @@ fi
 pm2 startOrRestart ecosystem.config.js
 pm2 save
 
+# 5.5) 채팅에서 쓴 대본 중 "auto" 표시가 있는 것은 자동으로 일러스트→음성→완성까지 (뒤에서 돌고, 스튜디오 작업란에 진행 표시)
+if grep -lq '"auto": \[' coaching/yt/specs/*.json 2>/dev/null; then
+  nohup .venv/bin/python3 coaching/yt/autobuild.py >> coaching/yt/out/_jobs/autobuild.log 2>&1 &
+  echo "자동 제작 예약됨 (스튜디오에서 진행 확인)"
+fi
+
 # 6) 기록/음성 커밋을 원격에도 백업 (권한 없으면 건너뜀)
 git push origin HEAD 2>/dev/null || echo "※ git push 생략 (원격 쓰기 권한 없음 — 로컬 이력만 유지)"
 
