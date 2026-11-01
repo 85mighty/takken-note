@@ -111,6 +111,26 @@ def _wiki(q, kind, n):
         out.append({"url": fav, "thumb": fav, "title": f"{name}（サイトのアイコン {dom}）", "page": site, "src": "wiki"})
     return out[:n]
 
+def _rank(res, kind):
+    """ロゴ探しの並べ替え: 名前に logo がある・Wikimedia・png/svg を上に、OGP画像・プレスリリース・YouTube アイコンは下に"""
+    def score(r):
+        u = (r.get("url") or "").lower(); t = (r.get("title") or "").lower(); sc = 0
+        if kind == "logo":
+            if "logo" in u or "logo" in t or "ロゴ" in t: sc += 5
+            if "wikimedia" in u or "wikipedia" in u: sc += 4
+            if re.search(r"\.(png|svg)(\?|$)", u): sc += 2
+            if re.search(r"ogp|og-image|og_image|release|prtimes|prcdn|youtube|googleusercontent|fbcdn|twimg|instagram|banner|thumb-|_thumb", u): sc -= 4
+            if re.search(r"\.jpe?g(\?|$)", u): sc -= 2
+        return -sc
+    out = []
+    for r in sorted(res, key=score):
+        m = re.search(r"wikipedia/commons/thumb/\w/\w\w/([^/]+)/", r.get("url") or "")     # Wikimedia の縮小版 → 元ファイルを大きく
+        if m:
+            fn = m.group(1); fp = "https://commons.wikimedia.org/wiki/Special:FilePath/" + fn
+            r = {**r, "url": fp + "?width=1000", "thumb": fp + "?width=240"}
+        out.append(r)
+    return out
+
 def search(q, kind="logo", n=8, log=None):
     """候補の一覧。鍵のある出どころを順に試し、最初に見つかった所の結果を返す（1日キャッシュ）"""
     q = q.strip(); cache = _jload(CACHE, {}); ck = f"{kind}|{q}"
@@ -119,7 +139,7 @@ def search(q, kind="logo", n=8, log=None):
     res, errs = [], []
     for p in providers():
         try:
-            res = {"brave": _brave, "serpapi": _serpapi, "wiki": _wiki}[p](q, kind, n)
+            res = _rank({"brave": _brave, "serpapi": _serpapi, "wiki": _wiki}[p](q, kind, n), kind)
         except Exception as e:
             errs.append(f"{p}: {str(e)[:120]}"); res = []
         if res: break
