@@ -5,10 +5,7 @@
  "status": "script",
  "topic": "ショート動画。宅建合格者の1日の勉強時間（目安300〜400時間、合格者アンケート、平日2時間・休日4時間で約4か月）。本編（STUDY_jikan）とチャンネルへの誘導",
  "created_at": "2026-11-02 09:00",
- "auto": [
-  "short"
- ],
- "short_target": "STUDY_jikan",
+ "short_target": "R8_kokugo",
  "usage": {
   "model": "chat"
  },
@@ -33,5 +30,6 @@
   "title": "",
   "excerpt": "",
   "url": ""
- }
+ },
+ "auto_done": "2026-11-02 23:10"
 }
