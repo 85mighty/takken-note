@@ -23,15 +23,38 @@ def _font(size, bold=True):
     return ImageFont.truetype(subs.font_path("BIZ UDPゴシック Bold" if bold else "BIZ UDPゴシック Regular"), size, index=0)
 
 def _wrap(d, text, fnt, maxw):
+    """幅に収まるように折る。改行（\n）はそのまま行の区切りにする"""
     import subs
-    lines, cur = [], ""
-    for c in subs._split(text, 9) if len(text) > 9 else [text]:
-        if d.textlength(cur + c, font=fnt) > maxw and cur: lines.append(cur); cur = c
-        else: cur += c
-    if cur: lines.append(cur)
+    lines = []
+    for para in text.split("\n"):
+        cur = ""
+        for c in subs._split(para, 9) if len(para) > 9 else [para]:
+            if d.textlength(cur + c, font=fnt) > maxw and cur: lines.append(cur); cur = c
+            else: cur += c
+        if cur: lines.append(cur)
     return lines
 
-def background(slide_png, hook, out, long_label=""):
+def render_narrow(G, title, sub, body, name="sh_narrow"):
+    """縦動画用: スライドを幅 1080px のページで描き直す（表が折り返されて文字が大きくなる）。
+    自由配置の要素(ov)があるときは座標が合わないので None（従来の 16:9 を使う）"""
+    if "class='ov" in body: return None
+    head = f"<h1>{G.E(title)}<small>{G.E(sub)}</small></h1>" if title else ""
+    avail = SH - TOP - 300 - 60                      # フック帯と下の帯の間
+    oldW = G.W; G.W = SW
+    try:
+        best = None
+        for sc in (1.0, 1.2, 1.4, 0.9, 0.8, 0.7):
+            im, ch, png = G._render_once(head, body, name, sc)
+            if ch <= avail and (best is None or ch > best[1]): best = (im, ch, png, sc)
+            if best and best[1] >= avail * 0.75: break
+        if best is None: return None
+        im, ch, png, sc = best
+    finally:
+        G.W = oldW
+    im.crop((0, 0, SW, min(im.size[1], ch + 40))).save(png)
+    return png
+
+def background(slide_png, hook, out, long_label="", crop169=True):
     from PIL import Image, ImageDraw
     im = Image.new("RGB", (SW, SH), "white"); d = ImageDraw.Draw(im)
     d.rectangle([0, 0, SW, TOP], fill=NAVY)
@@ -45,7 +68,7 @@ def background(slide_png, hook, out, long_label=""):
         d.text(((SW - d.textlength(l, font=f)) / 2, y), l, font=f, fill="white", stroke_width=3, stroke_fill=(10, 25, 60)); y += lh
     sl = Image.open(slide_png).convert("RGB")
     from PIL import ImageOps
-    sl = sl.crop((0, 0, sl.size[0], min(sl.size[1], int(sl.size[0] * 9 / 16))))
+    if crop169: sl = sl.crop((0, 0, sl.size[0], min(sl.size[1], int(sl.size[0] * 9 / 16))))
     bb = ImageOps.invert(sl.convert("L")).point(lambda v: 255 if v > 40 else 0).getbbox()
     if bb:                                       # 余白を切って文字を大きく
         sl = sl.crop((max(0, bb[0] - 30), max(0, bb[1] - 30), min(sl.size[0], bb[2] + 30), min(sl.size[1], bb[3] + 30)))
@@ -79,9 +102,11 @@ def make(path, i, hook=None, log=print):
     odir = os.path.join(G.OUT, "shorts"); os.makedirs(odir, exist_ok=True)
     base = os.path.join(odir, f"{spec['name']}_s{i:02d}")
     hook = hook or s.get("short_hook") or (s.get("title") or spec.get("label", "")).replace("｜", "\n").split("\n")[0]
-    reg = registry.load(); v = registry.get(reg, spec["name"]) or {}
+    reg = registry.load(); v = registry.get(reg, spec.get("short_target") or spec["name"]) or {}   # 本編 = short_target の動画（なければ自分）
+    if spec.get("short_target") and not v: log(f"※ 本編 {spec['short_target']} が URL 대장에 없습니다 → 링크 없이 만듭니다")
     long_title = v.get("yt_title") or (spec.get("youtube") or {}).get("title") or v.get("label") or spec.get("label", "")
-    bottom = background(png, hook, base + "_bg.png", long_title)
+    narrow = render_narrow(G, s.get("title", ""), s.get("sub", ""), s["_body"])       # 縦向きに描き直せれば文字が大きい方を使う
+    bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow)
     # 音声は本編のスライドから。字幕の時間は文字数で配分
     m4a = base + ".m4a"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", seg, "-vn", "-c:a", "aac", "-b:a", "128k", m4a], check=True)
@@ -98,10 +123,10 @@ def make(path, i, hook=None, log=print):
         V.encode_subtitled(base + "_bg.png", m4a, "0", total, sents, tp, base + ".mp4", odir, os.path.basename(base), width=SW, height=SH)
     finally:
         V.SUB_STYLE = old
-    url = v.get("url") or (spec.get("youtube") or {}).get("url") or ""
+    url = v.get("url") or ("" if spec.get("short_target") else (spec.get("youtube") or {}).get("url")) or ""
     title = f"{hook.replace(chr(10), ' ')}【宅建】 #shorts"
     desc = (f"本編はこちら ▶ {url or '（本編のURLが未登録です）'}\n{long_title}\n\n"
-            f"{(s.get('speech') or '')[:120]}…\n\n#宅建 #宅建士 #宅建試験 #shorts")
+            f"{(s.get('speech') or '')[:120]}…\n\nチャンネル ▶ https://www.youtube.com/@nippon-real\n\n#宅建 #宅建士 #宅建試験 #宅建勉強法 #shorts")
     open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n")
     for f in (m4a, base + "_bg.png"):
         if os.path.exists(f): os.remove(f)

@@ -29,7 +29,8 @@ def env():
 
 def run(name, steps):
     p = os.path.join(SPECS, name + ".json")
-    cmds = {"illust": [PY, "-u", "build_spec.py", p, "--illust", "0"], "draft": [PY, "-u", "build_spec.py", p, "--draft"], "build": [PY, "-u", "build_spec.py", p]}
+    cmds = {"illust": [PY, "-u", "build_spec.py", p, "--illust", "0"], "draft": [PY, "-u", "build_spec.py", p, "--draft"], "build": [PY, "-u", "build_spec.py", p],
+            "short": [PY, "-u", "shorts.py", p, "1"]}
     chain = " && ".join(shlex.join(cmds[s]) for s in steps if s in cmds)
     os.makedirs(JOBDIR, exist_ok=True)
     log = os.path.join(JOBDIR, "auto.log"); q = shlex.quote
@@ -41,6 +42,7 @@ def run(name, steps):
     while _alive(pid) and not os.path.exists(log + ".rc"): time.sleep(10)      # 自分が始めた作業だけ待つ
 
 def main():
+    os.makedirs(JOBDIR, exist_ok=True)
     for f in sorted(os.listdir(SPECS)) if os.path.isdir(SPECS) else []:
         if not f.endswith(".json"): continue
         p = os.path.join(SPECS, f)
@@ -50,12 +52,20 @@ def main():
         if not steps: continue
         sp.pop("auto"); sp["auto_done"] = time.strftime("%Y-%m-%d %H:%M")      # 二度始めないよう先に印を消す
         json.dump(sp, open(p + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=1); os.replace(p + ".tmp", p)
+        import fcntl                                                              # 自動制作どうしは同時に走らせない（デプロイのたびに1本ずつ起動されるため）
+        lockf = open(os.path.join(JOBDIR, "autobuild.lock"), "w")
+        for _ in range(720):
+            try: fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB); break
+            except OSError: time.sleep(10)
         for _ in range(360):                                                      # 最大1時間、ほかの作業が終わるのを待つ
             if not busy(): break
             time.sleep(10)
         print(time.strftime("%F %T"), f"자동 제작 대기 끝 (busy={busy()})", flush=True)
         print(f"자동 제작 시작: {sp['name']} {steps}", flush=True)
-        run(sp["name"], steps)
+        try: run(sp["name"], steps)
+        finally:
+            try: fcntl.flock(lockf, fcntl.LOCK_UN); lockf.close()
+            except Exception: pass
 
 if __name__ == "__main__":
     main()
