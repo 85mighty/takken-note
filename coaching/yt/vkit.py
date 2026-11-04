@@ -102,10 +102,13 @@ import re
 def split_sentences(text):
     """「。」「！」「？」で区切る。短すぎる断片は前と結合。"""
     parts = [p for p in re.split(r"(?<=[。！？!?])\s*", text.strip()) if p]
-    out = []
+    out, carry = [], ""
     for p in parts:
-        if out and len(p) < 8: out[-1] += p
-        else: out.append(p)
+        if len(p) < 8: carry += p; continue                        # 「学歴は。」のような短い文は次の文の頭につける
+        out.append(carry + p); carry = ""
+    if carry:
+        if out: out[-1] += carry
+        else: out.append(carry)
     return out
 
 def ssml_sentences(sents, pause_ms=350):

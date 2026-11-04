@@ -247,7 +247,7 @@ def _sub_area():
 LAST_SCALE = 1.0
 NO_SCROLL = os.environ.get("YT_SCROLL", "0") != "1"   # 長いスライドは縮めて1画面に収める（YT_SCROLL=1 で従来のスクロール）
 MIN_SCALE = 0.62                                        # ここまで縮めても入らなければスクロールに戻す
-RENDER_VER = 4      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
+RENDER_VER = 5      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
 ILL_RE = re.compile(r"<div class='ill ill-(\w+)'>(<img [^>]*>)</div>")
 ILL_MIN, ILL_MAX = 200, 340
 
@@ -423,7 +423,7 @@ def render(body, title, sub, name):
         import subs
         import themes
         _st = subs.load_style(V.SUB_STYLE); fsig = (_st.get("slide_font", ""), _st.get("slide_theme", "navy"), themes.css(_st.get("slide_theme")))   # テーマの CSS が変わったら描き直す
-        if themes.max_h(_st.get("slide_theme")): avail = min(avail, themes.max_h(_st.get("slide_theme")))   # 紙の枠からはみ出さない
+        if themes.max_h(_st.get("slide_theme")): avail = themes.max_h(_st.get("slide_theme"))   # 紙の中いっぱいに使う（字幕は枠に重なってよい）
     except Exception:
         fsig = ""
     ck = hashlib.md5(repr((head, body, CSS, avail, W, H, fsig, RENDER_VER)).encode()).hexdigest()

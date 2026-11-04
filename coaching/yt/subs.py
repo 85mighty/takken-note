@@ -147,10 +147,33 @@ def _split(s, maxc):
     return _split(s[:bi], maxc) + _split(s[bi:], maxc)
 
 def chunk(sentence, maxc=20):
-    """1文 → 画面に出す単位のリスト。句点・読点は表示しない（読点は区切りに使う）"""
-    s = sentence.strip().rstrip("。．.")
-    parts = [p for p in _split(s, maxc) if p.strip("、 ")]
-    return [p.strip().strip("、").replace("、", "　") for p in parts]
+    """1文 → 画面に出す単位のリスト。句点・読点は表示しない（読点は区切りに使う）。
+    強調の【】は区切りの判定から外し、区切ったあとで付け直す（【】のせいで変な所で切れない）"""
+    chars = []                                                   # [(文字, 強調か)]
+    for seg, em in runs(sentence.strip().rstrip("。．.")):
+        chars += [(c, em) for c in seg]
+    while chars and chars[-1][0] in "。．.": chars.pop()
+    chars = [("、" if c in "。．." else c, em) for c, em in chars]      # 途中の句点は読点と同じ扱い（区切り候補・表示は空白）
+    s = "".join(c for c, _e in chars)
+    parts = _split(s, maxc)
+    merged = []                                                  # 「中途」のような短すぎる断片は隣とくっつける
+    for part in parts:
+        if merged and (len(part.strip("、 　")) < 4 or len(merged[-1].strip("、 　")) < 4) and len(merged[-1]) + len(part) <= maxc + 3: merged[-1] += part
+        else: merged.append(part)
+    out, pos = [], 0
+    for part in merged:
+        piece = chars[pos: pos + len(part)]; pos += len(part)
+        while piece and piece[0][0] in "、 　": piece = piece[1:]
+        while piece and piece[-1][0] in "、 　": piece = piece[:-1]
+        if not piece: continue
+        text, cur = "", None
+        for c, em in piece:
+            if em != cur:
+                text += ("【" if em else "】") if cur is not None or em else ""; cur = em
+            text += "　" if c == "、" else c
+        if cur: text += "】"
+        out.append(text)
+    return out
 
 def timed_chunks(sents, spans, maxc=20):
     """[(text, t0, t1)]。文の時間を、区切った各部分の文字数で配分"""
