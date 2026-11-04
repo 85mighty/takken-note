@@ -60,7 +60,7 @@ td.hi{background:#ffecec;color:#c62828} td.lo{background:#eef5fb} tr.now td{back
 .big{color:#c62828}
 .cover h2{color:#0b5ea8} .cover h3{color:#333;border-top:3px solid #0b5ea8;border-bottom:3px solid #0b5ea8;display:inline-block;padding:14px 30px}
 """},
- "kokuban": {"label": "黒板＋白い紙 (解説系YouTube風·波線·赤枠)", "font": "Zen角ゴシックNew", "max_h": 840,
+ "kokuban": {"label": "黒板＋白い紙 (解説系YouTube風·波線·赤枠)", "font": "Zen角ゴシックNew", "max_h": 775,
              "desc": "녹색 칠판 위에 목재 액자에 든 흰 종이. 큰 글자, 굵은 글자(b)에는 파란 물결 밑줄, .rbox로 빨간 손그림 테두리. 자막 프리셋 kozarie(극태·黄色 강조)와 세트",
              "css": """
 body{background:#2f5b47 url('file://FRAME_PNG') no-repeat left top;background-size:100% auto;padding:10.4% 8.5% 22%;color:#222;font-size:38px}
@@ -110,14 +110,14 @@ td.hi{background:rgba(255,213,79,.3);color:#ffe082} td.lo{background:rgba(255,25
 def _frame_png():
     """黒板＋木枠＋白い紙＋水色の帯（1920×1080）。無ければ描く"""
     from PIL import Image, ImageDraw
-    d_ = os.path.join(HERE, "out", "_style"); os.makedirs(d_, exist_ok=True); p = os.path.join(d_, "kokuban_frame2.png")
+    d_ = os.path.join(HERE, "out", "_style"); os.makedirs(d_, exist_ok=True); p = os.path.join(d_, "kokuban_frame3.png")
     if os.path.exists(p): return p
     im = Image.new("RGB", (1920, 1080), (47, 91, 71)); d = ImageDraw.Draw(im)
     for y in range(0, 1080, 3):                                              # 黒板のムラ
         d.line([0, y, 1920, y], fill=(44 + (y // 3) % 5, 88 + (y // 7) % 4, 68))
-    d.rectangle([86, 50, 1834, 880], fill=(140, 92, 44))                       # 木枠
-    d.rectangle([92, 56, 1828, 874], outline=(100, 62, 26), width=3)
-    d.rectangle([104, 68, 1816, 862], fill=(255, 255, 255))                    # 紙
+    d.rectangle([86, 50, 1834, 816], fill=(140, 92, 44))                       # 木枠
+    d.rectangle([92, 56, 1828, 810], outline=(100, 62, 26), width=3)
+    d.rectangle([104, 68, 1816, 798], fill=(255, 255, 255))                    # 紙
     d.rectangle([104, 68, 1816, 168], fill=(207, 236, 240))                    # 水色の帯（見出し用・高め）
     d.line([104, 168, 1816, 168], fill=(150, 200, 210), width=2)
     im.save(p); return p

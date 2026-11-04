@@ -35,9 +35,9 @@ PRESETS = {
     "yellow": {"label": "黄色文字（バラエティ寄り）", "font": "M PLUS Rounded ExtraBold", "size": 54, "color": "#FFE14D",
                "stroke": 6, "stroke_color": "#222222", "box": False, "box_color": "#000000", "box_alpha": 0.0, "box_radius": 0,
                "shadow": True, "max_chars": 18, "max_lines": 1, "bottom": 60},
-    "kozarie": {"label": "解説系YouTube風（極太丸ゴ・太い黒フチ・【】は黄色）", "font": "M PLUS Rounded ExtraBold", "size": 66, "color": "#FFFFFF",
-               "stroke": 9, "stroke_color": "#111111", "box": False, "box_color": "#000000", "box_alpha": 0.0, "box_radius": 0,
-               "shadow": False, "max_chars": 16, "max_lines": 1, "bottom": 44, "accent": "#FFE14D"},
+    "kozarie": {"label": "解説系YouTube風（極太丸ゴ・太い黒フチ・【】は黄色）", "font": "M PLUS Rounded ExtraBold", "size": 99, "color": "#FFFFFF",
+               "stroke": 12, "stroke_color": "#111111", "box": False, "box_color": "#000000", "box_alpha": 0.0, "box_radius": 0,
+               "shadow": False, "max_chars": 15, "max_lines": 1, "bottom": 36, "accent": "#FFE14D"},
     "plain":  {"label": "シンプル（黒文字・白ボックス）", "font": "BIZ UDPゴシック Bold", "size": 48, "color": "#111111",
                "stroke": 0, "stroke_color": "#FFFFFF", "box": True, "box_color": "#FFFFFF", "box_alpha": 0.88, "box_radius": 10,
                "shadow": False, "max_chars": 20, "max_lines": 1, "bottom": 56},
@@ -50,7 +50,7 @@ SLIDE_FONTS = {
     "M PLUS Rounded": ("MPLUSRounded1c-Medium.ttf", "MPLUSRounded1c-ExtraBold.ttf"),
     "Noto Sans JP（遅い）": None,
 }
-DEFAULT = dict(PRESETS["kozarie"], preset="kozarie", slide_font="Zen角ゴシックNew", slide_theme="kokuban", accent="#FFE14D")
+DEFAULT = dict(PRESETS["kozarie"], preset="kozarie", slide_font="Zen角ゴシックNew", slide_theme="kokuban", accent="#FFE14D", ver=2)
 
 EMPH = re.compile(r"【([^】]*)】?")
 def plain(text):
@@ -85,6 +85,8 @@ def load_style(override=None):
         try:
             saved = json.load(open(STYLE_PATH, encoding="utf-8"))
             if "slide_theme" not in saved: saved = {k: v for k, v in saved.items() if k == "slide_font"}   # テーマ導入前の保存 → 新しい既定（黒板＋極太字幕）に乗り換え
+            if saved.get("preset") == "kozarie" and int(saved.get("ver", 1)) < 2:                          # 字幕を1.5倍に（一度だけ）
+                saved.update(size=99, stroke=12, max_chars=15, bottom=36, ver=2)
             st.update(saved)
         except Exception: pass
     if override: st.update(override)
