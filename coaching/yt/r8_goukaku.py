@@ -401,8 +401,8 @@ def render(body, title, sub, name):
     avail = H - area - 40                                   # 字幕と下余白を除いた高さ
     try:
         import subs
-        _st = subs.load_style(V.SUB_STYLE); fsig = (_st.get("slide_font", ""), _st.get("slide_theme", "navy"))
         import themes
+        _st = subs.load_style(V.SUB_STYLE); fsig = (_st.get("slide_font", ""), _st.get("slide_theme", "navy"), themes.css(_st.get("slide_theme")))   # テーマの CSS が変わったら描き直す
         if themes.max_h(_st.get("slide_theme")): avail = min(avail, themes.max_h(_st.get("slide_theme")))   # 紙の枠からはみ出さない
     except Exception:
         fsig = ""

@@ -64,7 +64,7 @@ td.hi{background:#ffecec;color:#c62828} td.lo{background:#eef5fb} tr.now td{back
              "desc": "녹색 칠판 위에 목재 액자에 든 흰 종이. 큰 글자, 굵은 글자(b)에는 파란 물결 밑줄, .rbox로 빨간 손그림 테두리. 자막 프리셋 kozarie(극태·黄色 강조)와 세트",
              "css": """
 body{background:#2f5b47 url('file://FRAME_PNG') no-repeat left top;background-size:100% auto;padding:9.2% 8.5% 22%;color:#222}
-h1{position:absolute;left:7%;top:3.9%;width:86%;margin:0;padding:0 1%;border:none;font-size:2.1vw;line-height:1.5;color:#1f3b63;background:none} h1 small{color:#4a5a70;font-size:1.4vw}
+h1{position:absolute;left:6.5vw;top:3.55vw;width:86vw;height:3.1vw;margin:0;padding:0 1vw;border:none;font-size:1.9vw;line-height:1.2;color:#1f3b63;background:none;white-space:nowrap;overflow:hidden;display:flex;align-items:center} h1 small{color:#4a5a70;font-size:1.25vw;margin-left:1vw}
 b{text-decoration:underline wavy #3b82d6;text-decoration-thickness:5px;text-underline-offset:12px} th b,td b,.key b,.ov b{text-decoration:none}
 .huge{font-size:92px;font-weight:bold;text-align:center;line-height:1.55;letter-spacing:.08em;margin:10px 0}
 .huge b{text-decoration-thickness:6px;text-underline-offset:16px}
