@@ -23,7 +23,7 @@ def _p(text):
 
 def _speech_paras(speech):
     """読み上げ文を 2〜3文ずつの段落に"""
-    sents = [s for s in re.split(r"(?<=。)", speech or "") if s.strip()]
+    sents = [s for s in re.split(r"(?<=。)", (speech or "").replace("【", "").replace("】", "")) if s.strip()]
     out, cur = [], ""
     for s in sents:
         cur += s

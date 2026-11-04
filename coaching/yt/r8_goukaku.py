@@ -402,6 +402,8 @@ def render(body, title, sub, name):
     try:
         import subs
         _st = subs.load_style(V.SUB_STYLE); fsig = (_st.get("slide_font", ""), _st.get("slide_theme", "navy"))
+        import themes
+        if themes.max_h(_st.get("slide_theme")): avail = min(avail, themes.max_h(_st.get("slide_theme")))   # 紙の枠からはみ出さない
     except Exception:
         fsig = ""
     ck = hashlib.md5(repr((head, body, CSS, avail, W, H, fsig, RENDER_VER)).encode()).hexdigest()

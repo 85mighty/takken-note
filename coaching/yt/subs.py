@@ -35,6 +35,9 @@ PRESETS = {
     "yellow": {"label": "黄色文字（バラエティ寄り）", "font": "M PLUS Rounded ExtraBold", "size": 54, "color": "#FFE14D",
                "stroke": 6, "stroke_color": "#222222", "box": False, "box_color": "#000000", "box_alpha": 0.0, "box_radius": 0,
                "shadow": True, "max_chars": 18, "max_lines": 1, "bottom": 60},
+    "kozarie": {"label": "解説系YouTube風（極太丸ゴ・太い黒フチ・【】は黄色）", "font": "M PLUS Rounded ExtraBold", "size": 66, "color": "#FFFFFF",
+               "stroke": 9, "stroke_color": "#111111", "box": False, "box_color": "#000000", "box_alpha": 0.0, "box_radius": 0,
+               "shadow": False, "max_chars": 16, "max_lines": 1, "bottom": 44, "accent": "#FFE14D"},
     "plain":  {"label": "シンプル（黒文字・白ボックス）", "font": "BIZ UDPゴシック Bold", "size": 48, "color": "#111111",
                "stroke": 0, "stroke_color": "#FFFFFF", "box": True, "box_color": "#FFFFFF", "box_alpha": 0.88, "box_radius": 10,
                "shadow": False, "max_chars": 20, "max_lines": 1, "bottom": 56},
@@ -47,7 +50,22 @@ SLIDE_FONTS = {
     "M PLUS Rounded": ("MPLUSRounded1c-Medium.ttf", "MPLUSRounded1c-ExtraBold.ttf"),
     "Noto Sans JP（遅い）": None,
 }
-DEFAULT = dict(PRESETS["box"], preset="box", slide_font="Zen角ゴシックNew", slide_theme="navy")
+DEFAULT = dict(PRESETS["box"], preset="box", slide_font="Zen角ゴシックNew", slide_theme="navy", accent="#FFE14D")
+
+EMPH = re.compile(r"【([^】]*)】?")
+def plain(text):
+    """読み上げ・ブログ用: 強調の【】を外す"""
+    return (text or "").replace("【", "").replace("】", "")
+
+def runs(text):
+    """[(文字列, 強調か)] 。【…】の中が強調。閉じ忘れは行末まで強調"""
+    out, pos = [], 0
+    for m in EMPH.finditer(text or ""):
+        if m.start() > pos: out.append((text[pos:m.start()], False))
+        if m.group(1): out.append((m.group(1), True))
+        pos = m.end()
+    if pos < len(text or ""): out.append((text[pos:], False))
+    return out or [("", False)]
 
 def slide_font_css(name):
     """スライド用 CSS の先頭に付ける @font-face と、使う font-family 名"""
@@ -154,25 +172,30 @@ def render(text, path, width, st):
     H = band_height(st)
     fnt = ImageFont.truetype(font_path(st["font"]), int(st["size"]), index=0)
     lines = [text]
-    if int(st.get("max_lines", 1)) >= 2 and fnt.getlength(text) > width * 0.86:
+    L = lambda l: fnt.getlength(plain(l))
+    if int(st.get("max_lines", 1)) >= 2 and L(text) > width * 0.86:
         cs = _split(text, max(4, len(text) // 2 + 1)); lines = ["".join(cs[: len(cs) // 2 or 1]), "".join(cs[len(cs) // 2 or 1:])]
     size = int(st["size"])
-    while size > 24 and max(fnt.getlength(l) for l in lines) > width * 0.9:   # はみ出すときだけ縮める
+    while size > 24 and max(L(l) for l in lines) > width * 0.9:   # はみ出すときだけ縮める
         size -= 2; fnt = ImageFont.truetype(font_path(st["font"]), size, index=0)
     im = Image.new("RGBA", (width, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
     lh = int(size * 1.45); total = lh * len(lines); y0 = (H - total) // 2
     sw = int(st.get("stroke", 0))
     if st.get("box"):
-        tw = max(fnt.getlength(l) for l in lines); padx, pady = int(size * 0.55), int(size * 0.22)
+        tw = max(L(l) for l in lines); padx, pady = int(size * 0.55), int(size * 0.22)
         x0 = (width - tw) / 2 - padx; y_top = y0 - pady + int(size * 0.08)
         d.rounded_rectangle([x0, y_top, x0 + tw + 2 * padx, y_top + total + 2 * pady - int(size * 0.18)],
                             radius=int(st.get("box_radius", 10)), fill=_rgba(st.get("box_color", "#000000"), float(st.get("box_alpha", 0.6))))
     y = y0
     for l in lines:
-        x = (width - fnt.getlength(l)) / 2
-        if st.get("shadow"):
-            d.text((x + 3, y + 4), l, font=fnt, fill=(0, 0, 0, 120), stroke_width=sw, stroke_fill=(0, 0, 0, 120))
-        d.text((x, y), l, font=fnt, fill=_rgba(st.get("color", "#FFFFFF")), stroke_width=sw, stroke_fill=_rgba(st.get("stroke_color", "#000000")))
+        x = (width - L(l)) / 2
+        for seg, emph in runs(l):                                  # 【】の中は強調色
+            if not seg: continue
+            if st.get("shadow"):
+                d.text((x + 3, y + 4), seg, font=fnt, fill=(0, 0, 0, 120), stroke_width=sw, stroke_fill=(0, 0, 0, 120))
+            d.text((x, y), seg, font=fnt, fill=_rgba(st.get("accent", "#FFE14D") if emph else st.get("color", "#FFFFFF")),
+                   stroke_width=sw, stroke_fill=_rgba(st.get("stroke_color", "#000000")))
+            x += fnt.getlength(seg)
         y += lh
     im.save(path)
     return path

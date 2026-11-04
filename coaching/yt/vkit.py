@@ -109,7 +109,7 @@ def split_sentences(text):
     return out
 
 def ssml_sentences(sents, pause_ms=350):
-    body = "".join(f'<mark name="s{i}"/>{html.escape(s)}<break time="{pause_ms}ms"/>' for i, s in enumerate(sents))
+    body = "".join(f'<mark name="s{i}"/>{html.escape(s.replace("【", "").replace("】", ""))}<break time="{pause_ms}ms"/>' for i, s in enumerate(sents))
     return "<speak>" + body + "</speak>"
 
 def spans(tp, n, total):
