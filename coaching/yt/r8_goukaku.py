@@ -247,7 +247,7 @@ def _sub_area():
 LAST_SCALE = 1.0
 NO_SCROLL = os.environ.get("YT_SCROLL", "0") != "1"   # 長いスライドは縮めて1画面に収める（YT_SCROLL=1 で従来のスクロール）
 MIN_SCALE = 0.62                                        # ここまで縮めても入らなければスクロールに戻す
-RENDER_VER = 3      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
+RENDER_VER = 4      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
 ILL_RE = re.compile(r"<div class='ill ill-(\w+)'>(<img [^>]*>)</div>")
 ILL_MIN, ILL_MAX = 200, 340
 
@@ -462,11 +462,13 @@ def render(body, title, sub, name):
             if ch2 <= avail: best = (im2, ch2, MIN_SCALE)
         if best: im, ch, LAST_SCALE = best
         else: im, ch, png = _render_once(head, body, name, 1.0)   # 最小倍率でも入らない → 従来どおりスクロール
-    bottom = max(H, min(im.size[1], ch + 90))
-    im = im.crop((0, 0, W, bottom))
-    if V.HIGHLIGHT and area > 90:   # 字幕のぶん下に余白を足す
-        pad = area - 90
-        bg = Image.new('RGB', (W, bottom + pad), 'white'); bg.paste(im, (0, 0)); im = bg; bottom += pad
+    if ch + 90 <= H:                                   # 1画面に収まる → ちょうど 1080px（余白を足さない＝動かない）
+        bottom = H; im = im.crop((0, 0, W, bottom))
+    else:                                              # 収まらない（従来のスクロール）→ 字幕のぶん下に余白を足す
+        bottom = min(im.size[1], ch + 90); im = im.crop((0, 0, W, bottom))
+        if V.HIGHLIGHT and area > 90:
+            pad = area - 90
+            bg = Image.new('RGB', (W, bottom + pad), 'white'); bg.paste(im, (0, 0)); im = bg; bottom += pad
     im.save(png); shutil.copy(png, cpng); open(cmeta, "w").write(f"{bottom} {LAST_SCALE}")
     return png, bottom
 
