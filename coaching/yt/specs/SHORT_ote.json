@@ -5,9 +5,6 @@
  "status": "script",
  "topic": "ショート動画。大手不動産に入るのに宅建は必須か（新卒：不要／中途：ほぼ必須／入社後：全員必須）。本編 CAREER_ote への誘導",
  "created_at": "2026-11-04 10:40",
- "auto": [
-  "short"
- ],
  "short_target": "CAREER_ote",
  "usage": {
   "model": "chat"
@@ -34,5 +31,6 @@
   "title": "",
   "excerpt": "",
   "url": ""
- }
+ },
+ "auto_done": "2026-11-04 02:55"
 }
