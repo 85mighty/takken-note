@@ -63,8 +63,9 @@ td.hi{background:#ffecec;color:#c62828} td.lo{background:#eef5fb} tr.now td{back
  "kokuban": {"label": "黒板＋白い紙 (解説系YouTube風·波線·赤枠)", "font": "Zen角ゴシックNew", "max_h": 840,
              "desc": "녹색 칠판 위에 목재 액자에 든 흰 종이. 큰 글자, 굵은 글자(b)에는 파란 물결 밑줄, .rbox로 빨간 손그림 테두리. 자막 프리셋 kozarie(극태·黄色 강조)와 세트",
              "css": """
-body{background:#2f5b47 url('file://FRAME_PNG') no-repeat left top;background-size:100% auto;padding:9.2% 8.5% 22%;color:#222}
-h1{position:absolute;left:6.5vw;top:3.55vw;width:86vw;height:3.1vw;margin:0;padding:0 1vw;border:none;font-size:1.9vw;line-height:1.2;color:#1f3b63;background:none;white-space:nowrap;overflow:hidden;display:flex;align-items:center} h1 small{color:#4a5a70;font-size:1.25vw;margin-left:1vw}
+body{background:#2f5b47 url('file://FRAME_PNG') no-repeat left top;background-size:100% auto;padding:10.4% 8.5% 22%;color:#222;font-size:38px}
+h1{position:absolute;left:6.5vw;top:3.55vw;width:86vw;height:5.2vw;margin:0;padding:0 1vw;border:none;font-size:3.1vw;line-height:1.15;color:#1f3b63;background:none;white-space:nowrap;overflow:hidden;display:flex;align-items:center;letter-spacing:.02em} h1 small{color:#4a5a70;font-size:1.7vw;margin-left:1.2vw;white-space:nowrap}
+table{font-size:36px} .key{font-size:42px} .note{font-size:28px} .steps li{font-size:38px}
 b{text-decoration:underline wavy #3b82d6;text-decoration-thickness:5px;text-underline-offset:12px} th b,td b,.key b,.ov b{text-decoration:none}
 .huge{font-size:92px;font-weight:bold;text-align:center;line-height:1.55;letter-spacing:.08em;margin:10px 0}
 .huge b{text-decoration-thickness:6px;text-underline-offset:16px}
@@ -93,7 +94,7 @@ td.hi{background:rgba(255,213,79,.3);color:#ffe082} td.lo{background:rgba(255,25
 def _frame_png():
     """黒板＋木枠＋白い紙＋水色の帯（1920×1080）。無ければ描く"""
     from PIL import Image, ImageDraw
-    d_ = os.path.join(HERE, "out", "_style"); os.makedirs(d_, exist_ok=True); p = os.path.join(d_, "kokuban_frame.png")
+    d_ = os.path.join(HERE, "out", "_style"); os.makedirs(d_, exist_ok=True); p = os.path.join(d_, "kokuban_frame2.png")
     if os.path.exists(p): return p
     im = Image.new("RGB", (1920, 1080), (47, 91, 71)); d = ImageDraw.Draw(im)
     for y in range(0, 1080, 3):                                              # 黒板のムラ
@@ -101,8 +102,8 @@ def _frame_png():
     d.rectangle([86, 50, 1834, 880], fill=(140, 92, 44))                       # 木枠
     d.rectangle([92, 56, 1828, 874], outline=(100, 62, 26), width=3)
     d.rectangle([104, 68, 1816, 862], fill=(255, 255, 255))                    # 紙
-    d.rectangle([104, 68, 1816, 128], fill=(207, 236, 240))                    # 水色の帯
-    d.line([104, 128, 1816, 128], fill=(150, 200, 210), width=2)
+    d.rectangle([104, 68, 1816, 168], fill=(207, 236, 240))                    # 水色の帯（見出し用・高め）
+    d.line([104, 168, 1816, 168], fill=(150, 200, 210), width=2)
     im.save(p); return p
 
 def css(key):

@@ -282,7 +282,8 @@ function render(){
         <label>제목</label><input type="text" data-f="title" value="${esc(s.title)}">
         <label>소제목</label><input type="text" data-f="sub" value="${esc(s.sub)}">
         <label>본문 (HTML)</label><textarea class="body" data-f="body">${esc(s.body)}</textarea>
-        <label>읽기 원고 (내레이션 = 자막)</label><textarea class="speech" data-f="speech">${esc(s.speech)}</textarea>
+        <label>사진 장면 <span class="hint">(비우면 보통 장면. 검색어 예: 試験会場 教室 / AI 생성: ai:試験会場で問題を解く受験生たち)</span></label><input type="text" data-f="photo" value="${esc(s.photo)}" placeholder="전체 화면 사진 + 자막 장면으로 만들기">
+        <label>읽기 원고 (내레이션 = 자막) <span class="hint">【…】로 감싼 부분은 자막에서 노란색</span></label><textarea class="speech" data-f="speech">${esc(s.speech)}</textarea>
         <div class="cnt">${chars}자・약 ${Math.round(chars/4.3)}초</div>
       </div>`;
     div.querySelectorAll("[data-f]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {

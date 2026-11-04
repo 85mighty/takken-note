@@ -18,9 +18,27 @@ def load(path):
 def compose_body(spec, s):
     """描画に使う本文 = 本文 + イラスト + 自由配置の要素"""
     import r8_goukaku as G, illust, imgsearch
-    body = imgsearch.resolve_tokens(s.get("body", ""), lambda m: print(m, flush=True))   # {{img:会社名 ロゴ}} → 実際のロゴ
+    log = lambda m: print(m, flush=True)
+    body = imgsearch.resolve_tokens(s.get("body", ""), log)   # {{img:会社名 ロゴ}} → 実際のロゴ
+    ph = photo_path(s, log)
+    if ph:                                                     # 全画面の写真 + (あれば) 見出し・本文
+        head = f"<div class='photo-title'>{G.E(s.get('title', ''))}</div>" if s.get("title") else ""
+        inner = f"<div class='photo-body'>{body}</div>" if body.strip() else ""
+        return f"<img class='photo' src='file://{ph}'>" + head + inner + G.overlays_html(s.get("overlays"))
     body = body if spec.get("illust_off") else illust.inject(s, body)
     return body + G.overlays_html(s.get("overlays"))
+
+def photo_path(s, log=print):
+    """photo: "ai:説明" なら実写風に生成、それ以外は検索語（Pexels → Commons → …）。無ければ None"""
+    q = (s.get("photo") or "").strip()
+    if not q: return None
+    import illust, imgsearch
+    try:
+        if q.lower().startswith("ai:"): return illust.ensure_photo(q[3:])
+        if os.path.exists(q): return q
+        return imgsearch.resolve(q, "photo", log)
+    except Exception as e:
+        log(f"사진을 준비하지 못했습니다 ({q}): {str(e)[:160]}"); return None
 
 def setup(spec):
     import r8_goukaku as G, vkit as V
@@ -28,7 +46,8 @@ def setup(spec):
     G.SLIDES.clear()
     for s in spec["slides"]:
         s["_body"] = compose_body(spec, s)
-        G.SLIDES.append((s.get("title", ""), s.get("sub", ""), s["_body"], s.get("speech", "")))
+        photo = "class='photo'" in s["_body"]
+        G.SLIDES.append(("" if photo else s.get("title", ""), "" if photo else s.get("sub", ""), s["_body"], s.get("speech", "")))   # 写真の場面は見出しを写真の上に描く
     G.OUT = os.path.join(V.OUT, spec["outdir"]); os.makedirs(G.OUT, exist_ok=True)
     return G
 

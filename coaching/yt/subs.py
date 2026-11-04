@@ -50,7 +50,7 @@ SLIDE_FONTS = {
     "M PLUS Rounded": ("MPLUSRounded1c-Medium.ttf", "MPLUSRounded1c-ExtraBold.ttf"),
     "Noto Sans JP（遅い）": None,
 }
-DEFAULT = dict(PRESETS["box"], preset="box", slide_font="Zen角ゴシックNew", slide_theme="navy", accent="#FFE14D")
+DEFAULT = dict(PRESETS["kozarie"], preset="kozarie", slide_font="Zen角ゴシックNew", slide_theme="kokuban", accent="#FFE14D")
 
 EMPH = re.compile(r"【([^】]*)】?")
 def plain(text):
@@ -82,7 +82,10 @@ def signature(st):
 def load_style(override=None):
     st = dict(DEFAULT)
     if os.path.exists(STYLE_PATH):
-        try: st.update(json.load(open(STYLE_PATH, encoding="utf-8")))
+        try:
+            saved = json.load(open(STYLE_PATH, encoding="utf-8"))
+            if "slide_theme" not in saved: saved = {k: v for k, v in saved.items() if k == "slide_font"}   # テーマ導入前の保存 → 新しい既定（黒板＋極太字幕）に乗り換え
+            st.update(saved)
         except Exception: pass
     if override: st.update(override)
     return st

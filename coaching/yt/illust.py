@@ -218,6 +218,31 @@ def ensure(s, force=False):
             last = e; print(f"    {q} 실패: {str(e)[:160]}", flush=True)
     raise last
 
+PHOTO_TEMPLATE = ("実写の写真のように見えるリアルな画像。{theme}。横長16:9。文字・ロゴ・透かしは一切入れない。"
+                  "日本の風景・日本人の人物、自然光、報道写真や広告写真のような自然な構図。顔のアップは避ける。")
+
+def ensure_photo(desc, force=False):
+    """実写風の写真を生成（photo: "ai:説明"）。パスを返す。作れなければ None"""
+    desc = desc.strip(); key = hashlib.md5(("photo", desc).__repr__().encode()).hexdigest()[:16]
+    out = os.path.join(DIR, "photo_" + key)
+    for ext in (".png", ".jpg", ".svg"):
+        if os.path.exists(out + ext) and not force: return out + ext
+    prov = provider()
+    if prov not in GEN: return None
+    order = [q for q in [prov] + [q for q in ("gemini", "openai") if q != prov and providers()[q]] if q not in DOWN and q != "claude"]
+    last = None
+    for q in order:
+        try:
+            p = GEN[q](PHOTO_TEMPLATE.format(theme=desc), out)
+            json.dump({"provider": q, "prompt": desc, "kind": "photo"}, open(out + ".json", "w", encoding="utf-8"), ensure_ascii=False)
+            return p
+        except Exhausted as e:
+            DOWN.add(q); last = e; print(f"    {q}: {e} → 이번 작업에서는 {q} 를 건너뜁니다", flush=True)
+        except Exception as e:
+            last = e; print(f"    {q} 실패: {str(e)[:160]}", flush=True)
+    if last: raise last
+    return None
+
 def placement(s):
     """このスライドに絵が入るか（空きがあるか）を、白紙の絵で試して判定する: top / right / cover / none"""
     if s.get("illust_off") or s.get("illust_pos") == "none": return "none"

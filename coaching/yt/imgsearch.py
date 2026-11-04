@@ -22,11 +22,30 @@ def _key(name, env):
     p = os.path.join(ROOT, name)
     return open(p).read().strip() if os.path.exists(p) else ""
 
-def providers():
+def providers(kind="logo"):
     out = []
+    if kind == "photo":                                     # 写真はライセンスが明確な所を先に
+        if _key(".pexels_api_key", "PEXELS_API_KEY"): out.append("pexels")
+        out.append("commons")
     if _key(".brave_api_key", "BRAVE_API_KEY"): out.append("brave")
     if _key(".serpapi_api_key", "SERPAPI_KEY"): out.append("serpapi")
-    out.append("wiki")
+    if kind != "photo": out.append("wiki")
+    return out
+
+def _pexels(q, kind, n):
+    key = _key(".pexels_api_key", "PEXELS_API_KEY")
+    j = _get("https://api.pexels.com/v1/search?" + urllib.parse.urlencode({"query": q, "per_page": n, "orientation": "landscape", "locale": "ja-JP"}), {"Authorization": key})
+    return [{"url": ph["src"]["large2x"], "thumb": ph["src"]["medium"], "title": (ph.get("alt") or "") + f"（Pexels / {ph.get('photographer', '')}）", "page": ph.get("url", ""), "src": "pexels"} for ph in j.get("photos", [])]
+
+def _commons(q, kind, n):
+    j = _get("https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "generator": "search", "gsrsearch": q + " filetype:bitmap", "gsrnamespace": 6, "gsrlimit": n,
+                                                                                "prop": "imageinfo", "iiprop": "url|extmetadata", "iiurlwidth": 1920, "format": "json"}))
+    out = []
+    for pg in j.get("query", {}).get("pages", {}).values():
+        ii = (pg.get("imageinfo") or [{}])[0]
+        if not ii.get("thumburl"): continue
+        lic = (ii.get("extmetadata", {}).get("LicenseShortName", {}) or {}).get("value", "")
+        out.append({"url": ii["thumburl"], "thumb": ii["thumburl"].replace("/1920px-", "/320px-"), "title": pg.get("title", "").replace("File:", "") + f"（Commons {lic}）", "page": ii.get("descriptionurl", ""), "src": "commons"})
     return out
 
 def _get(url, headers=None, timeout=30, binary=False):
@@ -137,14 +156,15 @@ def search(q, kind="logo", n=8, log=None):
     hit = cache.get(ck)
     if hit and time.time() - hit.get("t", 0) < 86400 and hit.get("r"): return hit["r"]
     res, errs = [], []
-    for p in providers():
+    for p in providers(kind):
         try:
-            res = _rank({"brave": _brave, "serpapi": _serpapi, "wiki": _wiki}[p](q, kind, n), kind)
+            res = _rank({"brave": _brave, "serpapi": _serpapi, "wiki": _wiki, "pexels": _pexels, "commons": _commons}[p](q, kind, n), kind)
         except Exception as e:
             errs.append(f"{p}: {str(e)[:120]}"); res = []
         if res: break
         errs.append(f"{p}: 0건")
     if log and errs: log("이미지 검색 경고: " + " / ".join(errs))
+    if log and res and kind == "photo" and res[0]["src"] in ("brave", "serpapi"): log("※ 사진이 일반 웹 검색에서 왔습니다 (저작권 확인 필요). Pexels 키(.pexels_api_key)를 넣으면 무료 사진을 우선 씁니다")
     if res:
         cache[ck] = {"t": time.time(), "r": res}; _jsave(CACHE, cache)
     return res

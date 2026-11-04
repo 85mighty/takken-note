@@ -58,7 +58,10 @@ SLIDE_GUIDE = """スライドの body は HTML の断片。使えるクラス:
 - <div class='big'>28点<small>説明</small></div>（大きな数字）
 - <p class='note'>注記・出典</p>
 - 1枚目だけ: <div class='cover'><h2>動画タイトル</h2><h3>サブタイトル</h3><p>※注記</p></div>（title は空にする）
-画面は 1920×1080。字幕が下に入るので、1枚に詰め込みすぎない（本文は 120〜220字目安）。上か右にイラストが入る。"""
+- <div class='huge'><b>地方税</b><br><span class='rbox'><b>区分所有法</b></span><br><b>不動産登記法</b></div>（見出し語を大きく3〜4行。<b> は波線、.rbox は赤枠。話題の切り替わりや結論に、12枚中2〜3枚）
+- 写真の場面: photo に「ai:試験会場で問題を解く受験生たち」のように ai: に続けて場面を書くと、全画面の実写風写真＋字幕だけの場面になる（body は空か1文）。導入・体験談・気持ちの場面に、12枚中1〜2枚
+画面は 1920×1080。字幕が下に入るので、1枚に詰め込みすぎない（本文は 120〜220字目安）。上か右にイラストが入る。
+speech の中で特に聞かせたい語句は【…】で囲む（字幕で黄色になる。1文に1か所まで。読み上げには影響しない）。"""
 
 DESC_GUIDE = """youtube.description は次の形（これまでのチャンネルの書き方）。{{chapters}} {{blog}} {{related}} はそのまま書く（書き出し後に自動で埋まる）:
 <動画の要約 2〜3文。誰向けか・何が分かるか>
@@ -106,9 +109,10 @@ SAVE_TOOL = {
             "label": {"type": "string", "description": "スタジオに出す短い日本語名"},
             "slides": {"type": "array", "items": {
                 "type": "object", "additionalProperties": False,
-                "required": ["title", "sub", "body", "speech", "illust"],
+                "required": ["title", "sub", "body", "speech", "illust", "photo"],
                 "properties": {"title": {"type": "string"}, "sub": {"type": "string"}, "body": {"type": "string"},
-                               "speech": {"type": "string"}, "illust": {"type": "string"}}}},
+                               "speech": {"type": "string"}, "illust": {"type": "string"},
+                               "photo": {"type": "string", "description": "写真の場面にするときだけ。ai:場面の説明。普通の場面は空文字"}}}},
             "youtube": {"type": "object", "additionalProperties": False, "required": ["title", "description", "tags"],
                         "properties": {"title": {"type": "string"}, "description": {"type": "string"},
                                        "tags": {"type": "array", "items": {"type": "string"}}}},
@@ -232,7 +236,7 @@ def save(inp, topic, name=None, usage=None):
     name = unique_name(name or inp["name"])
     spec = {"name": name, "outdir": name.lower(), "label": inp["label"], "status": "script", "topic": topic,
             "created_at": time.strftime("%Y-%m-%d %H:%M"),
-            "slides": [{k: s[k] for k in ("title", "sub", "body", "speech", "illust")} for s in inp["slides"]],
+            "slides": [{k: s[k] for k in ("title", "sub", "body", "speech", "illust", "photo") if s.get(k)} for s in inp["slides"]],
             "youtube": {**inp["youtube"], "url": ""}, "blog": {**inp["blog"], "url": ""},
             "related": inp["related"], "notes": inp["notes"],
             "usage": {"input": usage.input_tokens, "output": usage.output_tokens, "model": MODEL} if usage else {"model": "claude-code-cli"}}

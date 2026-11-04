@@ -37,6 +37,9 @@ ul { margin: 0 0 20px; padding-left: 44px; } li { margin: 8px 0; }
 .steps li { margin: 14px 0; font-size: 34px; }
 .ov { position: absolute; display: flex; align-items: center; box-sizing: border-box; line-height: 1.3; white-space: pre-wrap; font-weight: bold; }
 .ov.l { justify-content: flex-start; text-align: left; } .ov.c { justify-content: center; text-align: center; } .ov.r { justify-content: flex-end; text-align: right; }
+.photo { position: absolute; left: 0; top: 0; width: 100vw; height: 56.25vw; object-fit: cover; }
+.photo-title { position: absolute; left: 4vw; top: 3.2vw; max-width: 80vw; font-size: 3.4vw; font-weight: bold; line-height: 1.3; color: #fff; background: rgba(0,0,0,.42); padding: .5vw 1.6vw; border-radius: .6vw; text-shadow: 0 0 10px #000; }
+.photo-body { position: absolute; left: 10vw; right: 10vw; top: 15vw; background: rgba(255,255,255,.9); padding: 1.6vw 2.4vw; border-radius: 1vw; }
 .ill-top { text-align: center; margin: 0 0 24px; }
 .ill-right { float: right; width: 540px; margin: 0 0 24px 40px; } .ill-right img { width: 100%; }
 .ill-cover { text-align: center; margin: 10px 0 0; } .ill-cover + .cover { padding-top: 10px; } .ill-cover + .cover h2 { margin-bottom: 18px; } .ill-cover + .cover h3 { margin-bottom: 26px; }
@@ -207,13 +210,30 @@ def _html(head, body, scale, ph_mm=None):
 def _render_once(head, body, name, scale):
     """ページ幅を W/scale にして描き、解像度を scale 倍にして W px の画像にする → 文字が scale 倍になる"""
     pdf = os.path.join(OUT, name + ".pdf"); png = os.path.join(OUT, name + ".png")
-    HTML(string=_html(head, body, scale)).write_pdf(pdf)
+    doc = HTML(string=_html(head, body, scale)).render(); doc.write_pdf(pdf)
     subprocess.run(["pdftoppm", "-f", "1", "-l", "1", "-r", f"{96*scale:.3f}", "-png", "-singlefile", pdf, png[:-4]], check=True)
     im = Image.open(png).convert("RGB")
     if im.size[0] != W: im = im.resize((W, int(im.size[1] * W / im.size[0])))
-    bbox = ImageOps.invert(im.convert("L")).point(lambda v: 255 if v > 55 else 0).getbbox()
-    content_h = (bbox[3] if bbox else 0)
+    content_h = _content_bottom(doc, scale)
+    if content_h is None:                                       # 念のため: 箱から測れなければ、白でない所の下端
+        bbox = ImageOps.invert(im.convert("L")).point(lambda v: 255 if v > 55 else 0).getbbox()
+        content_h = (bbox[3] if bbox else 0)
     return im, content_h, png
+
+def _content_bottom(doc, scale):
+    """本文の箱の下端（画像の px）。テーマの背景（黒板など）は数えない。絶対配置（自由要素・写真・帯の見出し）も除く"""
+    try:
+        bottom = 0.0
+        for box in doc.pages[0]._page_box.descendants():
+            tag = getattr(box, "element_tag", None)
+            if tag in (None, "html", "body"): continue
+            try:
+                if box.style["position"] == "absolute": continue
+            except Exception: pass
+            bottom = max(bottom, box.position_y + box.margin_height())
+        return int(bottom * scale)
+    except Exception:
+        return None
 
 def _sub_area():
     """字幕が占める下端の高さ (スタイル設定から)"""
@@ -417,7 +437,7 @@ def render(body, title, sub, name):
     LAST_SCALE = 1.0
     body = _place(head, body, name, avail)
     im, ch, png = _render_once(head, body, name, 1.0)
-    if "class='ov" in body: ch = avail                       # 自由配置の要素があるときは座標がずれないよう拡大しない
+    if "class='ov" in body or "class='photo" in body: ch = avail   # 自由配置の要素・全画面写真のときは座標がずれないよう拡大しない
     if 0 < ch < avail * 0.85:                               # 下が空くなら文字を大きくして埋める (最大1.6倍・試すのは3回まで)
         lo, hi, best = 1.0, min(1.6, avail / ch), None
         for k in range(4):
@@ -429,7 +449,7 @@ def render(body, title, sub, name):
             if best is not None and best[1] >= avail * 0.9: break
         if best: im, ch, LAST_SCALE = best
         else: im, ch, png = _render_once(head, body, name, 1.0)
-    elif ch > avail and NO_SCROLL and "class='ov" not in body:   # 入りきらないときは縮めて1画面に（スクロールしない）
+    elif ch > avail and NO_SCROLL and "class='ov" not in body and "class='photo" not in body:   # 入りきらないときは縮めて1画面に（スクロールしない）
         lo, hi, best = MIN_SCALE, 1.0, None
         for _ in range(5):
             sc = (lo + hi) / 2
