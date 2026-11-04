@@ -46,7 +46,7 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
     if st.get("slide_theme") == "kokuban": V.SUB_STYLE = dict(st, slide_theme="paper")   # 縦では黒板の枠が合わないので紙だけ
     try:
         best = None
-        for sc in (1.0, 1.2, 1.4, 0.9, 0.8, 0.7):
+        for sc in ((1.0, 0.9, 0.8, 0.7) if "class='huge" in body else (1.0, 1.2, 1.4, 0.9, 0.8, 0.7)):   # 大文字の場面はこれ以上大きくすると折り返す
             im, ch, png = G._render_once(head, body, name, sc)
             if ch <= avail and (best is None or ch > best[1]): best = (im, ch, png, sc)
             if best and best[1] >= avail * 0.75: break
