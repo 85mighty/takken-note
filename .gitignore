@@ -28,3 +28,8 @@ coaching/yt/sub_style.json.tmp
 .yt_token.json
 .yt_client_secret.json
 coaching/yt/illust_provider.txt
+.serpapi_api_key
+.brave_api_key
+.pexels_api_key
+.pixabay_api_key
+.env.studio
