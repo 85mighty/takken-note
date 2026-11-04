@@ -189,7 +189,7 @@ def scripts_page():
 def style_page():
     import subs, themes
     return render_template("studio_style.html", presets=subs.PRESETS, fonts=list(subs.FONT_CHOICES), slide_fonts=list(subs.SLIDE_FONTS),
-                           style=subs.load_style(), themes=[{"key": k, **{x: v[x] for x in ("label", "desc", "font")}} for k, v in themes.THEMES.items()])
+                           style=subs.load_style(), themes=[{"key": k, **{x: v[x] for x in ("label", "desc", "font")}} for k, v in themes.THEMES.items() if not v.get("hidden")])
 
 @bp.route("/style/theme/<key>.png")
 def style_theme_sample(key):

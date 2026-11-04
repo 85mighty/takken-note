@@ -258,7 +258,7 @@ def ensure_spec(spec, only=None, log=print):
     n = 0
     for i, s in enumerate(spec["slides"], 1):
         if only and i != only: continue
-        if s.get("illust_off") or (path_for(s) and not only): continue
+        if s.get("illust_off") or s.get("photo") or (path_for(s) and not only): continue
         if not only and placement(s) == "none":
             log(f"일러스트 {i:02d} – 공간이 없어 그림 없음  {s.get('title') or 'はじめに'}"); continue
         try:

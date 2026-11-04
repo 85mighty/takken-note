@@ -40,7 +40,10 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
     if "class='ov" in body: return None
     head = f"<h1>{G.E(title)}<small>{G.E(sub)}</small></h1>" if title else ""
     avail = SH - TOP - 300 - 60                      # フック帯と下の帯の間
-    oldW = G.W; G.W = SW
+    import vkit as V, subs
+    oldW, oldst = G.W, V.SUB_STYLE; G.W = SW
+    st = subs.load_style(V.SUB_STYLE)
+    if st.get("slide_theme") == "kokuban": V.SUB_STYLE = dict(st, slide_theme="paper")   # 縦では黒板の枠が合わないので紙だけ
     try:
         best = None
         for sc in (1.0, 1.2, 1.4, 0.9, 0.8, 0.7):
@@ -50,7 +53,7 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
         if best is None: return None
         im, ch, png, sc = best
     finally:
-        G.W = oldW
+        G.W = oldW; V.SUB_STYLE = oldst
     im.crop((0, 0, SW, min(im.size[1], ch + 40))).save(png)
     return png
 

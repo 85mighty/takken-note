@@ -77,6 +77,22 @@ td.hi{background:#ffe3e0;color:#b8312f} td.lo{background:#e3f1f4} tr.now td{back
 .cover{padding-top:60px} .cover h2{color:#1f3b63;font-size:84px} .cover h3{color:#333} .cover p{color:#666}
 .ill-right{width:460px}
 """},
+ "paper": {"label": "白い紙のみ (黒板の枠なし·ショート用)", "font": "Zen角ゴシックNew", "hidden": True,
+           "desc": "kokuban と同じ文字の飾り（波線・赤枠）で、背景は白。縦のショートでは自動でこれを使う",
+           "css": """
+body{color:#222;font-size:38px} h1{font-size:60px;color:#1f3b63;border-bottom:5px solid #1f3b63} h1 small{font-size:30px}
+table{font-size:36px} .key{font-size:42px} .note{font-size:28px} .steps li{font-size:38px}
+b{text-decoration:underline wavy #3b82d6;text-decoration-thickness:5px;text-underline-offset:12px} th b,td b,.key b,.ov b{text-decoration:none}
+.huge{font-size:92px;font-weight:bold;text-align:center;line-height:1.55;letter-spacing:.08em;margin:10px 0}
+.huge b{text-decoration-thickness:6px;text-underline-offset:16px}
+.rbox{display:inline-block;border:7px solid #b8312f;border-radius:10px;padding:0 38px;margin:6px 0}
+th{background:#2f5b47;color:#fff;border:2px solid #2f5b47} td{border:2px solid #777}
+td.hi{background:#ffe3e0;color:#b8312f} td.lo{background:#e3f1f4} tr.now td{background:#fff3b0}
+.key{background:#fff8d6;border-left:12px solid #e0a800;color:#333}
+.big{color:#b8312f}
+.cover{padding-top:60px} .cover h2{color:#1f3b63;font-size:84px} .cover h3{color:#333} .cover p{color:#666}
+.ill-right{width:460px}
+"""},
  "chalk": {"label": "黒板 (녹색 칠판·흰 글자)", "font": "Zen丸ゴシック",
            "desc": "녹색 칠판에 흰 글자, 노란 분필 강조. 일러스트는 흰 테두리 사진처럼 붙음. 눈에 띄지만 표가 많으면 어두움",
            "css": """
