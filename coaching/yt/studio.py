@@ -187,9 +187,18 @@ def scripts_page():
 
 @bp.route("/style")
 def style_page():
-    import subs
+    import subs, themes
     return render_template("studio_style.html", presets=subs.PRESETS, fonts=list(subs.FONT_CHOICES), slide_fonts=list(subs.SLIDE_FONTS),
-                           style=subs.load_style())
+                           style=subs.load_style(), themes=[{"key": k, **{x: v[x] for x in ("label", "desc", "font")}} for k, v in themes.THEMES.items()])
+
+@bp.route("/style/theme/<key>.png")
+def style_theme_sample(key):
+    """テーマの見本（表＋表紙）。themes.py が新しくなっていれば描き直す"""
+    import themes
+    if key not in themes.THEMES: abort(404)
+    d = os.path.join(OUT, "_style"); os.makedirs(d, exist_ok=True); fn = f"theme_{key}.png"; p = os.path.join(d, fn)
+    if not os.path.exists(p) or os.path.getmtime(p) < os.path.getmtime(themes.__file__): themes.sample(key, p)
+    return send_from_directory(d, fn, max_age=0)
 
 @bp.route("/registry")
 def registry_page():

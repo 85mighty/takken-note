@@ -196,8 +196,10 @@ def _html(head, body, scale, ph_mm=None):
     css = CSS.replace("size: 508mm 3000mm", f"size: {pw/96*25.4:.2f}mm {ph_mm:.1f}mm").replace("width: 1920px", f"width: {pw:.0f}px")
     try:
         import subs
-        ff, fam = subs.slide_font_css(subs.load_style(V.SUB_STYLE).get("slide_font"))
-        css = ff + css.replace('"Noto Sans CJK JP"', fam)
+        st = subs.load_style(V.SUB_STYLE)
+        ff, fam = subs.slide_font_css(st.get("slide_font"))
+        import themes
+        css = ff + css.replace('"Noto Sans CJK JP"', fam) + themes.css(st.get("slide_theme"))   # テーマの上書きは最後
     except Exception:
         pass
     return f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{css}</style></head><body>{head}{body}</body></html>"
@@ -399,7 +401,7 @@ def render(body, title, sub, name):
     avail = H - area - 40                                   # 字幕と下余白を除いた高さ
     try:
         import subs
-        fsig = subs.load_style(V.SUB_STYLE).get("slide_font", "")
+        _st = subs.load_style(V.SUB_STYLE); fsig = (_st.get("slide_font", ""), _st.get("slide_theme", "navy"))
     except Exception:
         fsig = ""
     ck = hashlib.md5(repr((head, body, CSS, avail, W, H, fsig, RENDER_VER)).encode()).hexdigest()

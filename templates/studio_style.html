@@ -15,6 +15,7 @@ button.pri{background:#1a3d7c;color:#fff}
 img{width:100%;border-radius:8px;border:1px solid #ccc}
 .hint{font-size:12px;color:#777}
 h3{margin:4px 0 8px;color:#1a3d7c;font-size:15px}
+.themes{display:flex;flex-direction:column;gap:10px}.th{display:block;border:1px solid #ddd;border-radius:8px;padding:8px;cursor:pointer}.th:has(input:checked){border-color:#1a3d7c;background:#eef3fb}.th img{width:100%;border-radius:4px;margin:6px 0;border:1px solid #eee}
 </style>
 <div class="w">
 <div class="card">
@@ -36,6 +37,8 @@ h3{margin:4px 0 8px;color:#1a3d7c;font-size:15px}
   <label><span>한 화면 최대 글자 수 <b id="v_max_chars"></b></span><input type="range" id="max_chars" min="10" max="30"></label>
   <label><span>최대 줄 수</span><select id="max_lines"><option value="1">1줄</option><option value="2">2줄</option></select></label>
   <label><span>아래에서의 위치 <b id="v_bottom"></b></span><input type="range" id="bottom" min="20" max="200"></label>
+  <h3 style="margin-top:14px">슬라이드 테마 (전체 분위기)</h3>
+  <div class="themes">{% for t in themes %}<label class="th" title="{{ t.desc }}"><input type="radio" name="slide_theme" value="{{ t.key }}" onchange="theme('{{ t.key }}','{{ t.font }}')"> <b>{{ t.label }}</b><br><img src="/studio/style/theme/{{ t.key }}.png" loading="lazy" alt=""><span class="hint">{{ t.desc }}</span></label>{% endfor %}</div>
   <h3 style="margin-top:14px">슬라이드 본문 글꼴</h3>
   <label><span>글꼴</span><select id="slide_font">{% for f in slide_fonts %}<option>{{ f }}</option>{% endfor %}</select></label>
   <p class="hint">자막은 문장이 끊기는 곳(、나 조사 뒤)에서 나누고, 최대 글자 수를 넘지 않게 한 장씩 보여줍니다. 바꾸면 다음 출력부터 모든 슬라이드에 반영됩니다.</p>
@@ -47,12 +50,14 @@ h3{margin:4px 0 8px;color:#1a3d7c;font-size:15px}
 const PRESETS = {{ presets|tojson }};
 let ST = {{ style|tojson }};
 const F = ["font","size","color","stroke","stroke_color","shadow","box","box_color","box_alpha","box_radius","max_chars","max_lines","bottom","slide_font"];
-function fill(){ F.forEach(k => { const el = document.getElementById(k); if (!el) return;
+function fill(){ document.querySelectorAll('input[name=slide_theme]').forEach(r => r.checked = (r.value === (ST.slide_theme || "navy")));
+  F.forEach(k => { const el = document.getElementById(k); if (!el) return;
   if (el.type === "checkbox") el.checked = !!ST[k]; else el.value = ST[k];
   const v = document.getElementById("v_" + k); if (v) v.textContent = ST[k]; }); }
 function read(){ F.forEach(k => { const el = document.getElementById(k);
   ST[k] = el.type === "checkbox" ? el.checked : (el.type === "range" || k === "max_lines" ? +el.value : el.value);
   const v = document.getElementById("v_" + k); if (v) v.textContent = ST[k]; }); }
+function theme(k, font){ ST.slide_theme = k; ST.slide_font = font; fill(); send(false); }
 function preset(k){ const sf = ST.slide_font; ST = {...PRESETS[k], preset:k, slide_font:sf}; delete ST.label; fill(); send(false); }
 let t = null;
 F.forEach(k => document.getElementById(k).addEventListener("input", () => { read(); clearTimeout(t); t = setTimeout(() => send(false), 400); }));

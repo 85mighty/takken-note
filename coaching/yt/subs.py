@@ -47,7 +47,7 @@ SLIDE_FONTS = {
     "M PLUS Rounded": ("MPLUSRounded1c-Medium.ttf", "MPLUSRounded1c-ExtraBold.ttf"),
     "Noto Sans JP（遅い）": None,
 }
-DEFAULT = dict(PRESETS["box"], preset="box", slide_font="Zen角ゴシックNew")
+DEFAULT = dict(PRESETS["box"], preset="box", slide_font="Zen角ゴシックNew", slide_theme="navy")
 
 def slide_font_css(name):
     """スライド用 CSS の先頭に付ける @font-face と、使う font-family 名"""
