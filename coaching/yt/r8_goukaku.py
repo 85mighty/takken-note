@@ -248,7 +248,7 @@ def _sub_area():
 LAST_SCALE = 1.0
 NO_SCROLL = os.environ.get("YT_SCROLL", "0") != "1"   # 長いスライドは縮めて1画面に収める（YT_SCROLL=1 で従来のスクロール）
 MIN_SCALE = 0.62                                        # ここまで縮めても入らなければスクロールに戻す
-RENDER_VER = 6      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
+RENDER_VER = 7      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
 ILL_RE = re.compile(r"<div class='ill ill-(\w+)'>(<img [^>]*>)</div>")
 ILL_MIN, ILL_MAX = 200, 340
 

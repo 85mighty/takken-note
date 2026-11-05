@@ -121,7 +121,9 @@ def _break_scores(s):
     for i in range(1, len(s)):
         a, b = s[i - 1], s[i]
         ka, kb = _kind(a), _kind(b)
-        if a in "、，,": sc[i] = 10
+        if a in "，," and (b.isdigit() or (i >= 2 and s[i - 2].isdigit())): sc[i] = 0   # 1,000 のような数字の区切りでは切らない
+        elif a in "、，,": sc[i] = 10
+        elif a.isdigit() and b in "円%％点問時間万人戸社件か年月日分秒割倍回個通枚階㎡％": sc[i] = 0   # 数字と単位の間でも切らない
         elif b in "（「『【(": sc[i] = 6
         elif a in "）」』】)": sc[i] = 6
         elif ka == "N" and kb == "N": sc[i] = 0               # 数字の途中では切らない
@@ -132,8 +134,13 @@ def _break_scores(s):
         elif ka in "KT" and kb == "H": sc[i] = 0
     return sc
 
+def _in_number(s, i):
+    """位置 i が 1,400円 のような数字のかたまりの中か"""
+    a, b = s[i - 1], s[i]
+    return (a.isdigit() or a in ",，") and (b.isdigit() or b in ",，円%％点問時間万人戸社件か年月日分秒割倍回個通枚階㎡")
+
 def _split(s, maxc):
-    if len(s) <= maxc: return [s]
+    if len(s) <= maxc or (len(s) <= maxc + 2 and any(c.isdigit() for c in s)): return [s]   # 数字入りは2字まで多めを許す（描く時に縮む）
     sc = _break_scores(s)
     lo, hi = max(1, len(s) - maxc), min(len(s) - 1, maxc)       # 左右とも maxc 以下になる範囲
     best, bi = -1, None
@@ -143,7 +150,9 @@ def _split(s, maxc):
         bal = 1 - abs(i - len(s) / 2) / len(s)                  # 真ん中に近いほど良い
         v = sc[i] * 2 + bal * 3 + (6 if fits else 0) - (0 if i <= maxc else (i - maxc))
         if v > best: best, bi = v, i
-    if bi is None: bi = maxc                                    # 区切れる所がなければ文字数で切る
+    if bi is None:                                              # 区切れる所がなければ文字数で切る（数字の途中は避ける）
+        bi = maxc
+        while bi > 2 and _in_number(s, bi): bi -= 1
     return _split(s[:bi], maxc) + _split(s[bi:], maxc)
 
 def chunk(sentence, maxc=20):
