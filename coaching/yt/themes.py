@@ -64,7 +64,7 @@ td.hi{background:#ffecec;color:#c62828} td.lo{background:#eef5fb} tr.now td{back
              "desc": "녹색 칠판 위에 목재 액자에 든 흰 종이. 큰 글자, 굵은 글자(b)에는 파란 물결 밑줄, .rbox로 빨간 손그림 테두리. 자막 프리셋 kozarie(극태·黄色 강조)와 세트",
              "css": """
 body{background:#2f5b47 url('file://FRAME_PNG') no-repeat left top;background-size:100% auto;padding:8.6% 3.6% 20%;color:#222;font-size:44px}
-h1{position:absolute;left:2.6vw;top:1.8vw;width:94vw;height:5.6vw;margin:0;padding:0 1vw;border:none;font-size:3.4vw;line-height:1.15;color:#1f3b63;background:none;white-space:nowrap;overflow:hidden;display:flex;align-items:center;letter-spacing:.02em} h1 small{color:#4a5a70;font-size:1.7vw;margin-left:1.2vw;white-space:nowrap}
+h1{position:absolute;left:2.6vw;top:1.8vw;width:94vw;height:5.6vw;margin:0;padding:0 1vw;border:none;font-size:3.4vw;line-height:1.15;color:#1f3b63;background:none;white-space:nowrap;overflow:hidden;display:flex;align-items:center;letter-spacing:.02em} h1 small{color:#4a5a70;font-size:1.7vw;margin-left:1.2vw;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 table{font-size:42px} .key{font-size:50px} .note{font-size:30px} .steps li{font-size:44px} ul li{font-size:44px} .big{font-size:140px}
 b{text-decoration:underline wavy #3b82d6;text-decoration-thickness:5px;text-underline-offset:12px} th b,td b,.key b,.ov b{text-decoration:none}
 .huge{font-size:104px;font-weight:bold;text-align:center;line-height:1.55;letter-spacing:.08em;margin:10px 0}
