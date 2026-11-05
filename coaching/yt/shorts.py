@@ -38,6 +38,8 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
     """縦動画用: スライドを幅 1080px のページで描き直す（表が折り返されて文字が大きくなる）。
     自由配置の要素(ov)があるときは座標が合わないので None（従来の 16:9 を使う）"""
     if "class='ov" in body: return None
+    body = body.replace("class='two'", "class='two-narrow'")              # 縦では2列を上下に積む
+    body = re.sub(r"<div class='ill-(?:top|right|cover)'[^>]*>\s*<img[^>]*>\s*</div>", "", body)   # 縦ではイラストを外して字幕の場所を空ける
     head = f"<h1>{G.E(title)}<small>{G.E(sub)}</small></h1>" if title else ""
     avail = SH - TOP - 300 - 60                      # フック帯と下の帯の間
     import vkit as V, subs

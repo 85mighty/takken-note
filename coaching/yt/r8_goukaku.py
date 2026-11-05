@@ -26,6 +26,7 @@ td.lo { background: #e8f0ff; }
 tr.now td { background: #fff3c4; font-weight: bold; }
 ul { margin: 0 0 20px; padding-left: 44px; } li { margin: 8px 0; }
 .two { display: flex; gap: 40px; } .two > div { flex: 1; min-width: 0; }
+.two-narrow > div { margin-bottom: 24px; } .two-narrow td:first-child, .two-narrow th:first-child { white-space: normal; }
 .two td:first-child, .two th:first-child { white-space: normal; }
 .note { color: #666; font-size: 26px; margin-top: 10px; }
 .big { font-size: 120px; font-weight: bold; color: #c0392b; text-align: center; margin: 30px 0 10px; line-height: 1.1; }
