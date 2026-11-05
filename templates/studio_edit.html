@@ -114,7 +114,8 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
       <button class="pri" onclick="run('build')" {% if not keys.tts %}disabled title="음성 키가 없습니다"{% endif %}>③ 음성 넣어 완성</button>
     </div>
     <p class="hint">초안 = 슬라이드 + 자막만 (수십 초~). 자막·글 배치·일러스트를 보고 괜찮으면 「음성 넣어 완성」. 바뀐 슬라이드만 다시 만듭니다.
-    　<label style="display:inline"><input type="checkbox" id="illoff"> 이 영상은 일러스트 없음</label></p>
+    　<label style="display:inline"><input type="checkbox" id="illoff"> 이 영상은 일러스트 없음</label>
+    　<label style="display:inline" title="표의 행·항목·포인트 박스가 읽는 문장에 맞춰 차례로 나타납니다"><input type="checkbox" id="motoff"> 모션 끄기 (요소를 한 번에 표시)</label></p>
     <div id="dl"></div>
   </div>
 
@@ -247,19 +248,19 @@ function fillMeta(){
   $("#yt_url").value = yt.url || ((REG.videos || []).find(v => v.key === NAME) || {}).url || "";
   $("#bl_slug").value = bl.slug || ""; $("#bl_title").value = bl.title || ""; $("#bl_ex").value = bl.excerpt || "";
   $("#blurl").innerHTML = bl.url ? `발행됨: <a href="${esc(bl.url)}" target="_blank">${esc(bl.url)}</a>` : "아직 발행하지 않았습니다";
-  $("#illoff").checked = !!spec.illust_off;
+  $("#illoff").checked = !!spec.illust_off; $("#motoff").checked = !!spec.motion_off;
   $("#tlen").textContent = `${(yt.title||"").length}자`;
   const rel = new Set(spec.related || []);
   $("#rel").innerHTML = (REG.videos || []).filter(v => !v.short && v.key !== NAME).map(v =>
     `<label><input type="checkbox" value="${esc(v.key)}" ${rel.has(v.key) ? "checked" : ""}> ${esc(v.label || v.yt_title || v.key)} ${v.url ? "" : '<span class="nourl">URL 미등록</span>'}</label>`).join("");
   ["#yt_title","#yt_desc","#yt_tags","#bl_slug","#bl_title","#bl_ex"].forEach(s => $(s).oninput = () => { setDirty(true); if (s === "#yt_title") $("#tlen").textContent = `${$(s).value.length}자`; });
   $("#rel").querySelectorAll("input").forEach(c => c.onchange = () => setDirty(true));
-  $("#illoff").onchange = () => setDirty(true);
+  $("#illoff").onchange = () => setDirty(true); $("#motoff").onchange = () => setDirty(true);
 }
 function meta(){
   return {youtube:{title:$("#yt_title").value, description:$("#yt_desc").value, tags:$("#yt_tags").value},
           blog:{slug:$("#bl_slug").value.trim(), title:$("#bl_title").value, excerpt:$("#bl_ex").value},
-          related:[...$("#rel").querySelectorAll("input:checked")].map(c => c.value), illust_off:$("#illoff").checked};
+          related:[...$("#rel").querySelectorAll("input:checked")].map(c => c.value), illust_off:$("#illoff").checked, motion_off:$("#motoff").checked};
 }
 function render(){
   const box = $("#slides"); box.innerHTML = "";

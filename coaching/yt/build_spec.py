@@ -43,6 +43,7 @@ def photo_path(s, log=print):
 def setup(spec):
     import r8_goukaku as G, vkit as V
     V.SUB_STYLE = spec.get("sub_style")
+    G.MOTION = not spec.get("motion_off")
     G.SLIDES.clear()
     for s in spec["slides"]:
         s["_body"] = compose_body(spec, s)

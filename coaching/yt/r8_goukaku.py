@@ -194,7 +194,7 @@ slide("まとめ", """
 <div class='note'>この動画は、各社の公式発表と不動産適正取引推進機構の公表資料をまとめた記事（イング資格取得ラボ、10月22日更新）をもとに構成しています。各社の予想は非公式の見込みです。</div>""",
  "最後にまとめです。今年の予想の中心は32点から34点、幅は31点から35点です。大原とLECの予想会のあとに数字が動くこともあります。各社の予想は過去5年で26件中20件が的中していますが、外れるときは実際の合格点のほうが低いことが多いです。合格点は33点から38点、合格率は13パーセントから19パーセントで推移していて、去年の33点はこの10年で最低でした。5問免除の合格点は、これまで全例で一般から5点低い数字です。自己採点は2社から3社の速報で、割れた問題は幅で持ち、分野別に集計しておきましょう。正式な合格点と正解番号が出るのは、11月25日水曜日、午前9時30分です。それまでは、合格していた場合と届かなかった場合、両方の準備を進めておいてください。ご視聴ありがとうございました。")
 
-def _html(head, body, scale, ph_mm=None):
+def _html(head, body, scale, ph_mm=None, extra_css=""):
     pw = W / scale
     ph_mm = ph_mm or (1100 if scale == 1.0 else (H * 1.3 / scale) / 96 * 25.4)   # 拡大時は収まるか見るだけなので短いページで十分 (速い)
     css = CSS.replace("size: 508mm 3000mm", f"size: {pw/96*25.4:.2f}mm {ph_mm:.1f}mm").replace("width: 1920px", f"width: {pw:.0f}px")
@@ -206,12 +206,12 @@ def _html(head, body, scale, ph_mm=None):
         css = ff + css.replace('"Noto Sans CJK JP"', fam) + themes.css(st.get("slide_theme"))   # テーマの上書きは最後
     except Exception:
         pass
-    return f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{css}</style></head><body>{head}{body}</body></html>"
+    return f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{css}{extra_css}</style></head><body>{head}{body}</body></html>"
 
-def _render_once(head, body, name, scale):
+def _render_once(head, body, name, scale, extra_css=""):
     """ページ幅を W/scale にして描き、解像度を scale 倍にして W px の画像にする → 文字が scale 倍になる"""
     pdf = os.path.join(OUT, name + ".pdf"); png = os.path.join(OUT, name + ".png")
-    doc = HTML(string=_html(head, body, scale)).render(); doc.write_pdf(pdf)
+    doc = HTML(string=_html(head, body, scale, extra_css=extra_css)).render(); doc.write_pdf(pdf)
     subprocess.run(["pdftoppm", "-f", "1", "-l", "1", "-r", f"{96*scale:.3f}", "-png", "-singlefile", pdf, png[:-4]], check=True)
     im = Image.open(png).convert("RGB")
     if im.size[0] != W: im = im.resize((W, int(im.size[1] * W / im.size[0])))
@@ -248,7 +248,7 @@ def _sub_area():
 LAST_SCALE = 1.0
 NO_SCROLL = os.environ.get("YT_SCROLL", "0") != "1"   # 長いスライドは縮めて1画面に収める（YT_SCROLL=1 で従来のスクロール）
 MIN_SCALE = 0.62                                        # ここまで縮めても入らなければスクロールに戻す
-RENDER_VER = 5      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
+RENDER_VER = 6      # 配置のしかたを変えたら上げる（描画キャッシュを作り直す）
 ILL_RE = re.compile(r"<div class='ill ill-(\w+)'>(<img [^>]*>)</div>")
 ILL_MIN, ILL_MAX = 200, 340
 
@@ -431,7 +431,8 @@ def render(body, title, sub, name):
     cdir = os.path.join(OUT, "_rc"); os.makedirs(cdir, exist_ok=True)
     cpng, cmeta = os.path.join(cdir, ck + ".png"), os.path.join(cdir, ck + ".txt")
     png = os.path.join(OUT, name + ".png")
-    global LAST_SCALE
+    global LAST_SCALE, LAST_CK, LAST_HEAD
+    LAST_CK = ck; LAST_HEAD = head
     if os.path.exists(cpng) and os.path.exists(cmeta):
         parts = open(cmeta).read().split(); LAST_SCALE = float(parts[1]) if len(parts) > 1 else 1.0
         shutil.copy(cpng, png); return png, int(parts[0])
@@ -471,7 +472,43 @@ def render(body, title, sub, name):
             pad = area - 90
             bg = Image.new('RGB', (W, bottom + pad), 'white'); bg.paste(im, (0, 0)); im = bg; bottom += pad
     im.save(png); shutil.copy(png, cpng); open(cmeta, "w").write(f"{bottom} {LAST_SCALE}")
+    open(os.path.join(cdir, ck + ".body"), "w", encoding="utf-8").write(body)      # 置いた本文（モーションの層用）
     return png, bottom
+
+MOTION = True        # 読み上げに合わせて要素を順に出す（spec の motion_off で止める）
+LAST_CK = LAST_HEAD = None
+
+def motion_layers(name):
+    """直前に render() したスライドの、要素ごとの層。(土台PNG, [(層PNG, 要素番号)], 要素の文字列) を返す。作れなければ None。
+    層は描画キャッシュ (_rc/<ck>_uN.png) に残すので、2回目からは速い"""
+    import motion, shutil
+    if not MOTION or not LAST_CK: return None
+    cdir = os.path.join(OUT, "_rc"); ck = LAST_CK
+    bodyp = os.path.join(cdir, ck + ".body"); unitsp = os.path.join(cdir, ck + ".units.json")
+    if not os.path.exists(bodyp): return None
+    body = open(bodyp, encoding="utf-8").read()
+    if "class='photo'" in body: return None
+    marked, units = motion.mark_units(body)
+    if not units: return None
+    base = os.path.join(cdir, ck + "_u0.png")
+    layers = [(os.path.join(cdir, f"{ck}_u{k}.png"), k) for k in range(1, len(units))]
+    cached = motion.load_units(unitsp)
+    if cached == units and os.path.exists(base) and all(os.path.exists(p) or os.path.exists(p + ".none") for p, _k in layers):
+        return base, [(p, k) for p, k in layers if os.path.exists(p)], units
+    prev = None
+    for k in range(0, len(units)):
+        im, _ch, _p = _render_once(LAST_HEAD, marked, f"{name}_m{k}", LAST_SCALE, motion.hide_css(k + 1))
+        cur = os.path.join(cdir, f"{ck}_m{k}.png"); im.crop((0, 0, W, min(im.size[1], H))).save(cur)
+        if k == 0: shutil.copy(cur, base)
+        else:
+            out = os.path.join(cdir, f"{ck}_u{k}.png")
+            if motion.diff_layer(prev, cur, out) is None:
+                open(out + ".none", "w").write("")
+                if os.path.exists(out): os.remove(out)
+            elif os.path.exists(out + ".none"): os.remove(out + ".none")
+        prev = cur
+    motion.save_units(unitsp, units)
+    return base, [(p, k) for p, k in layers if os.path.exists(p)], units
 
 def slide_key(title, sub, body, speech):
     """スライド内容 + 描画設定のハッシュ。同じなら書き出し済みの動画を再利用する"""
@@ -518,7 +555,18 @@ def build(only=None, name="R8_goukaku"):
             total = dur(mp3) + 1.5
             pts = [(2.0, 0), (total - 2.0, h - H)] if h > H else []
             tmp = seg + ".part.mp4"
-            V.encode_subtitled(png, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, tmp, OUT, f"s{i:02d}")
+            lay, base = [], png
+            if h <= H:                                                        # スクロールしない場面だけモーション
+                try:
+                    ml = motion_layers(f"s{i:02d}")
+                    if ml:
+                        import motion
+                        base, lays, units = ml
+                        times = motion.assign(units, sents, tp, total)
+                        lay = [(p, times[k - 1]) + motion.offset(p) for p, k in lays if k - 1 < len(times)]
+                except Exception as e:
+                    print(f"  모션 생략 ({str(e)[:120]})", flush=True); lay, base = [], png
+            V.encode_subtitled(base, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, tmp, OUT, f"s{i:02d}", layers=lay)
             os.replace(tmp, seg); shutil.copy(png, thumb)
             print(f"슬라이드 {i:02d} {total:5.0f}초  page_h={h}  {title}", flush=True)
         shutil.copy(seg, old); open(old + ".key", "w").write(key)     # 旧スクリプト互換 (s01.mp4)

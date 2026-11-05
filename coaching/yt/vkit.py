@@ -153,9 +153,10 @@ def band_png(text, name, outdir, width=W, font=46):
 
 SUB_STYLE = None   # spec ごとの字幕スタイル上書き（build_spec が設定）
 
-def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name, width=W, height=H):
+def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name, width=W, height=H, layers=None):
     """スクロール動画 + 字幕。字幕は文を自然な位置で区切り（subs.chunk）、1枚ずつ切り替える。
-    字幕は1本の映像トラック（concat）にまとめて重ねる → 画像を何枚重ねても速い"""
+    字幕は1本の映像トラック（concat）にまとめて重ねる → 画像を何枚重ねても速い。
+    layers = [(透明PNG, 出す時刻)] を渡すと、その時刻にふわっと下から現れる（読み上げに合わせたモーション）"""
     import subs
     if not HIGHLIGHT or not sents:
         return encode(png, None, mp3, expr, total, out)
@@ -173,10 +174,20 @@ def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name, width=
     with open(lst, "w") as f:
         for p_, d_ in entries: f.write(f"file '{os.path.abspath(p_)}'\nduration {max(d_, 0.04):.3f}\n")
         f.write(f"file '{os.path.abspath(entries[-1][0])}'\n")
-    fc = (f"[0:v]fps={FPS},crop={width}:{height}:0:'{expr}'[bg];[2:v]fps={FPS},format=rgba[sub];"
-          f"[bg][sub]overlay=0:{y}:eof_action=pass,format=yuv420p[v];[1:a]apad=whole_dur={total:.2f}[a]")
+    fade, rise = 0.35, 26
+    fc = f"[0:v]fps={FPS},crop={width}:{height}:0:'{expr}'[bg0];"
+    extra, cur = [], "bg0"
+    for n, L in enumerate(layers or []):
+        lp, lt = L[0], L[1]; ox, oy = (L[2], L[3]) if len(L) >= 4 else (0, 0)
+        extra += ["-loop", "1", "-framerate", str(FPS), "-i", lp]
+        idx = 3 + n; T = f"{lt:.2f}"
+        fc += (f"[{idx}:v]format=rgba,fade=t=in:st={T}:d={fade}:alpha=1[l{n}];"
+               f"[{cur}][l{n}]overlay=x={ox}:y='{oy}+{rise}*max(0\\,1-(t-{T})/{fade})':enable='gte(t\\,{T})':eof_action=pass[bg{n+1}];")
+        cur = f"bg{n+1}"
+    fc += (f"[2:v]fps={FPS},format=rgba[sub];[{cur}][sub]overlay=0:{y}:eof_action=pass,format=yuv420p[v];"
+           f"[1:a]apad=whole_dur={total:.2f}[a]")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-framerate", "2", "-i", png, "-i", mp3,
-           "-f", "concat", "-safe", "0", "-i", lst, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
+           "-f", "concat", "-safe", "0", "-i", lst] + extra + ["-filter_complex", fc, "-map", "[v]", "-map", "[a]",
            "-t", f"{total:.2f}", "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-tune", "stillimage",
            "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", out]
     subprocess.run(cmd, check=True)

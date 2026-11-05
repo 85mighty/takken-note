@@ -274,6 +274,7 @@ def api_save(name):
             if k in meta["blog"]: b[k] = str(meta["blog"][k])
     if isinstance(meta.get("related"), list): sp["related"] = [str(x) for x in meta["related"] if str(x).strip()]
     if "illust_off" in meta: sp["illust_off"] = bool(meta["illust_off"])
+    if "motion_off" in meta: sp["motion_off"] = bool(meta["motion_off"])
     if "status" in meta and meta["status"] in [s for s, _ in STEPS]: sp["status"] = meta["status"]
     if isinstance(meta.get("youtube"), dict) and meta["youtube"].get("url"):      # URL は台帳にも入れる（他の動画の関連リンクになる）
         import registry
