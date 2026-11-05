@@ -80,7 +80,7 @@ td.hi{background:#ffe3e0;color:#b8312f} td.lo{background:#e3f1f4} tr.now td{back
  "paper": {"label": "白い紙のみ (黒板の枠なし·ショート用)", "font": "Zen角ゴシックNew", "hidden": True,
            "desc": "kokuban と同じ文字の飾り（波線・赤枠）で、背景は白。縦のショートでは自動でこれを使う",
            "css": """
-body{color:#222;font-size:38px} h1{font-size:60px;color:#1f3b63;border-bottom:5px solid #1f3b63} h1 small{font-size:30px}
+body{color:#222;font-size:40px} h1{font-size:50px;line-height:1.25;color:#1f3b63;border-bottom:5px solid #1f3b63;margin-bottom:20px} h1 small{font-size:28px}
 table{font-size:42px} .key{font-size:50px} .note{font-size:30px} .steps li{font-size:44px} ul li{font-size:44px} .big{font-size:140px}
 b{text-decoration:underline wavy #3b82d6;text-decoration-thickness:5px;text-underline-offset:12px} th b,td b,.key b,.ov b{text-decoration:none}
 .huge{font-size:104px;font-weight:bold;text-align:center;line-height:1.55;letter-spacing:.08em;margin:10px 0}

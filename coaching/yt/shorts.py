@@ -40,8 +40,8 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
     if "class='ov" in body: return None
     body = body.replace("class='two'", "class='two-narrow'")              # 縦では2列を上下に積む
     body = G.ILL_RE.sub("", body)                                           # 縦ではイラストを外して字幕の場所を空ける
-    head = f"<h1>{G.E(title)}<small>{G.E(sub)}</small></h1>" if title else ""
-    avail = SH - TOP - 300 - 60                      # フック帯と下の帯の間
+    head = f"<h1>{G.E(title)}</h1>" if title else ""                      # 縦では小見出しは出さない
+    avail = SH - TOP - 300 - 280                     # フック帯と下の帯の間から、字幕のぶん（約280px）を引く
     import vkit as V, subs
     oldW, oldst = G.W, V.SUB_STYLE; G.W = SW
     st = subs.load_style(V.SUB_STYLE)
