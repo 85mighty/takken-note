@@ -121,7 +121,7 @@ def make(path, i, hook=None, log=print):
     for k, n in enumerate(lens): tp[f"s{k}"] = t; t += span * n / sum(lens)
     import subs
     st = dict(subs.load_style(spec.get("sub_style")))
-    st.update(size=int(st["size"] * 1.25), max_chars=13, max_lines=2)
+    st.update(size=max(62, min(int(st["size"] * 0.85), 88)), max_chars=12, max_lines=1)   # 縦は1行・やや小さめ（スライドと下の帯の間に収める）
     st["bottom"] = SH - ((bottom + SH - 300) // 2) - subs.band_height(st) // 2   # スライドと下の帯の間の真ん中に字幕
     old = V.SUB_STYLE; V.SUB_STYLE = st
     try:
