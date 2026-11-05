@@ -176,14 +176,31 @@ def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name, width=
         f.write(f"file '{os.path.abspath(entries[-1][0])}'\n")
     fade, rise = 0.35, 26
     fc = f"[0:v]fps={FPS},crop={width}:{height}:0:'{expr}'[bg0];"
-    extra, cur = [], "bg0"
-    for n, L in enumerate(layers or []):
-        lp, lt = L[0], L[1]; ox, oy = (L[2], L[3]) if len(L) >= 4 else (0, 0)
-        extra += ["-loop", "1", "-framerate", str(FPS), "-i", lp]
-        idx = 3 + n; T = f"{lt:.2f}"
-        fc += (f"[{idx}:v]format=rgba,fade=t=in:st={T}:d={fade}:alpha=1[l{n}];"
-               f"[{cur}][l{n}]overlay=x={ox}:y='{oy}+{rise}*max(0\\,1-(t-{T})/{fade})':enable='gte(t\\,{T})':eof_action=pass[bg{n+1}];")
-        cur = f"bg{n+1}"
+    extra, cur, n = [], "bg0", 0
+    ops = []
+    for L in layers or []:                                                   # 旧形式 (png, t[, x, y]) も受ける
+        ops.append(L if isinstance(L, dict) else {"type": "fade", "png": L[0], "t": L[1], "x": L[2] if len(L) > 2 else 0, "y": L[3] if len(L) > 3 else 0})
+    boxes = [o for o in ops if o["type"] == "box"]
+    for o in [o for o in ops if o["type"] != "box"]:
+        idx = 3 + n
+        extra += ["-loop", "1", "-framerate", str(FPS), "-i", o["png"]]
+        ox, oy = int(o.get("x", 0)), int(o.get("y", 0))
+        if o["type"] == "fade":
+            T = f"{o['t']:.2f}"
+            fc += (f"[{idx}:v]format=rgba,fade=t=in:st={T}:d={fade}:alpha=1[l{n}];"
+                   f"[{cur}][l{n}]overlay=x={ox}:y='{oy}+{rise}*max(0\\,1-(t-{T})/{fade})':enable='gte(t\\,{T})':eof_action=pass[bg{n+1}];")
+        elif o["type"] == "wipe":                                              # 左から描く
+            T, D = f"{o['t']:.2f}", f"{o.get('d', 0.5):.2f}"
+            fc += (f"[{idx}:v]format=gbrap,geq=r='r(X\\,Y)':g='g(X\\,Y)':b='b(X\\,Y)':a='if(lt(X\\,W*(T-{T})/{D})\\,alpha(X\\,Y)\\,0)',format=rgba[l{n}];"
+                   f"[{cur}][l{n}]overlay=x={ox}:y={oy}:enable='gte(t\\,{T})':eof_action=pass[bg{n+1}];")
+        else:                                                                  # step: その間だけ差し替え（カウントアップ）
+            fc += (f"[{idx}:v]format=rgba[l{n}];"
+                   f"[{cur}][l{n}]overlay=x={ox}:y={oy}:enable='between(t\\,{o['t0']:.2f}\\,{o['t1']:.2f})':eof_action=pass[bg{n+1}];")
+        cur = f"bg{n+1}"; n += 1
+    for b in boxes:                                                            # 話している行のマーカー
+        fc += (f"[{cur}]drawbox=x={int(b['x'])}:y={int(b['y'])}:w={int(b['w'])}:h={int(b['h'])}:color={b.get('color', '0xFFE14D@0.3')}:t=fill"
+               f":enable='between(t\\,{b['t0']:.2f}\\,{b['t1']:.2f})'[bg{n+1}];")
+        cur = f"bg{n+1}"; n += 1
     fc += (f"[2:v]fps={FPS},format=rgba[sub];[{cur}][sub]overlay=0:{y}:eof_action=pass,format=yuv420p[v];"
            f"[1:a]apad=whole_dur={total:.2f}[a]")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-framerate", "2", "-i", png, "-i", mp3,

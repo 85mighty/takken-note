@@ -478,37 +478,19 @@ def render(body, title, sub, name):
 MOTION = True        # 読み上げに合わせて要素を順に出す（spec の motion_off で止める）
 LAST_CK = LAST_HEAD = None
 
-def motion_layers(name):
-    """直前に render() したスライドの、要素ごとの層。(土台PNG, [(層PNG, 要素番号)], 要素の文字列) を返す。作れなければ None。
-    層は描画キャッシュ (_rc/<ck>_uN.png) に残すので、2回目からは速い"""
-    import motion, shutil
+def motion_plan(name, sents, tp, total):
+    """直前に render() したスライドの、読み上げ同期モーション。(土台PNG, ops) を返す。作れなければ None"""
+    import motion
     if not MOTION or not LAST_CK: return None
     cdir = os.path.join(OUT, "_rc"); ck = LAST_CK
-    bodyp = os.path.join(cdir, ck + ".body"); unitsp = os.path.join(cdir, ck + ".units.json")
+    bodyp = os.path.join(cdir, ck + ".body")
     if not os.path.exists(bodyp): return None
     body = open(bodyp, encoding="utf-8").read()
     if "class='photo'" in body: return None
-    marked, units = motion.mark_units(body)
-    if not units: return None
-    base = os.path.join(cdir, ck + "_u0.png")
-    layers = [(os.path.join(cdir, f"{ck}_u{k}.png"), k) for k in range(1, len(units))]
-    cached = motion.load_units(unitsp)
-    if cached == units and os.path.exists(base) and all(os.path.exists(p) or os.path.exists(p + ".none") for p, _k in layers):
-        return base, [(p, k) for p, k in layers if os.path.exists(p)], units
-    prev = None
-    for k in range(0, len(units)):
-        im, _ch, _p = _render_once(LAST_HEAD, marked, f"{name}_m{k}", LAST_SCALE, motion.hide_css(k + 1))
-        cur = os.path.join(cdir, f"{ck}_m{k}.png"); im.crop((0, 0, W, min(im.size[1], H))).save(cur)
-        if k == 0: shutil.copy(cur, base)
-        else:
-            out = os.path.join(cdir, f"{ck}_u{k}.png")
-            if motion.diff_layer(prev, cur, out) is None:
-                open(out + ".none", "w").write("")
-                if os.path.exists(out): os.remove(out)
-            elif os.path.exists(out + ".none"): os.remove(out + ".none")
-        prev = cur
-    motion.save_units(unitsp, units)
-    return base, [(p, k) for p, k in layers if os.path.exists(p)], units
+    man = motion.build_layers(_render_once, LAST_HEAD, body, name, LAST_SCALE, cdir, ck, W, H)
+    if not man: return None
+    times = motion.assign(man["units"], sents, tp, total)
+    return os.path.join(cdir, man["base"]), motion.plan(man, times, total, cdir)
 
 def slide_key(title, sub, body, speech):
     """スライド内容 + 描画設定のハッシュ。同じなら書き出し済みの動画を再利用する"""
@@ -558,12 +540,8 @@ def build(only=None, name="R8_goukaku"):
             lay, base = [], png
             if h <= H:                                                        # スクロールしない場面だけモーション
                 try:
-                    ml = motion_layers(f"s{i:02d}")
-                    if ml:
-                        import motion
-                        base, lays, units = ml
-                        times = motion.assign(units, sents, tp, total)
-                        lay = [(p, times[k - 1]) + motion.offset(p) for p, k in lays if k - 1 < len(times)]
+                    mp = motion_plan(f"s{i:02d}", sents, tp, total)
+                    if mp: base, lay = mp
                 except Exception as e:
                     print(f"  모션 생략 ({str(e)[:120]})", flush=True); lay, base = [], png
             V.encode_subtitled(base, mp3, scroll_expr(pts, max(0, h - H), total), total, sents, tp, tmp, OUT, f"s{i:02d}", layers=lay)
