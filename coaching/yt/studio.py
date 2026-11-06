@@ -375,6 +375,9 @@ def api_run(name, kind):
         if i < 1: abort(400)
         argv = ["shorts.py", p, str(i)] + (["--hook", str(a["hook"])] if a.get("hook") else [])
         return _start(name, kind, f"쇼츠 #{i}", argv)
+    if kind == "short_auto":
+        n = max(1, min(3, int(a.get("n") or 1)))
+        return _start(name, "short", f"쇼츠 (AI가 핵심 장면 선택 ×{n})", ["short_pick.py", p, "--n", str(n)])
     if kind == "reslice":
         argv = ["reslice.py", p, "--sec", str(float(a.get("sec") or 25))] + (["--slide", str(int(a["i"]))] if a.get("i") else [])
         return _start(name, kind, f"AI로 나누기{' #'+str(a['i']) if a.get('i') else ' (전체)'}", argv)

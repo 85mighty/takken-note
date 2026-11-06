@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 # 1) VPS에서 쌓인 오답 기록(takken_db.json)을 먼저 커밋해 두고 pull (기록 유실 방지)
 #    スタジオ(/studio)で直した動画の定義(coaching/yt/specs)も同じく先にコミット
 #    スタジオで作ったもの（台本・テーマ候補・URL台帳・字幕スタイル・イラスト・ブログ原稿）も同じく
-KEEP="takken_db.json coaching/yt/specs coaching/yt/topics.json coaching/yt/videos.json coaching/yt/sub_style.json coaching/yt/illust coaching/blog"
+KEEP="takken_db.json coaching/yt/specs coaching/yt/jobs coaching/yt/topics.json coaching/yt/videos.json coaching/yt/sub_style.json coaching/yt/illust coaching/blog"
 for p in $KEEP; do [ -e "$p" ] && git add -A -- "$p"; done   # 없いパスが混ざると全部失敗するので1つずつ
 for f in $(git diff --cached --name-only); do                      # 衝突マークが残った/壊れた JSON はコミットしない
   if [ -f "$f" ] && grep -q '^<<<<<<< \|^>>>>>>> ' "$f"; then echo "※ 衝突マークが残っています → コミットから外す: $f"; git reset -q -- "$f"; fi
@@ -102,7 +102,7 @@ pm2 startOrRestart ecosystem.config.js
 pm2 save
 
 # 5.5) 채팅에서 쓴 대본 중 "auto" 표시가 있는 것은 자동으로 일러스트→음성→완성까지 (뒤에서 돌고, 스튜디오 작업란에 진행 표시)
-if grep -lq '"auto": \[' coaching/yt/specs/*.json 2>/dev/null; then
+if grep -lq '"auto": \[' coaching/yt/specs/*.json 2>/dev/null || ls coaching/yt/jobs/*.json >/dev/null 2>&1; then
   mkdir -p coaching/yt/out/_jobs
   # 9>&- : autodeploy のロック(fd 9)を子に持たせない（持たせると自動制作が終わるまで次のデプロイが止まる）
   setsid nohup .venv/bin/python3 coaching/yt/autobuild.py >> coaching/yt/out/_jobs/autobuild.log 2>&1 9>&- < /dev/null &

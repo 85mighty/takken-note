@@ -30,7 +30,8 @@ def env():
 def run(name, steps):
     p = os.path.join(SPECS, name + ".json")
     cmds = {"illust": [PY, "-u", "build_spec.py", p, "--illust", "0"], "draft": [PY, "-u", "build_spec.py", p, "--draft"], "build": [PY, "-u", "build_spec.py", p],
-            "short": [PY, "-u", "shorts.py", p, "1"]}
+            "short": [PY, "-u", "shorts.py", p, "1"], "short_auto": [PY, "-u", "short_pick.py", p],
+            "blog": [PY, "-u", "blogify.py", p, "--publish"]}
     for st in steps:                                                          # "short:6" = 6枚目をショートに
         if st.startswith("short:") and st[6:].isdigit(): cmds[st] = [PY, "-u", "shorts.py", p, st[6:]]
     chain = " && ".join(shlex.join(cmds[s]) for s in steps if s in cmds)
@@ -43,17 +44,36 @@ def run(name, steps):
     json.dump({"pid": pid, "name": name, "kind": "auto", "label": "자동 제작 (" + "→".join(steps) + ")", "log": log, "started": time.time()}, open(CUR, "w"))
     while _alive(pid) and not os.path.exists(log + ".rc"): time.sleep(10)      # 自分が始めた作業だけ待つ
 
-def main():
-    os.makedirs(JOBDIR, exist_ok=True)
+QUEUE = os.path.join(HERE, "jobs")                                           # 予約ファイル: jobs/<いつ>_<名前>.json = {"name":..., "steps":[...]}
+
+def pending():
+    """(name, steps, 印の消し方) を順に。予約ファイル → spec の auto"""
+    out = []
+    for f in sorted(os.listdir(QUEUE)) if os.path.isdir(QUEUE) else []:
+        if not f.endswith(".json"): continue
+        q = os.path.join(QUEUE, f)
+        try: j = json.load(open(q, encoding="utf-8"))
+        except Exception as e: print(f"{f}: 읽기 실패 → 건너뜀 ({e})", flush=True); continue
+        if j.get("name") and j.get("steps") and os.path.exists(os.path.join(SPECS, j["name"] + ".json")):
+            out.append((j["name"], list(j["steps"]), lambda q=q: os.remove(q)))
+        else: os.remove(q)
     for f in sorted(os.listdir(SPECS)) if os.path.isdir(SPECS) else []:
         if not f.endswith(".json"): continue
         p = os.path.join(SPECS, f)
         try: sp = json.load(open(p, encoding="utf-8"))
         except Exception as e: print(f"{f}: 읽기 실패 → 건너뜀 ({e})", flush=True); continue
-        steps = sp.get("auto")
-        if not steps: continue
-        sp.pop("auto"); sp["auto_done"] = time.strftime("%Y-%m-%d %H:%M")      # 二度始めないよう先に印を消す
-        json.dump(sp, open(p + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=1); os.replace(p + ".tmp", p)
+        if not sp.get("auto"): continue
+        def clear(p=p):
+            sp = json.load(open(p, encoding="utf-8")); sp.pop("auto", None); sp["auto_done"] = time.strftime("%Y-%m-%d %H:%M")
+            json.dump(sp, open(p + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=1); os.replace(p + ".tmp", p)
+        out.append((sp["name"], list(sp["auto"]), clear))
+    return out
+
+def main():
+    os.makedirs(JOBDIR, exist_ok=True)
+    for name, steps, clear in pending():
+        clear()                                                                   # 二度始めないよう先に印を消す
+        sp = {"name": name}
         import fcntl                                                              # 自動制作どうしは同時に走らせない（デプロイのたびに1本ずつ起動されるため）
         lockf = open(os.path.join(JOBDIR, "autobuild.lock"), "w")
         for _ in range(720):
