@@ -6,6 +6,8 @@
 出力: out/<outdir>/shorts/<name>_s04.mp4 と .txt（タイトル・概要欄。本編のURLは videos.json から）
 """
 import argparse, json, os, re, subprocess, sys
+
+def subs_plain(t): return (t or "").replace("【", "").replace("】", "")
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 SW, SH = 1080, 1920
 TOP, SLIDE_Y = 400, 400            # フック帯の高さ・スライドの位置
@@ -129,18 +131,10 @@ def make(path, i, hook=None, log=print):
     finally:
         V.SUB_STYLE = old
     url = v.get("url") or ("" if spec.get("short_target") else (spec.get("youtube") or {}).get("url")) or ""
-    title = f"{hook.replace(chr(10), ' ')}【宅建】 #shorts"
-    rel_lines = []
-    for k in (spec.get("related") or [])[:3]:                                  # 本編の関連動画もショートの概要欄に
-        rv = registry.get(reg, k) or {}
-        if rv.get("url") and rv["url"] != url: rel_lines.append(f"・{rv.get('label') or rv.get('yt_title') or k} ▶ {rv['url']}")
-    desc = (f"本編はこちら ▶ {url or '（本編のURLが未登録です）'}\n{long_title}\n\n"
-            f"{(s.get('speech') or '')[:120]}…\n\n" + (("▼関連動画\n" + "\n".join(rel_lines) + "\n\n") if rel_lines else "")
-            + f"チャンネル ▶ https://www.youtube.com/@nippon-real\n\n#宅建 #宅建士 #宅建試験 #宅建勉強法 #shorts")
-    pinned = f"本編（フル版）はこちら ▶ {url or '（本編のURL）'}\n{long_title}"
-    howto = ("YouTube Studio → ショートの詳細 → 「関連動画」に本編を設定すると、再生画面にリンクが出ます。"
-             "固定コメントにも本編リンクを入れてください。")
-    open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n\n【固定コメント】\n{pinned}\n\n【関連動画の設定】\n{howto}\n")
+    title = f"{hook.replace(chr(10), ' ')} #宅建 #宅建士"                        # ショートの題名: フック + タグ2つだけ
+    first = re.split(r"(?<=[。！？])", subs_plain(s.get("speech") or ""))[0].strip() if s.get("speech") else ""
+    desc = (first[:70] if first else hook.replace(chr(10), " "))                   # 概要欄は1行だけ（リンクなし）
+    open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n")
     for f in (m4a, base + "_bg.png"):
         if os.path.exists(f): os.remove(f)
     log(f"쇼츠 완성: {base}.mp4  {total:.0f}초" + (" (60초를 넘습니다. 쇼츠는 3분까지 올릴 수 있습니다)" if total > 60 else ""))
