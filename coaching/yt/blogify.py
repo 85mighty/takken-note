@@ -76,6 +76,9 @@ def _convert(body):
     b = re.sub(r"<ul class='steps'>", "<ul class='tk-steps'>", b)
     b = re.sub(r"<ol class='steps'>", "<ol class='tk-steps'>", b)
     b = re.sub(r"<div class='cover'>", "<div class='tk-cover'>", b)
+    b = re.sub(r"<div class='huge'[^>]*>", "<div class='tk-huge'>", b)             # 大文字の場面 → 記事では箇条書きサイズ（動画用の font-size は捨てる）
+    b = re.sub(r"<span class='rbox'>", "<span class='tk-rbox'>", b)
+    b = re.sub(r"<span class='rvl'[^>]*>", "<span>", b)
     b = re.sub(r"<table>([\s\S]*?)</table>", _table, b)
     b = re.sub(r"\s*\n\s*", "\n", b)
     return f"<!-- wp:html -->\n{b.strip()}\n<!-- /wp:html -->" if b.strip() else ""

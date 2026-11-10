@@ -31,6 +31,9 @@ add_action('wp_head', function () { if (!is_singular()) return; ?>
 .entry-content .tk-key{background:#fff3c4;border-left:6px solid #e0a800;padding:12px 16px;margin:18px 0;font-weight:700;line-height:1.7;border-radius:0 8px 8px 0}
 .entry-content .tk-note{color:#6b7280;font-size:.9em;margin:8px 0 18px}
 .entry-content .tk-big{text-align:center;font-size:2.4em;font-weight:900;color:#c0392b;margin:14px 0 6px;line-height:1.2}
+.entry-content .tk-huge{font-size:1.25em;font-weight:700;line-height:2.1;margin:14px 0 18px;padding:10px 18px;background:#f7f9fc;border-radius:8px}
+.entry-content .tk-huge b{text-decoration:underline wavy #3b82d6;text-decoration-thickness:2px;text-underline-offset:5px}
+.entry-content .tk-rbox{display:inline-block;border:2px solid #b8312f;border-radius:6px;padding:0 10px;margin:2px 0}
 .entry-content .tk-big small{display:block;font-size:.42em;color:#333;font-weight:700;margin-top:6px}
 .entry-content ul.tk-steps,.entry-content ol.tk-steps{padding-left:1.4em;margin:10px 0 16px}
 .entry-content .tk-steps li{margin:8px 0;line-height:1.8}
