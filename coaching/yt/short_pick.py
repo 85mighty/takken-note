@@ -34,20 +34,22 @@ def ask(spec, n, log=print):
     for i, s in enumerate(spec["slides"], 1):
         rows.append(f"[{i}] 見出し: {s.get('title') or '（表紙）'}\n本文: {_plain(s.get('body',''))[:220]}\n読み上げ: {(s.get('speech') or '')[:160]}")
     prompt = (f"動画「{spec.get('label','')}」のスライド一覧です。YouTube ショート（60秒・縦）として切り出したとき、最も再生されそうな（意外性・数字・結論がある）スライドを {n} 枚選び、"
-              f"それぞれに視聴者の指を止めるフック（日本語・2行・各行12字以内・疑問形か断定形。改行は \\n）を付けてください。表紙・まとめ・写真だけの場面は選ばない。\n\n" + "\n\n".join(rows))
+              f"それぞれに視聴者の指を止めるフック（日本語・2行・各行12字以内・疑問形か断定形。改行は \\n）と、"
+              f"概要欄に載せる1行（desc: 日本語 30〜60字・1文・その場面で分かることを具体的に。「2つめ、実務です」のようなつなぎの文は不可。リンク・タグ・絵文字なし）を付けてください。表紙・まとめ・写真だけの場面は選ばない。\n\n" + "\n\n".join(rows))
     schema = {"type": "object", "additionalProperties": False, "required": ["picks"],
-              "properties": {"picks": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["i", "hook", "reason"],
-                                        "properties": {"i": {"type": "integer"}, "hook": {"type": "string"}, "reason": {"type": "string"}}}}}}
+              "properties": {"picks": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["i", "hook", "desc", "reason"],
+                                        "properties": {"i": {"type": "integer"}, "hook": {"type": "string"}, "desc": {"type": "string"}, "reason": {"type": "string"}}}}}}
     def check(o):
         ps = o.get("picks") or []
         if not ps: return "picks が空です"
         for p in ps:
             if not (1 <= int(p.get("i", 0)) <= len(spec["slides"])): return f"i={p.get('i')} は範囲外です"
             if not str(p.get("hook", "")).strip(): return "hook が空です"
+            if len(str(p.get("desc", "")).strip()) < 15: return "desc が短すぎます（30〜60字の1文）"
         return None
     try:
         o = scriptgen.ask_json(prompt, "あなたはYouTubeショートの編集者です。短く、具体的に。", schema, check, log=log, effort="low", tool_name="pick", tool_desc="選んだスライドを保存する", max_tokens=2000)
-        return [(int(p["i"]), str(p["hook"]).replace("\\n", "\n").strip(), p.get("reason", "")) for p in o["picks"]][:n]
+        return [(int(p["i"]), str(p["hook"]).replace("\\n", "\n").strip(), p.get("reason", ""), str(p.get("desc", "")).strip()) for p in o["picks"]][:n]
     except Exception as e:
         log(f"AI 선택 실패 → 점수로 선택 ({str(e)[:120]})"); return None
 
@@ -59,11 +61,13 @@ def main():
     picks = ask(spec, a.n, log)
     if not picks:
         picks = [(i, None, "점수") for i in heuristic(spec)[: a.n]]
-    for i, hook, reason in picks:
+    for pk in picks:
+        i, hook, reason = pk[0], pk[1], pk[2]; desc = pk[3] if len(pk) > 3 else ""
         s = spec["slides"][i - 1]
         hook = hook or s.get("short_hook") or (s.get("title") or "").split("｜")[0]
         log(f"쇼츠 장면 선택: #{i} {s.get('title') or ''}  훅: {hook.replace(chr(10), ' / ')}  ({reason})")
         s["short_hook"] = hook
+        if desc: s["short_desc"] = desc
         json.dump(spec, open(a.spec, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
         shorts.make(a.spec, i, hook, log=log)
 

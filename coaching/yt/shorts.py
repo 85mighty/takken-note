@@ -91,6 +91,16 @@ def background(slide_png, hook, out, long_label="", crop169=True):
     im.save(out)
     return SLIDE_Y + sl.size[1]
 
+_TRANSITION = re.compile(r"^(こんにちは|まず|次に|つぎに|そして|さて|では|最後に|続いて|つづいて|ここで|それでは|今日は|きょうは|[0-9０-９一二三四五六七八九十]+\s*つ[めも目]|[①-⑳]|(第)?[0-9０-９一二三四五六七八九十]+に)")
+
+def desc_line(speech):
+    """ショートの概要欄 1 行: 読み上げから「中身のある最初の文」を選ぶ。
+    「2つめ、実務です。」「まず結論から。」のような前置き・つなぎの文は飛ばし、【】の強調がある文があればそれを優先する。"""
+    sents = [x.strip() for x in re.split(r"(?<=[。！？])", speech or "") if x.strip()]
+    good = [x for x in sents if len(subs_plain(x)) >= 12 and not _TRANSITION.match(x)]
+    pick = next((x for x in good if "【" in x), None) or (good[0] if good else (sents[0] if sents else ""))
+    return subs_plain(pick).strip()
+
 def make(path, i, hook=None, log=print):
     import build_spec, registry, vkit as V
     spec = json.load(open(path, encoding="utf-8"))
@@ -132,8 +142,7 @@ def make(path, i, hook=None, log=print):
         V.SUB_STYLE = old
     url = v.get("url") or ("" if spec.get("short_target") else (spec.get("youtube") or {}).get("url")) or ""
     title = f"{hook.replace(chr(10), ' ')} #宅建 #宅建士"                        # ショートの題名: フック + タグ2つだけ
-    first = re.split(r"(?<=[。！？])", subs_plain(s.get("speech") or ""))[0].strip() if s.get("speech") else ""
-    desc = (first[:70] if first else hook.replace(chr(10), " "))                   # 概要欄は1行だけ（リンクなし）
+    desc = (s.get("short_desc") or desc_line(s.get("speech") or "") or hook.replace(chr(10), " "))[:70]   # 概要欄は1行だけ（リンクなし）
     open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n")
     for f in (m4a, base + "_bg.png"):
         if os.path.exists(f): os.remove(f)

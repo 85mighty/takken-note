@@ -15,7 +15,7 @@ BENCH = os.path.join(ROOT, "coaching", "bench", "out")
 ILL = os.path.join(HERE, "illust")
 PY = sys.executable
 STEPS = [("script", "대본"), ("draft", "초안 영상"), ("voiced", "음성 완성"), ("uploaded", "YouTube"), ("blogged", "블로그")]
-SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "photo", "short_hook", "overlays", "_orig")
+SLIDE_KEYS = ("title", "sub", "body", "speech", "illust", "illust_pos", "illust_seed", "illust_off", "photo", "short_hook", "short_desc", "overlays", "_orig")
 OV_KEYS = {"x": float, "y": float, "w": float, "h": float, "size": float, "radius": float, "opacity": float, "pad": float, "stroke": float, "lh": float,
            "text": str, "color": str, "bg": str, "border": str, "align": str, "stroke_color": str, "bold": bool, "img": str,
            "border_left": str, "border_right": str, "border_top": str, "border_bottom": str, "box": bool}
@@ -253,6 +253,7 @@ def api_save(name):
             if s.get("illust_pos") in ("top", "right", "none"): c["illust_pos"] = s["illust_pos"]
             if s.get("illust_seed"): c["illust_seed"] = int(s["illust_seed"])
             if s.get("short_hook"): c["short_hook"] = str(s["short_hook"])
+            if s.get("short_desc"): c["short_desc"] = str(s["short_desc"])
             ov = _clean_ov(s.get("overlays"))
             if ov: c["overlays"] = ov
             if s.get("illust_off"): c["illust_off"] = True
