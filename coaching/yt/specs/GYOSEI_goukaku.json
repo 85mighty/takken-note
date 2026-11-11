@@ -141,6 +141,8 @@
    "合格点はどうなる？",
    "180点は動く？"
   ],
+  "style": "navy",
+  "mode": "ai",
   "badge": "11/8 実施",
   "points": [
    "各社講評",
@@ -148,7 +150,6 @@
    "足切り"
   ],
   "person": "man",
-  "mode": "ai",
   "quality": "high",
   "use_refs": true
  }
