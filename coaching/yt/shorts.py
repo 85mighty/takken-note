@@ -124,13 +124,21 @@ def make(path, i, hook=None, log=print):
     long_title = v.get("yt_title") or (spec.get("youtube") or {}).get("title") or v.get("label") or spec.get("label", "")
     narrow = render_narrow(G, s.get("title", ""), s.get("sub", ""), s["_body"])       # 縦向きに描き直せれば文字が大きい方を使う
     bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow)
-    # 音声は本編のスライドから。字幕の時間は文字数で配分
-    m4a = base + ".m4a"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", seg, "-vn", "-c:a", "aac", "-b:a", "128k", m4a], check=True)
-    total = V.dur(m4a)
+    # 音声と字幕の時刻は本編と同じ TTS から。cached_tts は同じ読み上げ文なら本編で作った音声と「文ごとの実測時刻」をそのまま返す
+    # （以前は文字数で按分していたため、話す速さが文ごとに違うと字幕が遅れた）
     sents = V.split_sentences(s.get("speech", "")) or [""]
-    lens = [max(1, len(x)) for x in sents]; span = max(1.0, total - 1.5); t, tp = 0.4, {}
-    for k, n in enumerate(lens): tp[f"s{k}"] = t; t += span * n / sum(lens)
+    m4a = base + ".mp3"
+    try:
+        tp = G.cached_tts(V.ssml_sentences(sents), m4a)
+        total = V.dur(m4a) + 1.5                                                      # 本編と同じく末尾に 1.5 秒の余白
+        log(f"  자막 시각: TTS 실측 ({len(sents)}문장)")
+    except Exception as e:                                                            # TTS が使えないときだけ従来の按分
+        log(f"  TTS 시각을 못 얻어 글자 수로 배분합니다 ({str(e)[:80]})")
+        m4a = base + ".m4a"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", seg, "-vn", "-c:a", "aac", "-b:a", "128k", m4a], check=True)
+        total = V.dur(m4a)
+        lens = [max(1, len(x)) for x in sents]; span = max(1.0, total - 1.5); t, tp = 0.4, {}
+        for k, n in enumerate(lens): tp[f"s{k}"] = t; t += span * n / sum(lens)
     import subs
     st = dict(subs.load_style(spec.get("sub_style")))
     st.update(size=max(62, min(int(st["size"] * 0.85), 88)), max_chars=12, max_lines=1)   # 縦は1行・やや小さめ（スライドと下の帯の間に収める）
@@ -144,7 +152,7 @@ def make(path, i, hook=None, log=print):
     title = f"{hook.replace(chr(10), ' ')} #宅建 #宅建士"                        # ショートの題名: フック + タグ2つだけ
     desc = (s.get("short_desc") or desc_line(s.get("speech") or "") or hook.replace(chr(10), " "))[:70]   # 概要欄は1行だけ（リンクなし）
     open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n")
-    for f in (m4a, base + "_bg.png"):
+    for f in (m4a, base + ".m4a", base + "_bg.png"):
         if os.path.exists(f): os.remove(f)
     log(f"쇼츠 완성: {base}.mp4  {total:.0f}초" + (" (60초를 넘습니다. 쇼츠는 3분까지 올릴 수 있습니다)" if total > 60 else ""))
     return {"video": base + ".mp4", "title": title, "description": desc, "dur": round(total, 1), "url_missing": not url}
