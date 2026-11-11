@@ -148,7 +148,7 @@ def _shorts_of(spec, reg=None):
     reg = reg or registry.load()
     d = os.path.join(_outdir(spec), "shorts"); out = []
     for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
-        if not f.endswith(".mp4"): continue
+        if not f.endswith(".mp4") or f.endswith("_raw.mp4") or f.endswith("_cover_tmp.mp4"): continue
         base = os.path.join(d, f[:-4]); txt = open(base + ".txt", encoding="utf-8").read() if os.path.exists(base + ".txt") else ""
         m = re.search(r"【タイトル】\n(.+)", txt); title = m.group(1).strip() if m else f[:-4]
         m = re.search(r"【概要欄】\n(.+)", txt); desc = m.group(1).strip() if m else ""
@@ -158,7 +158,9 @@ def _shorts_of(spec, reg=None):
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "0.3", "-i", base + ".mp4", "-frames:v", "1", "-vf", "scale=360:-2", poster], check=False)
         key = f"{spec['name']}_{f[:-4].split('_')[-1]}" if slide else f[:-4]
         v = registry.get(reg, key) or {}
+        tpng = base + "_thumb.png"
         out.append({"file": "shorts/" + f, "poster": "shorts/" + os.path.basename(poster) if os.path.exists(poster) else None, "text": txt,
+                    "thumb": "shorts/" + os.path.basename(tpng) if os.path.exists(tpng) else None, "base": f[:-4],
                     "title": title, "desc": desc, "slide": slide, "key": key, "url": v.get("url", ""),
                     "mtime": int(os.path.getmtime(base + ".mp4")), "dur": _dur(base + ".mp4")})
     return out
@@ -513,37 +515,57 @@ def api_topics():
 # ---------------- thumbnail ----------------
 @bp.route("/api/thumb/<name>", methods=["GET", "POST"])
 def api_thumb(name):
+    """롱폼 썸네일 (thumbnail.png) / ?short=<key> 로 쇼츠 썸네일 (shorts/<key>_thumb.png, 9:16)"""
     import thumb
-    p = _spec_path(name); sp = _load(name); out = _outdir(sp); tp = os.path.join(out, "thumbnail.png")
+    p = _spec_path(name); sp = _load(name); out = _outdir(sp)
+    a = (request.get_json(silent=True) or {}) if request.method == "POST" and "file" not in request.files else {}
+    short = request.args.get("short") or a.get("short") or request.form.get("short")
+    if short:
+        short = _safe(short); sp_ = thumb.short_paths(sp, short)
+        tp, hist_dir, rel, histrel = sp_["png"], os.path.join(out, "shorts", sp_["hist"]), f"shorts/{short}_thumb.png", f"shorts/{sp_['hist']}/"
+        cfg0 = (sp.get("thumb_shorts") or {}).get(short) or {}
+    else:
+        tp, hist_dir, rel, histrel = os.path.join(out, "thumbnail.png"), os.path.join(out, "thumb_hist"), "thumbnail.png", "thumb_hist/"
+        cfg0 = sp.get("thumb") or {}
     if request.method == "POST":
         if "file" in request.files:                                   # 自分で作った画像を使う (ChatGPT など)
             from PIL import Image
             im = Image.open(request.files["file"].stream).convert("RGB")
-            im = im.resize((1280, round(im.height * 1280 / im.width))) if im.width != 1280 else im
-            os.makedirs(out, exist_ok=True); im.save(tp)
-            sp.setdefault("thumb", {})["custom"] = True; _write(p, sp)
-        else:
-            a = request.get_json(force=True) or {}
-            if a.get("use"):                                            # 履歴から選び直す
-                src = os.path.join(out, "thumb_hist", _safe(os.path.basename(a["use"])))
-                if not os.path.exists(src): abort(404)
-                import shutil; shutil.copyfile(src, tp)
+            tw = 1080 if short else 1280
+            im = im.resize((tw, round(im.height * tw / im.width))) if im.width != tw else im
+            os.makedirs(os.path.dirname(tp), exist_ok=True); im.save(tp)
+            if short:
+                sp.setdefault("thumb_shorts", {}).setdefault(short, {})["custom"] = True; _write(p, sp)
+                if os.path.exists(sp_["mp4"]) and request.form.get("cover", "1") == "1": thumb.apply_cover(sp_["mp4"], tp, sp_["raw"])
             else:
-                lines = [str(x) for x in (a.get("lines") or []) if str(x).strip()]
-                if not lines: return jsonify(ok=False, error="문구를 넣어주세요"), 400
-                cfg = {"lines": lines, "style": a.get("style") or "navy", "mode": a.get("mode") or "plain", "badge": (a.get("badge") or "").strip(),
-                       "points": [str(x).strip() for x in (a.get("points") or []) if str(x).strip()][:3], "person": a.get("person") or "woman",
-                       "quality": a.get("quality") if a.get("quality") in ("medium", "high", "low") else "medium", "use_refs": bool(a.get("use_refs", True)),
-                       "provider": a.get("provider") if a.get("provider") in ("replicate", "openai", "auto") else "auto"}
-                sp["thumb"] = cfg; _write(p, sp)
-                if cfg["mode"] in ("ai", "ai_bg"):                       # OpenAI は 30〜90 秒かかるので裏の作業に
-                    return _start(name, "thumb", "썸네일 (AI)", ["thumb.py", p, "--ai"])
-                thumb.make(sp, lines, cfg["style"], tp)
-    hist = sorted(glob.glob(os.path.join(out, "thumb_hist", "*.png")), key=os.path.getmtime, reverse=True)[:8]
-    res = {"ok": True, "thumb": sp.get("thumb") or {}, "suggest": thumb.suggest(sp), "openai": bool(thumb._key()), "providers": thumb.providers(),
-           "hist": [{"file": "thumb_hist/" + os.path.basename(h), "mtime": int(os.path.getmtime(h))} for h in hist], "refs": len(thumb.references(sp))}
+                sp.setdefault("thumb", {})["custom"] = True; _write(p, sp)
+        elif a.get("restore") and short:                               # ショートの先頭サムネを外して元に戻す
+            if os.path.exists(sp_["raw"]): os.replace(sp_["raw"], sp_["mp4"])
+        elif a.get("use"):                                              # 履歴から選び直す
+            src = os.path.join(hist_dir, _safe(os.path.basename(a["use"])))
+            if not os.path.exists(src): abort(404)
+            import shutil; shutil.copyfile(src, tp)
+            if short and os.path.exists(sp_["mp4"]) and cfg0.get("cover", True): thumb.apply_cover(sp_["mp4"], tp, sp_["raw"])
+        else:
+            lines = [str(x) for x in (a.get("lines") or []) if str(x).strip()]
+            if not lines: return jsonify(ok=False, error="문구를 넣어주세요"), 400
+            cfg = {"lines": lines, "style": a.get("style") or "navy", "mode": a.get("mode") or "plain", "badge": (a.get("badge") or "").strip(),
+                   "points": [str(x).strip() for x in (a.get("points") or []) if str(x).strip()][:3], "person": a.get("person") or "woman",
+                   "quality": a.get("quality") if a.get("quality") in ("medium", "high", "low") else "medium", "use_refs": bool(a.get("use_refs", True)),
+                   "provider": a.get("provider") if a.get("provider") in ("replicate", "openai", "auto") else "auto", "cover": bool(a.get("cover", True))}
+            if short: sp.setdefault("thumb_shorts", {})[short] = cfg
+            else: sp["thumb"] = cfg
+            _write(p, sp)
+            if cfg["mode"] in ("ai", "ai_bg"):                       # 画像生成は 30〜90 秒かかるので裏の作業に
+                return _start(name, "thumb", "쇼츠 썸네일 (AI)" if short else "썸네일 (AI)", ["thumb.py", p, "--ai"] + (["--short", short] if short else []))
+            thumb.make_plain(sp, cfg, short) if short else thumb.make(sp, lines, cfg["style"], tp)
+        sp = _load(name); cfg0 = ((sp.get("thumb_shorts") or {}).get(short) if short else sp.get("thumb")) or {}
+    hist = sorted(glob.glob(os.path.join(hist_dir, "*.png")), key=os.path.getmtime, reverse=True)[:8]
+    res = {"ok": True, "thumb": cfg0, "suggest": thumb.suggest_short(sp, short) if short else thumb.suggest(sp), "openai": bool(thumb._key()), "providers": thumb.providers(),
+           "hist": [{"file": histrel + os.path.basename(h), "mtime": int(os.path.getmtime(h))} for h in hist], "refs": len(thumb.references(sp)),
+           "covered": bool(short and os.path.exists(sp_["raw"]))}
     if not os.path.exists(tp): return jsonify(file=None, **res)
-    return jsonify(file="thumbnail.png", mtime=int(os.path.getmtime(tp)), **res)
+    return jsonify(file=rel, mtime=int(os.path.getmtime(tp)), **res)
 
 # ---------------- YouTube / shorts ----------------
 @bp.route("/api/ytext/<name>")

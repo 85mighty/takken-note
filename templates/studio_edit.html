@@ -80,7 +80,10 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
 #props button,.edbar button{padding:4px 9px;font-size:12px}
 .edbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .sl.playing{outline:3px solid #ffd166}
-.shl{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.shl{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.shl .it .two{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#000}.shl .it .two video,.shl .it .two img{width:100%;aspect-ratio:9/16;object-fit:contain;background:#000;display:block}
+.shl .it .two .ph{display:flex;align-items:center;justify-content:center;color:#889;font-size:12px;aspect-ratio:9/16;background:#1a2233}
+.shl .it textarea{width:100%;min-height:58px;font-size:12px;margin-top:6px}.shl .it .hs{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}.shl .it .hs img{width:34px;aspect-ratio:9/16;object-fit:cover;border:1px solid #ccc;border-radius:3px;cursor:pointer}
 .shl .it{border:1px solid var(--line);border-radius:10px;overflow:hidden}.shl .it .b{padding:8px;font-size:12px}.shl .it b{display:block;font-size:13px;margin-bottom:4px}.shl .it .u{display:flex;gap:4px;margin-top:6px}.shl .it .u input{flex:1;font-size:12px;padding:3px 6px;min-width:0}.shl .it .u button{padding:3px 8px;font-size:12px}
 .shl video{aspect-ratio:9/16;max-height:360px}
 .shl pre{white-space:pre-wrap;font-size:11px;background:#f5f5f5;padding:6px;border-radius:6px;max-height:120px;overflow:auto}
@@ -108,7 +111,7 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   <div class="card"><div class="job" id="job">대기 중</div><div style="margin-top:6px"><button id="stopbtn" style="display:none;background:#c0392b;color:#fff;border-color:#c0392b" onclick="stopJob()">■ 이 작업 중지</button></div></div>
 </div>
 <div>
-  <div class="ptabs"><button class="on" data-p="make" onclick="pane('make')">제작</button><button data-p="yt" onclick="pane('yt')">YouTube 문구</button><button data-p="th" onclick="pane('th')">썸네일</button><button data-p="bl" onclick="pane('bl')">블로그</button><button class="short" data-p="sh" onclick="pane('sh')">쇼츠 <span id="shn2"></span></button></div>
+  <div class="ptabs"><button class="on" data-p="make" onclick="pane('make')">제작</button><button data-p="yt" onclick="pane('yt')">YouTube 문구</button><button data-p="th" onclick="pane('th')">롱폼 썸네일</button><button data-p="bl" onclick="pane('bl')">블로그</button><button class="short" data-p="sh" onclick="pane('sh')">쇼츠 <span id="shn2"></span></button></div>
   <div class="pane on" id="pane-make">
   <div class="card">
     <h3>영상 만들기</h3>
@@ -149,7 +152,8 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   </div>
   <div class="pane" id="pane-th">
   <div class="card">
-    <h3>썸네일</h3>
+    <h3>롱폼 썸네일 <span class="hint" style="font-weight:normal">(16:9 · 1280×720 · YouTube 업로드 시 직접 올림)</span></h3>
+    <p class="hint" style="margin:0 0 8px">쇼츠의 썸네일은 「쇼츠」 탭에서 각 쇼츠마다 따로 만듭니다 (9:16).</p>
     <div style="display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:start">
       <div>
         <img id="th_img" style="width:260px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:8px;background:#eee" alt="">
@@ -201,7 +205,7 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
 
   </div>
   <div class="pane" id="pane-sh">
-  <div class="card"><h3>이 영상에서 만든 쇼츠</h3>
+  <div class="card"><h3>이 영상에서 만든 쇼츠 <span class="hint" style="font-weight:normal">(각 쇼츠에 9:16 썸네일 · 영상 첫 1초에 삽입)</span></h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button onclick="run('short_auto',{n:1})" style="background:var(--short);color:#fff;border-color:var(--short)" {% if not keys.claude %}disabled{% endif %}>＋ 쇼츠 만들기 (AI가 핵심 장면 선택)</button>
       <button onclick="run('short_auto',{n:3})" style="border-color:var(--short);color:var(--short)" {% if not keys.claude %}disabled{% endif %}>3개</button>
@@ -434,7 +438,7 @@ function startPoll(){
   if (poll) return;
   poll = setInterval(async () => {
     const j = await (await fetch("/studio/api/job")).json(); showJob(j);
-    if (!j.running){ clearInterval(poll); poll = null; if (j.name === NAME){ if (j.kind === "thumb"){ loadThumb(); showJob(j); return; } if (j.kind === "draft") tab = "draft"; if (j.kind === "build") tab = "final"; load(); } }
+    if (!j.running){ clearInterval(poll); poll = null; if (j.name === NAME){ if (j.kind === "thumb"){ loadThumb(); loadShorts(); showJob(j); return; } if (j.kind === "draft") tab = "draft"; if (j.kind === "build") tab = "final"; load(); } }
   }, 3000);
 }
 async function loadYtext(){
@@ -499,10 +503,45 @@ async function loadShorts(){
   const d = await (await fetch(`/studio/api/shorts/${NAME}`)).json();
   const n = d.shorts.length; $("#shn") && ($("#shn").textContent = n ? `${n}개` : ""); $("#shn2").textContent = n ? `(${n})` : "";
   if (!n){ $("#shorts").innerHTML = `<div class="hint">아직 이 영상의 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 핵심 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>`; return; }
-  $("#shorts").innerHTML = d.shorts.map(s => `<div class="it"><video controls preload="none" src="${fileUrl(s.file, s.mtime)}" ${s.poster ? `poster="${fileUrl(s.poster, s.mtime)}"` : ""}></video>
-    <div class="b"><b>${esc(s.title)}</b>${esc(s.desc)}<div class="hint">${s.slide ? `장면 <a href="#s${s.slide}">#${s.slide}</a> · ` : ""}${s.dur ? s.dur + "초 · " : ""}<a href="${fileUrl(s.file, s.mtime)}&dl=1">mp4 받기</a></div>
-    <div class="u"><input type="url" placeholder="올린 쇼츠 URL" value="${esc(s.url)}" data-key="${esc(s.key)}" data-title="${esc(s.title)}"><button onclick="saveShortUrl(this)">저장</button></div></div></div>`).join("");
+  $("#shorts").innerHTML = d.shorts.map(s => `<div class="it" data-base="${esc(s.base)}">
+    <div class="two"><video controls preload="none" src="${fileUrl(s.file, s.mtime)}" ${s.poster ? `poster="${fileUrl(s.poster, s.mtime)}"` : ""}></video>
+      ${s.thumb ? `<img class="sth" src="${fileUrl(s.thumb, s.mtime)}" title="쇼츠 썸네일">` : `<div class="ph sth">쇼츠 썸네일<br>아직 없음</div>`}</div>
+    <div class="b"><b>${esc(s.title)}</b>${esc(s.desc)}<div class="hint">${s.slide ? `장면 <a href="#s${s.slide}">#${s.slide}</a> · ` : ""}${s.dur ? s.dur + "초 · " : ""}<a href="${fileUrl(s.file, s.mtime)}&dl=1">mp4 받기</a>${s.thumb ? ` · <a href="${fileUrl(s.thumb, s.mtime)}&dl=1">썸네일 받기</a>` : ""}</div>
+    <div class="u"><input type="url" placeholder="올린 쇼츠 URL" value="${esc(s.url)}" data-key="${esc(s.key)}" data-title="${esc(s.title)}"><button onclick="saveShortUrl(this)">저장</button></div>
+    <div class="hint" style="margin-top:8px"><b>쇼츠 썸네일</b> (9:16 · 줄마다 한 줄)</div><textarea class="stl" placeholder="훅 문구 2~3줄"></textarea>
+    <div class="u"><label style="margin:0;display:inline-flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" class="stc" checked> 영상 첫 1초에 넣기</label><span style="flex:1"></span>
+      <button onclick="makeShortThumb(this)" style="background:var(--short);color:#fff;border-color:var(--short)">썸네일 만들기</button>
+      <label style="margin:0;display:inline"><input type="file" accept="image/*" style="display:none" onchange="uploadShortThumb(this)"><button onclick="this.previousElementSibling.click()">내 이미지</button></label></div>
+    <div class="hs"></div><div class="hint sti"></div></div></div>`).join("");
+  d.shorts.forEach(s => loadShortThumb(s.base));
 }
+async function loadShortThumb(base){
+  const it = $(`#shorts .it[data-base="${base}"]`); if (!it) return;
+  const d = await (await fetch(`/studio/api/thumb/${NAME}?short=${encodeURIComponent(base)}`)).json();
+  const ta = it.querySelector(".stl"); const t = d.thumb || {};
+  if (!ta.value) ta.value = ((t.lines && t.lines.length) ? t.lines : (d.suggest.lines || [])).join("\n");
+  if (t.cover === false) it.querySelector(".stc").checked = false;
+  if (d.file){ const img = it.querySelector(".sth"); const el = document.createElement("img"); el.className = "sth"; el.src = fileUrl(d.file, d.mtime); img.replaceWith(el); }
+  it.querySelector(".hs").innerHTML = (d.hist || []).map(h => `<img src="${fileUrl(h.file, h.mtime)}" title="이걸로 쓰기" onclick="useShortThumb('${base}','${h.file}')">`).join("");
+  it.querySelector(".sti").innerHTML = (d.covered ? `첫 1초에 썸네일이 들어가 있습니다 <a href="#" onclick="restoreShort('${base}');return false">원래 영상으로 되돌리기</a>` : "") + (t.used_model ? ` · ${esc(t.used_model)}` : "");
+}
+function shortThumbBody(it){
+  return {lines: it.querySelector(".stl").value.split("\n").map(x => x.trim()).filter(Boolean), mode: $("#th_mode").value === "plain" ? "plain" : $("#th_mode").value,
+          provider: $("#th_prov").value, quality: $("#th_quality").value, person: $("#th_person").value, use_refs: $("#th_refs").checked, cover: it.querySelector(".stc").checked, style: $("#th_style").value};
+}
+async function makeShortThumb(btn){
+  const it = btn.closest(".it"); const base = it.dataset.base; const body = {...shortThumbBody(it), short: base};
+  if (!body.lines.length){ alert("썸네일 문구를 넣어주세요"); return; }
+  btn.disabled = true; const d = await post(`/studio/api/thumb/${NAME}`, body); btn.disabled = false;
+  if (!d.ok){ alert(d.error); return; }
+  if (body.mode === "plain") loadShorts(); else startPoll();
+}
+async function uploadShortThumb(inp){
+  const it = inp.closest(".it"); if (!inp.files[0]) return; const fd = new FormData(); fd.append("file", inp.files[0]); fd.append("short", it.dataset.base); fd.append("cover", it.querySelector(".stc").checked ? "1" : "0");
+  const d = await (await fetch(`/studio/api/thumb/${NAME}`, {method:"POST", body: fd})).json(); if (!d.ok){ alert(d.error); return; } loadShorts();
+}
+async function useShortThumb(base, f){ const d = await post(`/studio/api/thumb/${NAME}`, {short: base, use: f}); if (!d.ok){ alert(d.error || "실패"); return; } loadShorts(); }
+async function restoreShort(base){ if (!confirm("첫 1초의 썸네일을 빼고 원래 영상으로 되돌릴까요?")) return; const d = await post(`/studio/api/thumb/${NAME}`, {short: base, restore: true}); if (!d.ok){ alert(d.error || "실패"); return; } loadShorts(); }
 async function saveShortUrl(btn){
   const inp = btn.parentElement.querySelector("input");
   const d = await post("/studio/api/short_url", {name: NAME, key: inp.dataset.key, url: inp.value.trim(), title: inp.dataset.title});

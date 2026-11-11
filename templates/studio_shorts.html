@@ -50,7 +50,7 @@
     {% for s in g.shorts %}
     <div class="s" data-key="{{ s.key }}">
       <div class="pv">
-        <video controls preload="none" src="{{ url_for('studio.file', name=g.long.name, fn=s.file) }}?v={{ s.mtime }}" {% if s.poster %}poster="{{ url_for('studio.file', name=g.long.name, fn=s.poster) }}?v={{ s.mtime }}"{% endif %}></video>
+        <video controls preload="none" src="{{ url_for('studio.file', name=g.long.name, fn=s.file) }}?v={{ s.mtime }}" {% if s.thumb %}poster="{{ url_for('studio.file', name=g.long.name, fn=s.thumb) }}?v={{ s.mtime }}"{% elif s.poster %}poster="{{ url_for('studio.file', name=g.long.name, fn=s.poster) }}?v={{ s.mtime }}"{% endif %}></video>
         {% if s.slide %}<a class="no" href="{{ url_for('studio.edit', name=g.long.name) }}#s{{ s.slide }}" title="본편 #{{ s.slide }} 장면">#{{ s.slide }}</a>{% endif %}
         {% if s.dur %}<span class="dur">{{ s.dur }}초</span>{% endif %}
       </div>
@@ -61,6 +61,7 @@
       </div>
       <div class="ft">
         <a class="btn sm ghost" href="{{ url_for('studio.file', name=g.long.name, fn=s.file) }}?dl=1">mp4 받기</a>
+        {% if s.thumb %}<a class="btn sm ghost" href="{{ url_for('studio.file', name=g.long.name, fn=s.thumb) }}?dl=1">썸네일</a>{% else %}<a class="btn sm ghost" href="{{ url_for('studio.edit', name=g.long.name) }}" title="편집 화면의 쇼츠 탭에서 만듭니다">썸네일 만들기 →</a>{% endif %}
         {% if s.url %}<a class="btn sm ghost" href="{{ s.url }}" target="_blank" rel="noopener">▶ 열기</a>{% endif %}
       </div>
     </div>
