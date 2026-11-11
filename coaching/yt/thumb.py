@@ -60,13 +60,17 @@ def providers():
     return {"replicate": bool(_rkey()), "openai": bool(_key())}
 
 # Replicate: 日本語の文字が得意な順。先頭が失敗したら次へ
-R_MODELS = [m for m in os.environ.get("REPLICATE_IMAGE_MODELS", "bytedance/seedream-4,qwen/qwen-image-2512,ideogram-ai/ideogram-v3-turbo").split(",") if m]
+R_MODELS = [m for m in os.environ.get("REPLICATE_IMAGE_MODELS", "bytedance/seedream-4.5,google/nano-banana-pro,bytedance/seedream-4,qwen/qwen-image-2512").split(",") if m]
 
 def _r_input(model, prompt, refs, quality, vert=False):
     ar = "9:16" if vert else "16:9"
     """モデルごとの入力。参照画像は data URI で渡す（Replicate はファイル入力に data URI を受け付ける）"""
     if model.startswith("bytedance/seedream"):
         inp = {"prompt": prompt, "size": "2K", "aspect_ratio": ar, "max_images": 1}
+        if refs: inp["image_input"] = [_data_uri(f) for f in refs[:3]]
+        return inp
+    if model.startswith("google/nano-banana"):                       # Gemini 3 Pro Image: 多言語の文字に強い。参照画像は最大 14 枚
+        inp = {"prompt": prompt, "aspect_ratio": ar, "resolution": "2K", "output_format": "png"}
         if refs: inp["image_input"] = [_data_uri(f) for f in refs[:3]]
         return inp
     if model.startswith("qwen/"):
