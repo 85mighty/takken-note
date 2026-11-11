@@ -91,11 +91,39 @@ def _multipart(fields, files):
     body.write(f"--{b}--\r\n".encode())
     return body.getvalue(), f"multipart/form-data; boundary={b}"
 
-def _call(prompt, refs, quality="medium", log=print):
+PREFER = ["gpt-image-2", "gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini", "dall-e-3"]
+
+def available_models(log=print):
+    """この鍵で使える画像モデル（/v1/models から）。gpt-image 系は組織の本人確認が済んでいないと出てこない"""
+    import urllib.request
+    try:
+        req = urllib.request.Request("https://api.openai.com/v1/models", headers={"Authorization": "Bearer " + _key()})
+        with urllib.request.urlopen(req, timeout=30) as r: ids = [m["id"] for m in json.load(r).get("data", [])]
+        return [m for m in ids if m.startswith("gpt-image") or m.startswith("dall-e")]
+    except Exception as e:
+        log(f"  모델 목록 조회 실패 ({str(e)[:80]}) → 순서대로 시도"); return None
+
+def pick_model(log=print):
+    env = os.environ.get("OPENAI_IMAGE_MODEL")
+    avail = available_models(log)
+    if env and (avail is None or env in avail): return env
+    if avail is not None:
+        for m in PREFER:
+            if m in avail: return m
+        for m in avail:
+            if m.startswith("gpt-image"): return m
+        if avail: return avail[0]
+    return "gpt-image-1"
+
+def _call(prompt, refs, quality="medium", log=print, model=None):
     import urllib.request, urllib.error
     hdr = {"Authorization": "Bearer " + _key()}
-    model = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
-    if refs:
+    model = model or pick_model(log)
+    log(f"  모델: {model}")
+    if model.startswith("dall-e"):                                   # 参照画像・品質指定が違う。日本語文字も苦手
+        body = {"model": model, "prompt": prompt[:3900], "size": "1792x1024", "quality": "hd" if quality == "high" else "standard", "response_format": "b64_json", "n": 1}
+        req = urllib.request.Request("https://api.openai.com/v1/images/generations", data=json.dumps(body).encode(), headers={"Content-Type": "application/json", **hdr})
+    elif refs:
         log(f"  참고 썸네일 {len(refs)}장과 함께 생성 (images/edits)")
         files = [("image[]", (os.path.basename(f), open(f, "rb").read(), "image/png")) for f in refs]
         data, ct = _multipart({"model": model, "prompt": prompt + "\n参考画像はこのチャンネルの既存サムネイル。文字の太さ・色づかい・レイアウトの密度を同じ雰囲気にする（内容はコピーしない）。",
@@ -109,8 +137,11 @@ def _call(prompt, refs, quality="medium", log=print):
     except urllib.error.HTTPError as e:
         try: detail = json.loads(e.read().decode("utf-8", "replace")).get("error", {}).get("message", "")[:300]
         except Exception: detail = e.reason
+        if e.code in (400, 403, 404) and ("does not exist" in detail or "not have access" in detail or "verif" in detail.lower()) and model != "dall-e-3":
+            log(f"  {model} 사용 불가 ({detail[:120]}) → dall-e-3 로 다시 시도")
+            return _call(prompt, [], quality, log, model="dall-e-3")
         raise RuntimeError(f"OpenAI HTTP {e.code}: {detail}")
-    return base64.b64decode(d["data"][0]["b64_json"])
+    return base64.b64decode(d["data"][0]["b64_json"]), model
 
 def _to_169(raw):
     from PIL import Image
@@ -210,11 +241,16 @@ def make_ai(spec, cfg, log=print):
     mode = cfg.get("mode") or "ai"
     if not _key(): raise RuntimeError("OpenAI 키(.openai_api_key)가 없습니다")
     refs = references(spec) if cfg.get("use_refs", True) else []
+    model = pick_model(log)
+    if mode == "ai" and model.startswith("dall-e"):                 # dall-e は日本語の文字を正しく描けない → 背景だけ描かせて文字は合成
+        log("  ※ gpt-image 系が使えない鍵です（OpenAI の組織認証が未了の可能性）。dall-e-3 で背景を描き、文字は合成します")
+        mode = "ai_bg"; refs = []
     pr = prompt_for(spec, cfg, with_text=(mode == "ai"))
     log(f"썸네일 생성 ({mode}, {cfg.get('quality') or 'medium'}) …\n{pr}")
-    raw = _call(pr, refs, cfg.get("quality") or "medium", log)
+    raw, used = _call(pr, refs, cfg.get("quality") or "medium", log, model=model)
     im = _to_169(raw)
-    if mode == "ai_bg": im = compose(im, cfg)
+    if mode == "ai_bg" or used.startswith("dall-e"): im = compose(im, cfg)
+    spec.setdefault("thumb", {})["used_model"] = used
     return _save(spec, im)
 
 if __name__ == "__main__":
