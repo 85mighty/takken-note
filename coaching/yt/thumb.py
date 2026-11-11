@@ -129,7 +129,81 @@ def references(spec, n=2):
         if os.path.exists(f) and (th.get("custom") or th.get("mode") in ("ai", "ai_bg")): out.append((os.path.getmtime(f), f))
     return [f for _, f in sorted(out, reverse=True)[:n]]
 
+# スタイルのプリセット（docs/THUMB_STYLE.md のマスタープロンプトをもとに。スタジオのドロップダウンで選ぶ）
+PRESETS = {
+    "guide":   {"label": "가이드 표준 (빨강 배너 + 노랑 헤드라인 + 파랑 띠)",
+                "bg": "日本の都市や住宅、試験問題・解答用紙・教科書・オフィスなど、テーマに合う写真またはフォトリアルな背景。文字が目立つよう背景のコントラストを落とす",
+                "extra": ""},
+    "number":  {"label": "숫자 중심 (합격점·시간·금액을 최대 크기로)",
+                "bg": "宅建の解答用紙、赤丸、シンプルな折れ線グラフ、カレンダー、時計",
+                "extra": "強調コピーの数字を画面でいちばん大きな要素にする。数字は黄色か赤で、タイトルより大きく。"},
+    "compare": {"label": "비교형 (○ vs × 좌우 2분할)",
+                "bg": "画面を左右または上下に2分割し、片方を青系（○・重なる・できる）、片方を赤系（×・重ならない・できない）で対比させる。試験用紙や教科書のアイコン",
+                "extra": "補足テキストを2つの区画にそれぞれ置き、○と×の大きな記号を添える。"},
+    "career":  {"label": "취업·취득 후 현실 (비즈니스 인물 + 오피스)",
+                "bg": "自信のある、または驚いた表情の日本の20〜40代ビジネスパーソンの写真風人物、日本のオフィス街の高層ビル、宅建士証・履歴書・チェックリストのアイコン",
+                "extra": "人物は右側 3 分の 1、文字は左側。給与・費用などの数字は黄色で大きく。"},
+    "study":   {"label": "공부법·직전 대비 (책상·시계·달력)",
+                "bg": "勉強机、教科書と過去問、時計、カレンダー、考え込む受験生（写真風）",
+                "extra": "時間や日数の数字を大きく。補足は「平日2h／休日4h」のような小さな計画カードで。"},
+    "person":  {"label": "인물 사진 중심 (기존 방식)", "bg": None, "extra": ""},
+    "news":    {"label": "뉴스 속보풍 (붉은 띠 + 긴급감)",
+                "bg": "テレビのニュース速報のような赤いテロップ帯と白抜き文字、背景は試験会場や官公庁・都市の写真を暗めに",
+                "extra": "最上部に赤い帯で上部ラベル、画面中央に白抜きの巨大なメインコピー、下部に青い情報帯。装飾は最小限で緊急感を出す。"},
+}
+
+def _guide_prompt(spec, cfg, vert, with_text, preset):
+    """THUMB_STYLE.md のマスタープロンプト（横）/ ショート用プロンプト（縦）に、動画の情報を差し込む"""
+    lines = [l for l in cfg.get("lines") or [] if l.strip()][:3]
+    # 行の使い方: 3行なら 1〜2行目がメインコピー・3行目が強調、2行なら 1行目がメイン・2行目が強調
+    main = ("　".join(lines[:-1]) if len(lines) >= 3 else (lines[0] if lines else (spec.get("label") or "").split("｜")[0]))
+    emph = lines[-1] if len(lines) >= 2 else ""
+    pts = [x for x in (cfg.get("points") or []) if x.strip()][:3]
+    badge = (cfg.get("badge") or "").strip()
+    person = PERSON.get(cfg.get("person") or "woman")
+    theme = (spec.get("label") or spec.get("topic") or "")[:100]
+    bg = preset["bg"]
+    if person and preset["bg"] and "人物" not in preset["bg"]: bg += f"。{person}の写真風の人物を1人、脇役として配置"
+    if not person: bg += "。人物は入れない"
+    if vert:
+        p = ["YouTube Shorts用の縦長9:16サムネイルを1枚制作。",
+             "日本の宅建・資格試験解説チャンネルらしい赤・黄・濃紺の高コントラストなポップ系サムネイル。", ""]
+        if with_text:
+            p += [f"最重要文字：{main}" + (f"／{emph}" if emph else ""),
+                  f"上部ラベル：{badge}" if badge else "上部ラベル：なし",
+                  "補足：" + ("／".join(pts) if pts else "なし"), "",
+                  "最重要文字を画面の中央に極端に大きく配置し、太い黒フチと白フチ、強い影を付ける。"]
+        else:
+            p += ["文字・数字・ロゴは一切描かない。上 3 分の 1 と最下部 20% は後から文字を載せるので空けておく。"]
+        p += [f"周囲に関連するビジュアルを少数配置：{bg}。", preset["extra"],
+              "小さなスマホ画面で一瞬で意味が分かる構図。細かい情報を詰め込みすぎない。",
+              "画面右側や下部に重なるアプリUIを考慮し、重要な文字は中央寄り。",
+              "自然な日本語を正確に記し、指定外の数字や断定は追加しない。誤字・文字化け・無関係なロゴ・透かしを入れない。"]
+        return "\n".join(x for x in p if x is not None)
+    p = ["日本の宅建・資格試験・不動産業界を扱うYouTubeチャンネル向けに、非常に目立つ、プロ品質のサムネイル画像を1枚制作してください。", "",
+         f"【動画テーマ】\n{theme}", "", "【画像サイズ・向き】\n横長16:9", ""]
+    if with_text:
+        p += ["【画像内に入れる文字：この表記を厳密に守る】",
+              f"最上部：{badge}" if badge else "最上部：なし",
+              f"最重要タイトル：{main}",
+              f"強調する数字や問い：{emph}" if emph else "強調する数字や問い：なし",
+              "補足テキスト：" + (" / ".join(pts) if pts else "なし"), ""]
+    else:
+        p += ["【文字】\n文字・数字・ロゴは一切描かない。左側 6 割と最下部 20% は後から文字を載せるので、明るく単純な空間にして要素を置かない。", ""]
+    p += ["【ビジュアルスタイル】",
+          "日本の人気資格試験解説YouTubeのような、強烈に視認性が高い赤・黄色・濃紺・白・黒のインパクトあるデザイン。",
+          "重要な文字を極太の日本語ゴシック体で大きく配置。文字には太い黒フチ、細い白フチ、強いドロップシャドウ。",
+          "メインタイトルは画面の最重要要素とし、スマホの小さな画面でも読める。",
+          "鮮やかな赤い見出し帯、黄色いブラシストローク、紺色の情報帯、チェックマークや矢印、光のアクセントを適度に使う。",
+          preset["extra"], "",
+          f"【背景】\n{bg}", "",
+          "【配置】\n中心に巨大なメインコピー、右側に関連ビジュアル、下部に短い補足情報カードまたはバナー。重要な要素を端で切らない。十分な余白を確保する。", "",
+          "【禁止事項】\n誤字、文字化け、架空の数字、指定していない文字、意味のない細かい文字、無関係なロゴ、透かし、過度な装飾は入れない。想像で統計・合格点・採用条件を補完しない。実在企業のロゴは入れない。必ず1枚の完成したサムネイルを出力する。"]
+    return "\n".join(x for x in p if x is not None)
+
 def prompt_for(spec, cfg, with_text=True, vert=False):
+    preset = PRESETS.get(cfg.get("preset") or "guide") or PRESETS["guide"]
+    if preset["bg"] is not None: return _guide_prompt(spec, cfg, vert, with_text, preset)
     lines = [l for l in cfg.get("lines") or [] if l.strip()][:3]
     person = PERSON.get(cfg.get("person") or "woman")
     cols = ["白い文字に濃紺の太いフチ", "黄色い文字に赤の太いフチ", "赤い文字に白の太いフチと黒い影"]
@@ -369,12 +443,22 @@ def apply_cover(mp4, png, raw=None, sec=1.0, log=print):
     log(f"  쇼츠 첫 {sec:g}초에 썸네일을 넣었습니다: {os.path.basename(mp4)}")
     return mp4
 
+MODEL_CHOICES = [("auto", "자동 (Replicate 순서 → 없으면 OpenAI)"), ("gpt-image-2", "OpenAI gpt-image-2"), ("bytedance/seedream-4.5", "Replicate Seedream 4.5"),
+                 ("google/nano-banana-pro", "Replicate Nano Banana Pro"), ("bytedance/seedream-4", "Replicate Seedream 4"), ("qwen/qwen-image-2512", "Replicate Qwen-Image 2512"),
+                 ("ideogram-ai/ideogram-v3-turbo", "Replicate Ideogram v3"), ("gpt-image-1", "OpenAI gpt-image-1"), ("dall-e-3", "OpenAI dall-e-3 (글자는 합성)")]
+
 def make_ai(spec, cfg, log=print, short=None):
     """short=<key> なら 9:16 のショート用サムネイル（出力は shorts/<key>_thumb.png）"""
+    global R_MODELS
     vert = bool(short)
     mode = cfg.get("mode") or "ai"
     av = providers()
     prov = cfg.get("provider") or "auto"
+    want = cfg.get("model") or "auto"                                 # ドロップダウンで選んだモデル
+    if want != "auto":
+        prov = "openai" if (want.startswith("gpt-image") or want.startswith("dall-e")) else "replicate"
+        if prov == "replicate": R_MODELS = [want] + [m for m in R_MODELS if m != want]
+        else: os.environ["OPENAI_IMAGE_MODEL"] = want
     if prov == "auto": prov = "replicate" if av["replicate"] else "openai"
     if prov == "replicate" and not av["replicate"]: raise RuntimeError("Replicate 토큰(.replicate_api_token)이 없습니다")
     if prov == "openai" and not av["openai"]: raise RuntimeError("OpenAI 키(.openai_api_key)가 없습니다")
