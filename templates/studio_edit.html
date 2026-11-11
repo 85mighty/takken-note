@@ -244,9 +244,12 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   </div>
   <div id="props"></div>
 </div></div>
-<h3 id="slides-h">대본 (슬라이드)</h3>
+<details id="slides-box" ontoggle="slidesToggled()">
+<summary style="cursor:pointer;font-size:17px;font-weight:800;color:var(--pri);padding:10px 0;list-style:none;display:flex;align-items:center;gap:10px"><span class="tri">▸</span> 대본 (슬라이드) <span id="sl-n" class="hint" style="font-weight:normal"></span><span class="hint" style="font-weight:normal;margin-left:auto">펼쳐서 장면별로 편집 · 쇼츠로 만들기</span></summary>
 <p class="hint">빨간 테두리 = 지난번 출력 이후 바뀐 슬라이드. 본문은 HTML. 일러스트는 「공간 있는 곳만」 자동으로 들어갑니다 (배치는 자동 / 위 가운데 / 오른쪽에 두고 본문 왼쪽 / 없음 중 선택).</p>
 <div id="slides"></div>
+</details>
+<style>#slides-box[open] summary .tri{transform:rotate(90deg)} #slides-box summary .tri{display:inline-block;transition:transform .15s} #slides-box summary::-webkit-details-marker{display:none}</style>
 </div>
 <script>
 const NAME = {{ name|tojson }}, STEPS = {{ steps|tojson }};
@@ -262,9 +265,23 @@ async function load(){
   spec = d.spec; rows = d.rows; video = d.video; draft = d.draft;
   if (!REG) REG = await (await fetch("/studio/api/registry")).json();
   setDirty(false); render(); fillMeta(); stepper(); showTab(tab || (video ? "final" : "draft")); showJob(d.job); loadYtext(); loadShorts(); loadThumb();
-  autoPreview();
+  $("#sl-n").textContent = `${spec.slides.length}장`;
+  if (!slidesInit){ slidesInit = true; let open = false; try { open = localStorage.getItem("studio_slides_" + NAME) === "1"; } catch(e){}
+    if (/^#s\d+$/.test(location.hash)) open = true;
+    if (open) $("#slides-box").open = true; }
+  if ($("#slides-box").open) autoPreview();
+  if (/^#s\d+$/.test(location.hash)){ const el = document.querySelector(location.hash); if (el) setTimeout(() => el.scrollIntoView({behavior:"smooth"}), 300); }
 }
-let pvBusy = false;
+let pvBusy = false, slidesInit = false;
+function slidesToggled(){
+  const o = $("#slides-box").open; try { localStorage.setItem("studio_slides_" + NAME, o ? "1" : "0"); } catch(e){}
+  if (o && spec) autoPreview();
+}
+document.addEventListener("click", e => {                       // 쇼츠 카드의 「장면 #9」 같은 링크는 접힌 대본을 펼치고 이동
+  const a = e.target.closest('a[href^="#s"]'); if (!a) return;
+  const el = document.querySelector(a.getAttribute("href")); if (!el) return;
+  $("#slides-box").open = true; e.preventDefault(); setTimeout(() => el.scrollIntoView({behavior:"smooth"}), 50);
+});
 async function autoPreview(){            // 画像がないスライドは開いたときに順に描く（ボタンを押さなくてよい）
   if (pvBusy) return; pvBusy = true;
   try {
