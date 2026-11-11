@@ -373,6 +373,13 @@ function showJob(j){
   if (!j || !j.name){ el.textContent = "대기 중"; return; }
   const st = j.running ? `<b>${esc(j.label)} 실행 중…</b> ${j.elapsed}초` : (j.rc === 0 ? `<b>${esc(j.label)} 완료</b>` : (j.rc === -15 ? `<b>${esc(j.label)} 중지됨</b>` : `<b>${esc(j.label)} 종료 (코드 ${j.rc})</b>`));
   $("#stopbtn").style.display = j.running ? "" : "none";
+  if (j.name !== NAME){                              // 作業欄は全体で1つ。別の動画の作業はそれと分かるように短く出す
+    const other = `<a href="/studio/v/${encodeURIComponent(j.name)}">${esc(j.name)}</a>`;
+    el.innerHTML = j.running
+      ? `<span style="color:#8a6d1a">⏳ 지금 <b>다른 영상</b>(${other})의 작업이 진행 중입니다: ${esc(j.label)} ${j.elapsed}초. 끝나면 이 영상의 버튼을 누를 수 있습니다.</span>`
+      : `<span style="color:#777">이 영상의 진행 중인 작업은 없습니다. (마지막 작업은 다른 영상 ${other}의 「${esc(j.label)}」${j.rc === 0 ? " 완료" : ""} — 결과는 그 영상 페이지에 있습니다)</span>`;
+    if (j.running) startPoll(); return;
+  }
   el.innerHTML = `${st}　${esc(j.name)}\n` + esc(j.log); el.scrollTop = el.scrollHeight;
   if (j.running) startPoll();
 }
@@ -418,7 +425,7 @@ async function uploadThumb(inp){
 }
 async function loadShorts(){
   const d = await (await fetch(`/studio/api/shorts/${NAME}`)).json();
-  if (!d.shorts.length) return;
+  if (!d.shorts.length){ $("#shorts").innerHTML = `<div style="color:#777;font-size:13px">아직 이 영상의 쇼츠가 없습니다. 위의 「쇼츠 만들기 (AI가 핵심 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>`; return; }
   $("#shorts").innerHTML = d.shorts.map(s => `<div><video controls preload="none" src="${fileUrl(s.file, s.mtime)}"></video>
     <a class="btn" href="${fileUrl(s.file, s.mtime)}&dl=1">다운로드</a><pre>${esc(s.text)}</pre></div>`).join("");
 }
