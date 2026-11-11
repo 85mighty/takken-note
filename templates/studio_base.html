@@ -11,7 +11,10 @@ html{font-size:15px}
 body{margin:0;font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 a{color:var(--pri)}
 /* ---- 상단 내비: 롱폼 / 쇼츠 / 주제 + 보조 메뉴 + 작업 표시 ---- */
-nav.sn{background:var(--nav);color:#fff;display:flex;align-items:center;gap:4px;padding:0 18px;height:52px;position:sticky;top:0;z-index:20}
+nav.sn{background:var(--nav);color:#fff;display:flex;align-items:center;gap:4px;padding:0 18px;height:52px;position:sticky;top:0;z-index:20;white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+nav.sn::-webkit-scrollbar{display:none}
+@media(max-width:480px){nav.sn .brand .full{display:none}}
+@media(max-width:640px){nav.sn{padding:0 10px}nav.sn .brand{font-size:13px;margin-right:8px}nav.sn a.tab{padding:0 10px;font-size:14px}nav.sn .more summary{padding:6px 6px}main{padding:14px 10px 60px}}
 nav.sn .brand{font-weight:800;color:#ffd166;margin-right:18px;letter-spacing:.2px;text-decoration:none;font-size:15px}
 nav.sn a.tab{color:#c9d3e6;text-decoration:none;padding:0 14px;height:52px;display:flex;align-items:center;font-weight:700;border-bottom:3px solid transparent;font-size:15px}
 nav.sn a.tab.on{color:#fff;border-bottom-color:#ffd166}
@@ -66,7 +69,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid #bcd0f2;border-color:v
 </head>
 <body>
 <nav class="sn">
-  <a class="brand" href="{{ url_for('studio.index') }}">NIPPONリアル 스튜디오</a>
+  <a class="brand" href="{{ url_for('studio.index') }}">NIPPON<span class="full">リアル 스튜디오</span></a>
   <a class="tab {% if request.endpoint in ('studio.index','studio.edit') and not short_target %}on{% endif %}" href="{{ url_for('studio.index') }}">롱폼</a>
   <a class="tab short {% if request.endpoint == 'studio.shorts_page' or short_target %}on{% endif %}" href="{{ url_for('studio.shorts_page') }}">쇼츠</a>
   <a class="tab {% if request.endpoint == 'studio.topics_page' %}on{% endif %}" href="{{ url_for('studio.topics_page') }}">주제·아이디어</a>
