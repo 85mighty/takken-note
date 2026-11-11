@@ -51,6 +51,65 @@ def _key():
     import illust
     return illust._key(".openai_api_key", "OPENAI_API_KEY")
 
+def _rkey():
+    import illust
+    return illust._key(".replicate_api_token", "REPLICATE_API_TOKEN")
+
+def providers():
+    return {"replicate": bool(_rkey()), "openai": bool(_key())}
+
+# Replicate: 日本語の文字が得意な順。先頭が失敗したら次へ
+R_MODELS = [m for m in os.environ.get("REPLICATE_IMAGE_MODELS", "bytedance/seedream-4,qwen/qwen-image-2512,ideogram-ai/ideogram-v3-turbo").split(",") if m]
+
+def _r_input(model, prompt, refs, quality):
+    """モデルごとの入力。参照画像は data URI で渡す（Replicate はファイル入力に data URI を受け付ける）"""
+    if model.startswith("bytedance/seedream"):
+        inp = {"prompt": prompt, "size": "2K", "aspect_ratio": "16:9", "max_images": 1}
+        if refs: inp["image_input"] = [_data_uri(f) for f in refs[:3]]
+        return inp
+    if model.startswith("qwen/"):
+        return {"prompt": prompt, "aspect_ratio": "16:9", "output_format": "png", "go_fast": quality != "high"}
+    if model.startswith("ideogram-ai/"):
+        inp = {"prompt": prompt, "aspect_ratio": "16:9", "magic_prompt_option": "Off"}
+        if refs: inp["style_reference_images"] = [_data_uri(f) for f in refs[:3]]
+        return inp
+    return {"prompt": prompt, "aspect_ratio": "16:9"}
+
+def _data_uri(path):
+    from PIL import Image
+    im = Image.open(path).convert("RGB"); im.thumbnail((1024, 1024))
+    b = io.BytesIO(); im.save(b, "JPEG", quality=85)
+    return "data:image/jpeg;base64," + base64.b64encode(b.getvalue()).decode()
+
+def _replicate(prompt, refs, quality="medium", log=print):
+    """Replicate の公式モデルを同期実行（Prefer: wait → 足りなければ urls.get をポーリング）。戻り値 (画像bytes, 使ったモデル)"""
+    import urllib.request, urllib.error
+    hdr = {"Authorization": "Bearer " + _rkey(), "Content-Type": "application/json", "Prefer": "wait=60"}
+    last = None
+    for model in R_MODELS:
+        try:
+            log(f"  Replicate 모델: {model}" + (f" (참고 {len(refs)}장)" if refs else ""))
+            body = json.dumps({"input": _r_input(model, prompt, refs, quality)}).encode()
+            req = urllib.request.Request(f"https://api.replicate.com/v1/models/{model}/predictions", data=body, headers=hdr)
+            with urllib.request.urlopen(req, timeout=120) as r: pred = json.load(r)
+            t0 = time.time()
+            while pred.get("status") in ("starting", "processing") and time.time() - t0 < 240:
+                time.sleep(2)
+                req = urllib.request.Request(pred["urls"]["get"], headers={"Authorization": "Bearer " + _rkey()})
+                with urllib.request.urlopen(req, timeout=60) as r: pred = json.load(r)
+            if pred.get("status") != "succeeded":
+                raise RuntimeError(f"{pred.get('status')}: {str(pred.get('error'))[:200]}")
+            out = pred["output"]; url = out[0] if isinstance(out, list) else out
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "takken-studio"}), timeout=120) as r: return r.read(), model
+        except urllib.error.HTTPError as e:
+            try: detail = json.loads(e.read().decode("utf-8", "replace")).get("detail") or ""
+            except Exception: detail = e.reason
+            last = f"{model}: HTTP {e.code} {str(detail)[:160]}"; log(f"  ✗ {last}")
+            if e.code in (401, 402): break                                # 鍵・残高の問題は次のモデルでも同じ
+        except Exception as e:
+            last = f"{model}: {str(e)[:160]}"; log(f"  ✗ {last}")
+    raise RuntimeError("Replicate 실패: " + (last or "모델 없음"))
+
 def references(spec, n=2):
     """スタイル参照: ほかの動画で「自分で上げた」または「AIで作って採用した」サムネイル（新しい順に n 枚）"""
     import vkit as V
@@ -239,18 +298,29 @@ def _save(spec, im, out=None):
 
 def make_ai(spec, cfg, log=print):
     mode = cfg.get("mode") or "ai"
-    if not _key(): raise RuntimeError("OpenAI 키(.openai_api_key)가 없습니다")
+    av = providers()
+    prov = cfg.get("provider") or "auto"
+    if prov == "auto": prov = "replicate" if av["replicate"] else "openai"
+    if prov == "replicate" and not av["replicate"]: raise RuntimeError("Replicate 토큰(.replicate_api_token)이 없습니다")
+    if prov == "openai" and not av["openai"]: raise RuntimeError("OpenAI 키(.openai_api_key)가 없습니다")
     refs = references(spec) if cfg.get("use_refs", True) else []
-    model = pick_model(log)
-    if mode == "ai" and model.startswith("dall-e"):                 # dall-e は日本語の文字を正しく描けない → 背景だけ描かせて文字は合成
-        log("  ※ gpt-image 系が使えない鍵です（OpenAI の組織認証が未了の可能性）。dall-e-3 で背景を描き、文字は合成します")
-        mode = "ai_bg"; refs = []
-    pr = prompt_for(spec, cfg, with_text=(mode == "ai"))
-    log(f"썸네일 생성 ({mode}, {cfg.get('quality') or 'medium'}) …\n{pr}")
-    raw, used = _call(pr, refs, cfg.get("quality") or "medium", log, model=model)
+    quality = cfg.get("quality") or "medium"
+    if prov == "replicate":
+        pr = prompt_for(spec, cfg, with_text=(mode == "ai"))
+        log(f"썸네일 생성 (Replicate, {mode}) …\n{pr}")
+        raw, used = _replicate(pr, refs, quality, log)
+    else:
+        model = pick_model(log)
+        if mode == "ai" and model.startswith("dall-e"):             # dall-e は日本語の文字を正しく描けない → 背景だけ描かせて文字は合成
+            log("  ※ gpt-image 系が使えない鍵です（OpenAI の組織認証が未了の可能性）。dall-e-3 で背景を描き、文字は合成します")
+            mode = "ai_bg"; refs = []
+        pr = prompt_for(spec, cfg, with_text=(mode == "ai"))
+        log(f"썸네일 생성 (OpenAI, {mode}, {quality}) …\n{pr}")
+        raw, used = _call(pr, refs, quality, log, model=model)
     im = _to_169(raw)
     if mode == "ai_bg" or used.startswith("dall-e"): im = compose(im, cfg)
     spec.setdefault("thumb", {})["used_model"] = used
+    log(f"  사용 모델: {used}")
     return _save(spec, im)
 
 if __name__ == "__main__":

@@ -33,3 +33,4 @@ coaching/yt/illust_provider.txt
 .pexels_api_key
 .pixabay_api_key
 .env.studio
+.replicate_api_token

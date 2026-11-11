@@ -151,6 +151,7 @@
   ],
   "person": "man",
   "quality": "high",
-  "use_refs": true
+  "use_refs": true,
+  "provider": "auto"
  }
 }

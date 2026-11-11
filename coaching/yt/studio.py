@@ -533,13 +533,14 @@ def api_thumb(name):
                 if not lines: return jsonify(ok=False, error="문구를 넣어주세요"), 400
                 cfg = {"lines": lines, "style": a.get("style") or "navy", "mode": a.get("mode") or "plain", "badge": (a.get("badge") or "").strip(),
                        "points": [str(x).strip() for x in (a.get("points") or []) if str(x).strip()][:3], "person": a.get("person") or "woman",
-                       "quality": a.get("quality") if a.get("quality") in ("medium", "high", "low") else "medium", "use_refs": bool(a.get("use_refs", True))}
+                       "quality": a.get("quality") if a.get("quality") in ("medium", "high", "low") else "medium", "use_refs": bool(a.get("use_refs", True)),
+                       "provider": a.get("provider") if a.get("provider") in ("replicate", "openai", "auto") else "auto"}
                 sp["thumb"] = cfg; _write(p, sp)
                 if cfg["mode"] in ("ai", "ai_bg"):                       # OpenAI は 30〜90 秒かかるので裏の作業に
                     return _start(name, "thumb", "썸네일 (AI)", ["thumb.py", p, "--ai"])
                 thumb.make(sp, lines, cfg["style"], tp)
     hist = sorted(glob.glob(os.path.join(out, "thumb_hist", "*.png")), key=os.path.getmtime, reverse=True)[:8]
-    res = {"ok": True, "thumb": sp.get("thumb") or {}, "suggest": thumb.suggest(sp), "openai": bool(thumb._key()),
+    res = {"ok": True, "thumb": sp.get("thumb") or {}, "suggest": thumb.suggest(sp), "openai": bool(thumb._key()), "providers": thumb.providers(),
            "hist": [{"file": "thumb_hist/" + os.path.basename(h), "mtime": int(os.path.getmtime(h))} for h in hist], "refs": len(thumb.references(sp))}
     if not os.path.exists(tp): return jsonify(file=None, **res)
     return jsonify(file="thumbnail.png", mtime=int(os.path.getmtime(tp)), **res)
