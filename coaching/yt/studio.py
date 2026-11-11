@@ -2,7 +2,7 @@
 """スタジオ (/studio) — テーマ選び → 台本 → 下書き動画 → 音声で完成 → YouTube 文面 → ブログ → ショート
   studio_app.py (ポート 8789) から読み込む。重い処理（書き出し・AI・発行）は1つずつ裏で動かし、ログを画面に出す。
 """
-import json, os, re, subprocess, sys, tempfile, threading, time
+import glob, json, os, re, subprocess, sys, tempfile, threading, time
 from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory
 
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
@@ -513,6 +513,7 @@ def api_topics():
 # ---------------- thumbnail ----------------
 @bp.route("/api/thumb/<name>", methods=["GET", "POST"])
 def api_thumb(name):
+    import thumb
     p = _spec_path(name); sp = _load(name); out = _outdir(sp); tp = os.path.join(out, "thumbnail.png")
     if request.method == "POST":
         if "file" in request.files:                                   # 自分で作った画像を使う (ChatGPT など)
@@ -522,14 +523,26 @@ def api_thumb(name):
             os.makedirs(out, exist_ok=True); im.save(tp)
             sp.setdefault("thumb", {})["custom"] = True; _write(p, sp)
         else:
-            import thumb
             a = request.get_json(force=True) or {}
-            lines = [str(x) for x in (a.get("lines") or []) if str(x).strip()]
-            if not lines: return jsonify(ok=False, error="문구를 넣어주세요"), 400
-            sp["thumb"] = {"lines": lines, "style": a.get("style") or "navy"}; _write(p, sp)
-            thumb.make(sp, lines, sp["thumb"]["style"], tp)
-    if not os.path.exists(tp): return jsonify(ok=True, file=None, thumb=sp.get("thumb") or {})
-    return jsonify(ok=True, file="thumbnail.png", mtime=int(os.path.getmtime(tp)), thumb=sp.get("thumb") or {})
+            if a.get("use"):                                            # 履歴から選び直す
+                src = os.path.join(out, "thumb_hist", _safe(os.path.basename(a["use"])))
+                if not os.path.exists(src): abort(404)
+                import shutil; shutil.copyfile(src, tp)
+            else:
+                lines = [str(x) for x in (a.get("lines") or []) if str(x).strip()]
+                if not lines: return jsonify(ok=False, error="문구를 넣어주세요"), 400
+                cfg = {"lines": lines, "style": a.get("style") or "navy", "mode": a.get("mode") or "plain", "badge": (a.get("badge") or "").strip(),
+                       "points": [str(x).strip() for x in (a.get("points") or []) if str(x).strip()][:3], "person": a.get("person") or "woman",
+                       "quality": a.get("quality") if a.get("quality") in ("medium", "high", "low") else "medium", "use_refs": bool(a.get("use_refs", True))}
+                sp["thumb"] = cfg; _write(p, sp)
+                if cfg["mode"] in ("ai", "ai_bg"):                       # OpenAI は 30〜90 秒かかるので裏の作業に
+                    return _start(name, "thumb", "썸네일 (AI)", ["thumb.py", p, "--ai"])
+                thumb.make(sp, lines, cfg["style"], tp)
+    hist = sorted(glob.glob(os.path.join(out, "thumb_hist", "*.png")), key=os.path.getmtime, reverse=True)[:8]
+    res = {"ok": True, "thumb": sp.get("thumb") or {}, "suggest": thumb.suggest(sp), "openai": bool(thumb._key()),
+           "hist": [{"file": "thumb_hist/" + os.path.basename(h), "mtime": int(os.path.getmtime(h))} for h in hist], "refs": len(thumb.references(sp))}
+    if not os.path.exists(tp): return jsonify(file=None, **res)
+    return jsonify(file="thumbnail.png", mtime=int(os.path.getmtime(tp)), **res)
 
 # ---------------- YouTube / shorts ----------------
 @bp.route("/api/ytext/<name>")

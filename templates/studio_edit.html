@@ -149,22 +149,40 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   </div>
   <div class="pane" id="pane-th">
   <div class="card">
-    <h3>썸네일 (직접 올릴 때 쓰는 이미지)</h3>
-    <div style="display:grid;grid-template-columns:200px 1fr;gap:10px;align-items:start">
-      <div><img id="th_img" style="width:200px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:6px;background:#eee" alt=""><div class="hint" id="th_info">썸네일 없음</div><a id="th_dl" class="btn" style="display:none;margin-top:4px;font-size:12px;padding:4px 8px" href="#">썸네일 다운로드</a></div>
+    <h3>썸네일</h3>
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:start">
       <div>
-        <label style="margin-top:0">썸네일 문구 (줄마다 한 줄, 2~3줄 · 일본어)</label><textarea id="th_lines" style="min-height:66px;font-size:13px"></textarea>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">
-          <select id="th_style" style="width:auto"><option value="navy">남색</option><option value="red">빨강</option><option value="white">흰색</option></select>
-          <button onclick="makeThumb()">썸네일 만들기</button>
+        <img id="th_img" style="width:260px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:8px;background:#eee" alt="">
+        <div class="hint" id="th_info" style="margin-top:4px">썸네일 없음</div>
+        <a id="th_dl" class="btn" style="display:none;margin-top:6px;font-size:12px;padding:4px 10px" href="#">다운로드 (1280×720)</a>
+        <div id="th_hist" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px"></div>
+      </div>
+      <div>
+        <label style="margin-top:0">큰 글자 (줄마다 한 줄, 2~3줄 · 일본어) <span class="cp" style="cursor:pointer;color:var(--pri);font-size:11px;text-decoration:underline" onclick="thSuggest()">제목에서 자동 채우기</span></label><textarea id="th_lines" style="min-height:66px;font-size:13px"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label>오른쪽 위 빨간 배지 (예: 11月最新! / 11/8 実施)</label><input type="text" id="th_badge" placeholder="비우면 없음"></div>
+          <div><label>인물</label><select id="th_person" style="width:100%"><option value="woman">여성 (스ーツ)</option><option value="man">남성 (스ーツ)</option><option value="none">없음</option></select></div>
+        </div>
+        <label>아래 정보 박스 3개 (쉼표로 구분 · 각 9자 이내)</label><input type="text" id="th_points" placeholder="登録の手順, 3つの仕事, 年代別戦略">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+          <select id="th_mode" style="width:auto">
+            <option value="ai">AI 전체 생성 (OpenAI · 글자까지)</option>
+            <option value="ai_bg">AI 배경 + 글자는 정확히 합성</option>
+            <option value="plain">단색 배경 (API 없이)</option>
+          </select>
+          <select id="th_quality" style="width:auto" title="OpenAI 품질"><option value="medium">보통 (≈$0.06)</option><option value="high">고품질 (≈$0.25)</option></select>
+          <select id="th_style" style="width:auto;display:none"><option value="navy">남색</option><option value="red">빨강</option><option value="white">흰색</option></select>
+          <label style="margin:0;display:inline-flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" id="th_refs" checked> 기존 썸네일을 스타일 참고로 <span id="th_refn" class="hint"></span></label>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <button class="pri" onclick="makeThumb()" id="th_btn">썸네일 만들기</button>
           <label style="margin:0;display:inline"><input type="file" id="th_file" accept="image/*" style="display:none" onchange="uploadThumb(this)"><button onclick="$('#th_file').click()">내 이미지 올리기</button></label>
         </div>
-        <p class="hint">표지 슬라이드에 일러스트가 있으면 오른쪽에 같이 들어갑니다. ChatGPT 등으로 만든 이미지는 「내 이미지 올리기」로.</p>
+        <p class="hint" id="th_note">AI 생성은 30~90초 걸리고 끝나면 여기에 나옵니다. 마음에 안 들면 다시 눌러 몇 장 만들고, 왼쪽 아래 작은 그림(이력)에서 골라 쓰세요. 글자가 틀리면 「AI 배경 + 글자 합성」이 안전합니다.</p>
       </div>
     </div>
-    <p class="hint">업로드는 YouTube 스튜디오에서 직접 합니다. 올린 뒤 아래 「업로드한 영상 URL」에 주소만 넣어주세요(설명란·블로그 링크에 쓰입니다).</p>
+    <p class="hint">업로드는 YouTube 스튜디오에서 직접 합니다. 올린 뒤 「YouTube 문구」 탭의 「업로드한 영상 URL」에 주소만 넣어주세요.</p>
   </div>
-
   </div>
   <div class="pane" id="pane-bl">
   <div class="card">
@@ -415,7 +433,7 @@ function startPoll(){
   if (poll) return;
   poll = setInterval(async () => {
     const j = await (await fetch("/studio/api/job")).json(); showJob(j);
-    if (!j.running){ clearInterval(poll); poll = null; if (j.name === NAME){ if (j.kind === "draft") tab = "draft"; if (j.kind === "build") tab = "final"; load(); } }
+    if (!j.running){ clearInterval(poll); poll = null; if (j.name === NAME){ if (j.kind === "thumb"){ loadThumb(); showJob(j); return; } if (j.kind === "draft") tab = "draft"; if (j.kind === "build") tab = "final"; load(); } }
   }, 3000);
 }
 async function loadYtext(){
@@ -429,19 +447,38 @@ async function copyTxt(k){
   try { await navigator.clipboard.writeText(t); alert("복사했습니다"); } catch(e){ prompt("복사해 주세요", t); }
 }
 async function setProv(v){ const d = await post("/studio/api/illust_provider", {provider: v}); if (d.ok) alert("일러스트 생성처: " + d.provider + " (모든 영상에 적용)"); }
+let TH = null;
 async function loadThumb(){
-  const d = await (await fetch(`/studio/api/thumb/${NAME}`)).json();
-  if (d.file){ $("#th_img").src = fileUrl(d.file, d.mtime); $("#th_info").textContent = d.thumb.custom ? "내 이미지" : "자동 생성"; $("#th_dl").href = fileUrl(d.file, d.mtime) + "&dl=1"; $("#th_dl").style.display = "inline-block"; }
+  const d = await (await fetch(`/studio/api/thumb/${NAME}`)).json(); TH = d;
+  if (d.file){ $("#th_img").src = fileUrl(d.file, d.mtime); $("#th_info").textContent = d.thumb.custom ? "내 이미지" : ({ai:"AI 생성", ai_bg:"AI 배경 + 글자 합성", plain:"단색 배경"}[d.thumb.mode] || "자동 생성"); $("#th_dl").href = fileUrl(d.file, d.mtime) + "&dl=1"; $("#th_dl").style.display = "inline-block"; }
   else { $("#th_img").removeAttribute("src"); $("#th_info").textContent = "썸네일 없음"; $("#th_dl").style.display = "none"; }
-  if (d.thumb && d.thumb.lines && !$("#th_lines").value) $("#th_lines").value = d.thumb.lines.join("\n");
-  if (d.thumb && d.thumb.style) $("#th_style").value = d.thumb.style;
-  if (!$("#th_lines").value){ const t = (spec.youtube||{}).title || spec.label || ""; $("#th_lines").value = t.replace(/[【】｜|]/g, "\n").split("\n").map(x => x.trim()).filter(Boolean).slice(0, 3).join("\n"); }
+  const t = d.thumb || {};
+  if (t.lines && !$("#th_lines").value) $("#th_lines").value = t.lines.join("\n");
+  if (t.badge != null && !$("#th_badge").value) $("#th_badge").value = t.badge;
+  if (t.points && !$("#th_points").value) $("#th_points").value = t.points.join(", ");
+  if (t.person) $("#th_person").value = t.person;
+  if (t.mode) $("#th_mode").value = t.mode; else if (!d.openai) $("#th_mode").value = "plain";
+  if (t.quality) $("#th_quality").value = t.quality;
+  if (t.style) $("#th_style").value = t.style;
+  if (!$("#th_lines").value) thSuggest();
+  $("#th_refn").textContent = d.refs ? `(${d.refs}장 있음)` : "(아직 없음)";
+  $("#th_hist").innerHTML = (d.hist || []).map(h => `<img src="${fileUrl(h.file, h.mtime)}" title="이걸로 쓰기" style="width:60px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:4px;cursor:pointer" onclick="useThumb('${h.file}')">`).join("");
+  thMode();
+  if (!d.openai){ [...$("#th_mode").options].forEach(o => { if (o.value !== "plain") o.disabled = true; }); $("#th_note").textContent = "OpenAI 키(.openai_api_key)가 없어 AI 생성은 쓸 수 없습니다. 단색 배경이나 내 이미지 올리기를 쓰세요."; }
 }
+function thSuggest(){ const s = (TH && TH.suggest) || {}; if (s.lines && s.lines.length) $("#th_lines").value = s.lines.join("\n"); if (s.badge) $("#th_badge").value = s.badge; if (s.points && s.points.length) $("#th_points").value = s.points.join(", "); }
+function thMode(){ const m = $("#th_mode").value; $("#th_style").style.display = m === "plain" ? "" : "none"; $("#th_quality").style.display = m === "plain" ? "none" : ""; $("#th_refs").parentElement.style.display = m === "plain" ? "none" : ""; }
+$("#th_mode").onchange = thMode;
 async function makeThumb(){
   const lines = $("#th_lines").value.split("\n").map(x => x.trim()).filter(Boolean);
-  const d = await post(`/studio/api/thumb/${NAME}`, {lines, style: $("#th_style").value});
-  if (!d.ok){ alert(d.error); return; } loadThumb();
+  const body = {lines, style: $("#th_style").value, mode: $("#th_mode").value, badge: $("#th_badge").value, person: $("#th_person").value,
+                points: $("#th_points").value.split(/[,、，]/).map(x => x.trim()).filter(Boolean), quality: $("#th_quality").value, use_refs: $("#th_refs").checked};
+  $("#th_btn").disabled = true;
+  const d = await post(`/studio/api/thumb/${NAME}`, body); $("#th_btn").disabled = false;
+  if (!d.ok){ alert(d.error); return; }
+  if (body.mode === "plain") loadThumb(); else startPoll();
 }
+async function useThumb(f){ const d = await post(`/studio/api/thumb/${NAME}`, {use: f}); if (!d.ok){ alert(d.error || "실패"); return; } loadThumb(); }
 async function uploadThumb(inp){
   if (!inp.files[0]) return; const fd = new FormData(); fd.append("file", inp.files[0]);
   const d = await (await fetch(`/studio/api/thumb/${NAME}`, {method:"POST", body: fd})).json();
