@@ -133,25 +133,104 @@ def _keys_status():
             "illust": illust.provider(), "illust_choice": illust.chosen(), "illust_avail": illust.providers(),
             "img": __import__("imgsearch").providers()}
 
-def _list(d):
+def _cover(spec, man, dman):
+    """一覧用のサムネイル: 自作サムネ → 完成の1枚目 → 下書きの1枚目"""
+    out = _outdir(spec)
+    if os.path.exists(os.path.join(out, "thumbnail.png")): return "thumbnail.png"
+    for m in (man, dman):
+        for sl in (m or {}).get("slides", [])[:1]:
+            if sl.get("thumb") and os.path.exists(os.path.join(out, sl["thumb"])): return sl["thumb"]
+    return None
+
+def _shorts_of(spec, reg=None):
+    """この動画から切り出したショート (out/<outdir>/shorts/*.mp4) と、その題名・概要欄・URL"""
+    import registry
+    reg = reg or registry.load()
+    d = os.path.join(_outdir(spec), "shorts"); out = []
+    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        if not f.endswith(".mp4"): continue
+        base = os.path.join(d, f[:-4]); txt = open(base + ".txt", encoding="utf-8").read() if os.path.exists(base + ".txt") else ""
+        m = re.search(r"【タイトル】\n(.+)", txt); title = m.group(1).strip() if m else f[:-4]
+        m = re.search(r"【概要欄】\n(.+)", txt); desc = m.group(1).strip() if m else ""
+        m = re.search(r"_s(\d+)$", f[:-4]); slide = int(m.group(1)) if m else None
+        poster = base + "_poster.jpg"
+        if not os.path.exists(poster):
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "0.3", "-i", base + ".mp4", "-frames:v", "1", "-vf", "scale=360:-2", poster], check=False)
+        key = f"{spec['name']}_{f[:-4].split('_')[-1]}" if slide else f[:-4]
+        v = registry.get(reg, key) or {}
+        out.append({"file": "shorts/" + f, "poster": "shorts/" + os.path.basename(poster) if os.path.exists(poster) else None, "text": txt,
+                    "title": title, "desc": desc, "slide": slide, "key": key, "url": v.get("url", ""),
+                    "mtime": int(os.path.getmtime(base + ".mp4")), "dur": _dur(base + ".mp4")})
+    return out
+
+def _dur(p):
+    try:
+        import vkit as V; return round(V.dur(p))
+    except Exception: return None
+
+def _list(d, reg=None):
+    import registry
+    reg = reg or registry.load()
     items = []
     for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
         if not f.endswith(".json") or f.startswith("TMP"): continue
         try: sp = json.load(open(os.path.join(d, f), encoding="utf-8"))
         except Exception as e:                                      # 壊れた spec は印を付けて並べる（一覧全体は落とさない）
-            items.append({"name": f[:-5], "label": f"⚠ {f} 읽기 실패: {e}", "n": 0, "status": "script", "total": None, "built_at": None, "created": "", "blog": "", "broken": True}); continue
-        man = _manifest(sp)
+            items.append({"name": f[:-5], "label": f"⚠ {f} 읽기 실패: {e}", "n": 0, "status": "script", "total": None, "built_at": None, "created": "", "blog": "", "broken": True,
+                          "thumb": None, "url": "", "shorts": [], "is_short": False, "short_target": None, "related": []}); continue
+        man = _manifest(sp); dman = _draftman(sp); v = registry.get(reg, sp["name"]) or {}
         items.append({"name": sp["name"], "label": sp.get("label", sp["name"]), "n": len(sp["slides"]), "status": sp.get("status", "script"),
                       "total": man["total"] if man else None, "built_at": man["built_at"] if man else None,
-                      "created": sp.get("created_at", ""), "blog": (sp.get("blog") or {}).get("url", "")})
+                      "created": sp.get("created_at", ""), "blog": (sp.get("blog") or {}).get("url", ""),
+                      "url": (sp.get("youtube") or {}).get("url") or v.get("url", ""), "thumb": _cover(sp, man, dman),
+                      "is_short": bool(sp.get("short_target")), "short_target": sp.get("short_target"),
+                      "video": (man or {}).get("video") if man and os.path.exists(os.path.join(_outdir(sp), man.get("video", ""))) else None,
+                      "shorts": _shorts_of(sp, reg) if not sp.get("short_target") else [], "related": sp.get("related") or [], "archived": d == ARCH})
     return items
+
+def _labels(reg=None):
+    """動画名 → 表示名（spec / URL 台帳のどちらにあっても引ける）"""
+    import registry
+    reg = reg or registry.load(); lab = {}
+    for v in reg["videos"]: lab[v["key"]] = v.get("label") or v.get("yt_title") or v["key"]
+    for d in (SPECS, ARCH):
+        for f in os.listdir(d) if os.path.isdir(d) else []:
+            if f.endswith(".json") and not f.startswith("TMP"):
+                try: sp = json.load(open(os.path.join(d, f), encoding="utf-8")); lab[sp["name"]] = sp.get("label", sp["name"])
+                except Exception: pass
+    return lab
 
 # ---------------- pages ----------------
 @bp.route("/")
 def index():
-    import topics
-    items = sorted(_list(SPECS), key=lambda x: x["created"], reverse=True)
-    import glob
+    """롱폼 목록. 쇼츠용 spec (short_target 있음) 은 쇼츠 탭에"""
+    import registry
+    reg = registry.load()
+    items = sorted(_list(SPECS, reg) + _list(ARCH, reg), key=lambda x: x["created"], reverse=True)
+    longs = [x for x in items if not x["is_short"]]
+    urls = {x["name"]: x["url"] for x in items}
+    return render_template("studio_index.html", items=longs, steps=STEPS, labels=_labels(reg), urls=urls, keys=_keys_status())
+
+@bp.route("/shorts")
+def shorts_page():
+    """쇼츠 탭: 本編(롱폼)별로 묶어서. 쇼츠 전용 spec 도 본편 아래에"""
+    import registry
+    reg = registry.load()
+    items = sorted(_list(SPECS, reg) + _list(ARCH, reg), key=lambda x: x["created"], reverse=True)
+    by = {x["name"]: x for x in items}
+    groups = []
+    for x in items:
+        if x["is_short"]: continue
+        specs = [y for y in items if y["is_short"] and y["short_target"] == x["name"]]
+        groups.append({"long": x, "shorts": x["shorts"], "short_specs": specs})
+    orphan = [y for y in items if y["is_short"] and y["short_target"] not in by]
+    uploaded = [v for v in reg["videos"] if v.get("short") and v.get("url") and not v.get("parent")]
+    return render_template("studio_shorts.html", groups=groups, orphan=orphan, uploaded=uploaded, labels=_labels(reg), keys=_keys_status())
+
+@bp.route("/topics")
+def topics_page():
+    """주제 후보・벤치마크・학습 자료 블로그 (만들기 전 단계)"""
+    import topics, glob
     bfiles = glob.glob(os.path.join(BENCH, "videos_*.json"))
     bench_at = time.strftime("%Y-%m-%d %H:%M", time.localtime(max(os.path.getmtime(f) for f in bfiles))) if bfiles else ""
     sys.path.insert(0, os.path.join(ROOT, "coaching", "blog"))
@@ -159,13 +238,15 @@ def index():
     st = study_posts.state()
     study = [{"slug": p["slug"], "title": p["title"], "url": (st.get(p["slug"]) or {}).get("url", ""), "at": (st.get(p["slug"]) or {}).get("at", "")}
              for p in study_posts.posts()]
-    return render_template("studio_index.html", items=items, bench_at=bench_at, study=study, archived=_list(ARCH), topics=topics.load()["topics"],
-                           steps=STEPS, keys=_keys_status(), bench=os.path.exists(os.path.join(BENCH, "summary.html")))
+    return render_template("studio_topics.html", bench_at=bench_at, study=study, topics=topics.load()["topics"], keys=_keys_status(),
+                           bench=os.path.exists(os.path.join(BENCH, "summary.html")))
 
 @bp.route("/v/<name>")
 def edit(name):
     sp = _load(name)
-    return render_template("studio_edit.html", name=name, label=sp.get("label", name), steps=STEPS,
+    tgt = sp.get("short_target")
+    return render_template("studio_edit.html", name=name, label=sp.get("label", name), steps=STEPS, short_target=tgt,
+                           short_target_label=_labels().get(tgt, tgt) if tgt else None,
                            archived=_spec_path(name).startswith(ARCH), keys=_keys_status())
 
 @bp.route("/scripts")
@@ -458,13 +539,19 @@ def api_ytext(name):
 
 @bp.route("/api/shorts/<name>")
 def api_shorts(name):
-    sp = _load(name); d = os.path.join(_outdir(sp), "shorts"); out = []
-    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
-        if f.endswith(".mp4"):
-            txt = os.path.join(d, f[:-4] + ".txt")
-            out.append({"file": "shorts/" + f, "text": open(txt, encoding="utf-8").read() if os.path.exists(txt) else "",
-                        "mtime": int(os.path.getmtime(os.path.join(d, f)))})
-    return jsonify(ok=True, shorts=out)
+    sp = _load(name)
+    return jsonify(ok=True, shorts=_shorts_of(sp))
+
+@bp.route("/api/short_url", methods=["POST"])
+def api_short_url():
+    """ショートをアップロードしたら URL を台帳に (key = <本編名>_sNN, parent = 本編名)"""
+    import registry
+    a = request.get_json(force=True) or {}
+    name, key, url, title = _safe(a.get("name", "")), str(a.get("key", "")), (a.get("url") or "").strip(), a.get("title") or ""
+    if not key.startswith(name): abort(400)
+    if url and not re.match(r"https://(youtu\.be|(www\.)?youtube\.com)/", url): return jsonify(ok=False, error="YouTube URL 을 넣어주세요"), 400
+    reg = registry.load(); registry.upsert(reg, key, label=title or None, url=url, short=True, parent=name); registry.save(reg)
+    return jsonify(ok=True)
 
 # ---------------- style / registry ----------------
 @bp.route("/api/illust_provider", methods=["POST"])

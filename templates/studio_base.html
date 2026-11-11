@@ -5,29 +5,101 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}스튜디오{% endblock %}</title>
 <style>
+:root{--bg:#f3f4f7;--card:#fff;--line:#e3e6ec;--ink:#1c2230;--mute:#6b7280;--pri:#1a3d7c;--pri-2:#eef3fb;--short:#c0392b;--short-2:#fdeeec;--ok:#1f7a45;--ok-2:#e8f6ee;--warn:#8a6d1a;--warn-2:#fff6d6;--nav:#121c33;--r:12px}
 *{box-sizing:border-box}
-body{margin:0;font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;background:#f5f6f8;color:#111}
-nav.sn{background:#0f1b33;color:#fff;display:flex;align-items:center;gap:6px;padding:10px 16px;flex-wrap:wrap}
-nav.sn .brand{font-weight:bold;margin-right:14px;color:#ffd166}
-nav.sn a{color:#dfe6f3;text-decoration:none;padding:6px 10px;border-radius:6px}
-nav.sn a.on,nav.sn a:hover{background:#1a3d7c;color:#fff}
-nav.sn .sp{margin-left:auto;font-size:12px;color:#9fb0cc}
-main{padding:16px}
-a{color:#1a3d7c}
+html{font-size:15px}
+body{margin:0;font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+a{color:var(--pri)}
+/* ---- 상단 내비: 롱폼 / 쇼츠 / 주제 + 보조 메뉴 + 작업 표시 ---- */
+nav.sn{background:var(--nav);color:#fff;display:flex;align-items:center;gap:4px;padding:0 18px;height:52px;position:sticky;top:0;z-index:20}
+nav.sn .brand{font-weight:800;color:#ffd166;margin-right:18px;letter-spacing:.2px;text-decoration:none;font-size:15px}
+nav.sn a.tab{color:#c9d3e6;text-decoration:none;padding:0 14px;height:52px;display:flex;align-items:center;font-weight:700;border-bottom:3px solid transparent;font-size:15px}
+nav.sn a.tab.on{color:#fff;border-bottom-color:#ffd166}
+nav.sn a.tab:hover{color:#fff}
+nav.sn a.tab.short.on{border-bottom-color:#ff7b6b}
+nav.sn .more{margin-left:auto;position:relative}
+nav.sn .more summary{list-style:none;cursor:pointer;color:#c9d3e6;padding:6px 10px;border-radius:8px;font-size:13px}
+nav.sn .more summary::-webkit-details-marker{display:none}
+nav.sn .more[open] summary,nav.sn .more summary:hover{background:#1f2d4d;color:#fff}
+nav.sn .more .menu{position:absolute;right:0;top:36px;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.15);min-width:190px;padding:6px;display:flex;flex-direction:column}
+nav.sn .more .menu a{color:var(--ink);text-decoration:none;padding:8px 10px;border-radius:7px;font-size:14px}
+nav.sn .more .menu a:hover{background:var(--pri-2);color:var(--pri)}
+nav.sn .jobchip{font-size:12px;color:#ffd166;text-decoration:none;padding:5px 10px;border:1px solid #3b4a6b;border-radius:999px;margin-right:6px;display:none;white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis}
+nav.sn .jobchip.run{display:inline-block;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+main{padding:22px 18px 60px}
+.w{max-width:1180px;margin:0 auto}
+/* ---- 공통 부품 ---- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:0 0 14px}
+.card h3{margin:0 0 10px;font-size:15px;color:var(--pri)}
+h2.pg{margin:0 0 4px;font-size:22px}
+p.lead{margin:0 0 16px;color:var(--mute);font-size:14px}
+.btn,button.btn{padding:7px 14px;border-radius:9px;border:1px solid var(--pri);background:#fff;color:var(--pri);font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:14px;line-height:1.2;font-family:inherit}
+.btn.pri{background:var(--pri);color:#fff}
+.btn.short{border-color:var(--short);color:var(--short)}
+.btn.short.pri{background:var(--short);color:#fff}
+.btn.sm{padding:4px 10px;font-size:12px;border-radius:7px}
+.btn.ghost{border-color:var(--line);color:var(--ink);font-weight:600}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 9px;border-radius:999px;background:#eef0f4;color:#4b5563;text-decoration:none;white-space:nowrap}
+.chip.ok{background:var(--ok-2);color:var(--ok)}
+.chip.pri{background:var(--pri-2);color:var(--pri)}
+.chip.short{background:var(--short-2);color:var(--short)}
+.chip.warn{background:var(--warn-2);color:var(--warn)}
+.chip a{color:inherit;text-decoration:none}
+.hint{font-size:12px;color:var(--mute)}
+.warnbox{background:var(--warn-2);border-left:5px solid #e0a800;padding:8px 12px;border-radius:8px;font-size:13px;margin:0 0 14px}
+.job{background:#0f1b33;color:#dfe6f3;border-radius:10px;padding:10px 12px;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;max-height:240px;overflow:auto}
+.job b{color:#ffd166}
+input[type=text],input[type=url],textarea,select{border:1px solid #cfd4dd;border-radius:8px;padding:7px 9px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+input:focus,textarea:focus,select:focus{outline:2px solid #bcd0f2;border-color:var(--pri)}
+/* 진행 단계 */
+.steps{display:flex;gap:3px;flex-wrap:wrap}
+.steps span{font-size:11px;padding:2px 8px;border-radius:999px;background:#eef0f4;color:#9aa3b2}
+.steps span.on{background:var(--pri);color:#fff}
+.steps span.cur{background:#ffd166;color:#222}
+/* 페이지 안 필터 탭 */
+.ftabs{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
+.ftabs button{padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--mute);font-weight:700;cursor:pointer;font-size:13px;font-family:inherit}
+.ftabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 </style>
 </head>
 <body>
 <nav class="sn">
-  <span class="brand">NIPPONリアル 스튜디오</span>
-  <a href="{{ url_for('studio.index') }}" {% if request.endpoint == 'studio.index' or request.endpoint == 'studio.edit' %}class="on"{% endif %}>영상</a>
-  <a href="{{ url_for('studio.scripts_page') }}" {% if request.endpoint == 'studio.scripts_page' %}class="on"{% endif %}>대본</a>
-  <a href="{{ url_for('studio.style_page') }}" {% if request.endpoint == 'studio.style_page' %}class="on"{% endif %}>자막 스타일</a>
-  <a href="{{ url_for('studio.registry_page') }}" {% if request.endpoint == 'studio.registry_page' %}class="on"{% endif %}>URL 대장</a>
-  <a href="{{ url_for('studio.bench') }}" {% if request.endpoint == 'studio.bench' %}class="on"{% endif %}>벤치마크</a>
-  {% if session.get('authed') %}<a class="sp" href="{{ url_for('logout') }}">로그아웃</a>{% endif %}
+  <a class="brand" href="{{ url_for('studio.index') }}">NIPPONリアル 스튜디오</a>
+  <a class="tab {% if request.endpoint in ('studio.index','studio.edit') and not short_target %}on{% endif %}" href="{{ url_for('studio.index') }}">롱폼</a>
+  <a class="tab short {% if request.endpoint == 'studio.shorts_page' or short_target %}on{% endif %}" href="{{ url_for('studio.shorts_page') }}">쇼츠</a>
+  <a class="tab {% if request.endpoint == 'studio.topics_page' %}on{% endif %}" href="{{ url_for('studio.topics_page') }}">주제·아이디어</a>
+  <details class="more">
+    <summary>⋯ 설정·도구</summary>
+    <div class="menu">
+      <a href="{{ url_for('studio.scripts_page') }}">대본 보관함</a>
+      <a href="{{ url_for('studio.style_page') }}">슬라이드 테마·자막 스타일</a>
+      <a href="{{ url_for('studio.registry_page') }}">URL 대장</a>
+      <a href="{{ url_for('studio.bench') }}">벤치마크</a>
+      {% if session.get('authed') %}<a href="{{ url_for('logout') }}">로그아웃</a>{% endif %}
+    </div>
+  </details>
+  <a class="jobchip" id="navjob" href="#"></a>
 </nav>
 <main>
 {% block body %}{% endblock %}
 </main>
+<script>
+// 상단의 작업 표시: 어느 페이지에 있어도 지금 돌아가는 작업과 그 영상이 보인다
+(function(){
+  const el = document.getElementById("navjob"); if (!el) return;
+  const esc = s => (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  async function tick(){
+    try {
+      const j = await (await fetch("/studio/api/job")).json();
+      if (j && j.running){ el.className = "jobchip run"; el.href = "/studio/v/" + encodeURIComponent(j.name); el.innerHTML = `● 작업 중: ${esc(j.label)} · ${esc(j.name)} · ${j.elapsed}초`; }
+      else el.className = "jobchip";
+    } catch(e){}
+  }
+  tick(); setInterval(tick, 5000);
+  document.addEventListener("click", e => { document.querySelectorAll("nav details[open]").forEach(d => { if (!d.contains(e.target)) d.removeAttribute("open"); }); });
+})();
+</script>
 </body>
 </html>

@@ -4,9 +4,15 @@
 <style>
 main{max-width:none!important}
 .ed{max-width:1400px;margin:0 auto}
-.bar{position:sticky;top:0;z-index:5;background:#f5f6f8;border-bottom:1px solid #ddd;padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar{position:sticky;top:52px;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ptabs{display:flex;gap:2px;border-bottom:2px solid var(--line);margin:0 0 12px}
+.ptabs button{border:0;background:none;padding:8px 12px;font-weight:800;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-2px;border-radius:0;font-size:14px}
+.ptabs button.on{color:var(--pri);border-bottom-color:var(--pri)}
+.ptabs button.short.on{color:var(--short);border-bottom-color:var(--short)}
+.pane{display:none}.pane.on{display:block}
+.crumb{font-size:13px;color:var(--mute)}.crumb a{text-decoration:none;font-weight:700}
 .bar h2{margin:0 10px 0 0;font-size:18px}
-button,.btn{padding:7px 13px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block;font-size:14px}
+button,.btn{padding:7px 13px;border-radius:8px;border:1px solid var(--pri);background:#fff;color:var(--pri);font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block;font-size:14px;font-family:inherit}
 button.pri,.btn.pri{background:#1a3d7c;color:#fff}
 button:disabled{opacity:.45;cursor:not-allowed}
 .dirty{color:#c0392b;font-weight:bold}
@@ -16,7 +22,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .stepper div.cur{background:#ffd166;color:#222}
 .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
 @media(max-width:960px){.grid{grid-template-columns:1fr}}
-.card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px 14px;margin:0 0 14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px}
 .card h3{margin:0 0 8px;font-size:16px;color:#1a3d7c}
 video{width:100%;background:#000;border-radius:8px}
 .tabs button{border-radius:8px 8px 0 0;border-bottom:0}
@@ -75,16 +81,19 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
 .edbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .sl.playing{outline:3px solid #ffd166}
 .shl{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.shl .it{border:1px solid var(--line);border-radius:10px;overflow:hidden}.shl .it .b{padding:8px;font-size:12px}.shl .it b{display:block;font-size:13px;margin-bottom:4px}.shl .it .u{display:flex;gap:4px;margin-top:6px}.shl .it .u input{flex:1;font-size:12px;padding:3px 6px;min-width:0}.shl .it .u button{padding:3px 8px;font-size:12px}
 .shl video{aspect-ratio:9/16;max-height:360px}
 .shl pre{white-space:pre-wrap;font-size:11px;background:#f5f5f5;padding:6px;border-radius:6px;max-height:120px;overflow:auto}
 </style>
 <div class="ed">
+<div class="crumb" style="margin:0 0 4px">{% if short_target %}<a href="{{ url_for('studio.shorts_page') }}">쇼츠</a> › 본편: <a href="{{ url_for('studio.edit', name=short_target) }}">{{ short_target_label }}</a>{% else %}<a href="{{ url_for('studio.index') }}">롱폼</a> › {{ name }}{% endif %}</div>
 <div class="bar">
   <h2>{{ label }}</h2>
   <button class="pri" onclick="save()">저장</button>
   <button onclick="resliceAll()" title="읽기 원고가 긴 슬라이드를 AI가 여러 장으로 나눕니다 (원고 내용은 바뀌지 않음)">AI로 전체 더 잘게</button>
   <span id="dirty"></span>
-  <a href="{{ url_for('studio.index') }}" style="margin-left:auto">← 목록</a>
+  {% if not short_target %}<a class="btn" style="margin-left:auto;border-color:var(--short);color:var(--short)" href="{{ url_for('studio.shorts_page') }}#{{ name }}">▮ 이 영상의 쇼츠 <span id="shn"></span></a>{% else %}<span style="margin-left:auto"></span>{% endif %}
+  <a href="{{ url_for('studio.index') }}">← 목록</a>
 </div>
 {% if archived %}<div class="warn">지난 영상입니다. 슬라이드의 「쇼츠로 만들기」로 홍보용 쇼츠를 만들 수 있습니다 (음성 있는 영상이 없으면 그 1장만 음성을 만듭니다).</div>{% endif %}
 <div class="stepper" id="stepper"></div>
@@ -99,11 +108,11 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   <div class="card"><div class="job" id="job">대기 중</div><div style="margin-top:6px"><button id="stopbtn" style="display:none;background:#c0392b;color:#fff;border-color:#c0392b" onclick="stopJob()">■ 이 작업 중지</button></div></div>
 </div>
 <div>
+  <div class="ptabs"><button class="on" data-p="make" onclick="pane('make')">제작</button><button data-p="yt" onclick="pane('yt')">YouTube 문구</button><button data-p="th" onclick="pane('th')">썸네일</button><button data-p="bl" onclick="pane('bl')">블로그</button><button class="short" data-p="sh" onclick="pane('sh')">쇼츠 <span id="shn2"></span></button></div>
+  <div class="pane on" id="pane-make">
   <div class="card">
     <h3>영상 만들기</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="run('short_auto',{n:1})" title="AI가 이 영상에서 가장 눈길을 끄는 장면 1개를 고르고 훅 문구를 붙여 세로 쇼츠로 만듭니다. 설명란에 본편 링크와 관련 영상이 들어갑니다" style="background:#c0392b;color:#fff;border-color:#c0392b">쇼츠 만들기 (AI가 핵심 장면 선택)</button>
-      <button onclick="run('short_auto',{n:3})" title="후보 3장면을 각각 쇼츠로">쇼츠 3개</button>
       <button onclick="run('illust',{i:0})" {% if keys.illust == 'none' %}disabled title="일러스트 키가 없습니다"{% endif %}>일러스트 만들기 (공간 있는 곳만)</button>
       <label style="display:inline-flex;align-items:center;gap:4px;margin:0;font-size:12px;color:#555">생성처
         <select id="ill_prov" style="width:auto;font-size:12px;padding:3px 6px" onchange="setProv(this.value)">
@@ -120,9 +129,10 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
     　<label style="display:inline" title="표의 행·항목·포인트 박스가 읽는 문장에 맞춰 차례로 나타납니다"><input type="checkbox" id="motoff"> 모션 끄기 (요소를 한 번에 표시)</label></p>
     <div id="dl"></div>
   </div>
-
+  </div>
+  <div class="pane" id="pane-yt">
   <div class="card">
-    <h3>④ YouTube 에 올릴 문구</h3>
+    <h3>YouTube 에 올릴 문구</h3>
     <label>제목 <span class="hint" id="tlen"></span></label><input type="text" id="yt_title">
     <label>설명란 템플릿 ({{ '{{chapters}}' }} 목차・{{ '{{blog}}' }} 블로그・{{ '{{related}}' }} 관련 영상 은 자동으로 들어갑니다)</label>
     <textarea class="desc" id="yt_desc"></textarea>
@@ -136,6 +146,8 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
     <p class="hint">URL 을 모르면 <a href="{{ url_for('studio.registry_page') }}">URL 대장</a> 의 「채널에서 가져오기」로 자동으로 채워집니다.</p>
   </div>
 
+  </div>
+  <div class="pane" id="pane-th">
   <div class="card">
     <h3>썸네일 (직접 올릴 때 쓰는 이미지)</h3>
     <div style="display:grid;grid-template-columns:200px 1fr;gap:10px;align-items:start">
@@ -153,8 +165,10 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
     <p class="hint">업로드는 YouTube 스튜디오에서 직접 합니다. 올린 뒤 아래 「업로드한 영상 URL」에 주소만 넣어주세요(설명란·블로그 링크에 쓰입니다).</p>
   </div>
 
+  </div>
+  <div class="pane" id="pane-bl">
   <div class="card">
-    <h3>⑤ 블로그 (takken.ekunblog.com)</h3>
+    <h3>블로그 (takken.ekunblog.com)</h3>
     <label>슬러그 (URL 끝부분・영문 소문자와 하이픈)</label><input type="text" id="bl_slug">
     <label>글 제목</label><input type="text" id="bl_title">
     <label>요약 (도입문・설명란 첫머리에도 사용)</label><textarea id="bl_ex" style="min-height:60px"></textarea>
@@ -166,7 +180,17 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
     <p class="hint">발행하면 글 URL 이 저장되어 YouTube 설명란의 「ブログで詳しく」에 자동으로 들어갑니다. 영상 URL 을 넣은 뒤 다시 누르면 글에 영상이 임베드됩니다.</p>
   </div>
 
-  <div class="card"><h3>쇼츠</h3><div id="shorts" class="shl"><span class="hint">아직 없습니다. 오른쪽 「쇼츠 만들기 (AI가 핵심 장면 선택)」 또는 1.대본 탭의 각 장면 「쇼츠로 만들기」로 만들 수 있습니다. 완성되면 여기에 mp4와 제목·설명·고정 댓글 문구가 나옵니다.</span></div></div>
+  </div>
+  <div class="pane" id="pane-sh">
+  <div class="card"><h3>이 영상에서 만든 쇼츠</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button onclick="run('short_auto',{n:1})" style="background:var(--short);color:#fff;border-color:var(--short)" {% if not keys.claude %}disabled{% endif %}>＋ 쇼츠 만들기 (AI가 핵심 장면 선택)</button>
+      <button onclick="run('short_auto',{n:3})" style="border-color:var(--short);color:var(--short)" {% if not keys.claude %}disabled{% endif %}>3개</button>
+      <a class="btn" href="{{ url_for('studio.shorts_page') }}#{{ name }}">쇼츠 탭에서 보기</a>
+    </div>
+    <p class="hint">장면을 직접 고르려면 아래 대본의 각 장면에 있는 「쇼츠로 만들기」. 올린 뒤 URL을 넣으면 본편 설명란·블로그에서 연결할 수 있습니다.</p>
+    <div id="shorts" class="shl"></div></div>
+  </div>
 </div>
 </div>
 
@@ -197,7 +221,7 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   </div>
   <div id="props"></div>
 </div></div>
-<h3>① 대본 (슬라이드)</h3>
+<h3 id="slides-h">대본 (슬라이드)</h3>
 <p class="hint">빨간 테두리 = 지난번 출력 이후 바뀐 슬라이드. 본문은 HTML. 일러스트는 「공간 있는 곳만」 자동으로 들어갑니다 (배치는 자동 / 위 가운데 / 오른쪽에 두고 본문 왼쪽 / 없음 중 선택).</p>
 <div id="slides"></div>
 </div>
@@ -272,7 +296,7 @@ function render(){
     const chars = (s.speech||"").length;
     const ok = r.state === "built" && !r.edited;
     const div = document.createElement("div");
-    div.className = "sl" + (ok ? "" : " mod");
+    div.className = "sl" + (ok ? "" : " mod"); div.id = "s" + i;
     div.innerHTML = `
       <div class="hd"><span class="no">#${i}</span>
         <span class="tm" data-t="${r.start ?? ""}">${r.in_video ? fmt(r.start) + "〜" + fmt(r.start + r.dur) + ` (${Math.round(r.dur)}초)` : (r.dstart != null ? "초안 " + fmt(r.dstart) : "영상에 미반영")}</span>
@@ -423,11 +447,24 @@ async function uploadThumb(inp){
   const d = await (await fetch(`/studio/api/thumb/${NAME}`, {method:"POST", body: fd})).json();
   if (!d.ok){ alert(d.error); return; } loadThumb();
 }
+function pane(k){
+  document.querySelectorAll(".ptabs button").forEach(b => b.classList.toggle("on", b.dataset.p === k));
+  document.querySelectorAll(".pane").forEach(p => p.classList.toggle("on", p.id === "pane-" + k));
+  try { localStorage.setItem("studio_pane_" + NAME, k); } catch(e){}
+}
+try { const k = localStorage.getItem("studio_pane_" + NAME); if (k && document.getElementById("pane-" + k)) pane(k); } catch(e){}
 async function loadShorts(){
   const d = await (await fetch(`/studio/api/shorts/${NAME}`)).json();
-  if (!d.shorts.length){ $("#shorts").innerHTML = `<div style="color:#777;font-size:13px">아직 이 영상의 쇼츠가 없습니다. 위의 「쇼츠 만들기 (AI가 핵심 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>`; return; }
-  $("#shorts").innerHTML = d.shorts.map(s => `<div><video controls preload="none" src="${fileUrl(s.file, s.mtime)}"></video>
-    <a class="btn" href="${fileUrl(s.file, s.mtime)}&dl=1">다운로드</a><pre>${esc(s.text)}</pre></div>`).join("");
+  const n = d.shorts.length; $("#shn") && ($("#shn").textContent = n ? `${n}개` : ""); $("#shn2").textContent = n ? `(${n})` : "";
+  if (!n){ $("#shorts").innerHTML = `<div class="hint">아직 이 영상의 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 핵심 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>`; return; }
+  $("#shorts").innerHTML = d.shorts.map(s => `<div class="it"><video controls preload="none" src="${fileUrl(s.file, s.mtime)}" ${s.poster ? `poster="${fileUrl(s.poster, s.mtime)}"` : ""}></video>
+    <div class="b"><b>${esc(s.title)}</b>${esc(s.desc)}<div class="hint">${s.slide ? `장면 <a href="#s${s.slide}">#${s.slide}</a> · ` : ""}${s.dur ? s.dur + "초 · " : ""}<a href="${fileUrl(s.file, s.mtime)}&dl=1">mp4 받기</a></div>
+    <div class="u"><input type="url" placeholder="올린 쇼츠 URL" value="${esc(s.url)}" data-key="${esc(s.key)}" data-title="${esc(s.title)}"><button onclick="saveShortUrl(this)">저장</button></div></div></div>`).join("");
+}
+async function saveShortUrl(btn){
+  const inp = btn.parentElement.querySelector("input");
+  const d = await post("/studio/api/short_url", {name: NAME, key: inp.dataset.key, url: inp.value.trim(), title: inp.dataset.title});
+  if (!d.ok){ alert(d.error || "저장 실패"); return; } btn.textContent = "저장됨"; setTimeout(() => btn.textContent = "저장", 1500);
 }
 // ---------- 배치 편집 (seido-tube 와 같은 방식) ----------
 const ED = {k:-1, ovs:[], sel:-1, SC:0.6, undo:[], redo:[]};

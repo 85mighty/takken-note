@@ -1,145 +1,83 @@
 {% extends "studio_base.html" %}
-{% block title %}스튜디오｜NIPPONリアル{% endblock %}
+{% block title %}롱폼｜스튜디오{% endblock %}
 {% block body %}
 <style>
-.w{max-width:1100px;margin:0 auto}
-.card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:14px 16px;margin:10px 0}
-h2{margin:18px 0 6px}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.btn{padding:7px 14px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block}
-.btn.pri{background:#1a3d7c;color:#fff}
-.btn:disabled{opacity:.5}
-.small{font-size:12px;color:#666}
-.tp{display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid #eee;padding:10px 0}
-.tp:first-child{border-top:0}
-.tp .t{font-weight:bold}
-.src{font-size:11px;padding:1px 7px;border-radius:9px;background:#eef;color:#335;margin-right:6px}
-.src.ai{background:#e8f6ee;color:#1f7a45}.src.chat{background:#fff3c4;color:#7a5a00}
-.refs{margin:6px 0;padding:6px 10px;background:#f7f9fc;border-radius:6px;font-size:13px}.refs a{color:#1a3d7c}
-.steps{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
-.steps span{font-size:11px;padding:2px 8px;border-radius:9px;background:#eee;color:#888}
-.steps span.on{background:#1a3d7c;color:#fff}
-.vid{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #eee;padding:10px 0}
-.vid:first-child{border-top:0}
-.vid a.t{font-weight:bold;font-size:16px;text-decoration:none}
-input[type=text],textarea,select{border:1px solid #ccc;border-radius:6px;padding:6px 8px;font-size:14px}
-.job{background:#0f1b33;color:#dfe6f3;border-radius:8px;padding:10px 12px;font:12px/1.45 monospace;white-space:pre-wrap;max-height:220px;overflow:auto;display:none}
-.warn{background:#fff3c4;border-left:6px solid #e0a800;padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0}
-details summary{cursor:pointer;color:#1a3d7c}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.v{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .15s}
+.v:hover{box-shadow:0 6px 22px rgba(20,30,60,.10)}
+.v .th{position:relative;aspect-ratio:16/9;background:#e9ecf2 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><text x='10' y='38' font-size='26' fill='%23b7bfcc'>▶</text></svg>") center/60px no-repeat;display:block}
+.v .th img{width:100%;height:100%;object-fit:cover;display:block}
+.v .th .dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font-size:12px;padding:1px 7px;border-radius:5px;font-weight:700}
+.v .th .st{position:absolute;left:8px;top:8px}
+.v .bd{padding:12px 14px 10px;display:flex;flex-direction:column;gap:8px;flex:1}
+.v .t{font-weight:800;font-size:15px;line-height:1.35;color:var(--ink);text-decoration:none}
+.v .t:hover{color:var(--pri)}
+.v .meta{font-size:12px;color:var(--mute)}
+.v .links{display:flex;gap:6px;flex-wrap:wrap}
+.v .rel{font-size:11.5px;color:var(--mute);border-top:1px dashed var(--line);padding-top:8px;margin-top:auto;line-height:1.5}
+.v .rel a{color:var(--pri);text-decoration:none}
+.v .rel a:hover{text-decoration:underline}
+.v .ft{display:flex;gap:6px;padding:10px 14px;border-top:1px solid var(--line);background:#fafbfd;align-items:center}
+.v .ft .sp{flex:1}
+.sec{font-size:13px;font-weight:800;color:var(--mute);margin:18px 0 8px;letter-spacing:.3px}
+.sec:first-of-type{margin-top:0}
 </style>
 <div class="w">
-{% if not keys.claude or not keys.tts or keys.illust == 'none' or not keys.wp %}
-<div class="warn">
-  {% if not keys.tts %}・음성(Google TTS) 키 <code>.google_api_key</code> 가 없습니다.<br>{% endif %}
-  {% if not keys.claude %}・AI(대본·주제 후보)에는 Claude 키 <code>.anthropic_api_key</code> 또는 서버의 Claude Code CLI 가 필요합니다. 채팅으로 대본을 만들 때는 필요 없습니다.<br>{% endif %}
-  {% if keys.illust == 'none' %}・일러스트 자동 생성에는 <code>.gemini_api_key</code>(추천) 또는 <code>.openai_api_key</code> / <code>.anthropic_api_key</code> 가 필요합니다.<br>{% endif %}
-  {% if not keys.wp %}・블로그 발행에는 <code>.wp_user</code> 와 <code>.wp_app_password</code> 가 필요합니다.{% endif %}
+<div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+  <div style="flex:1"><h2 class="pg">롱폼</h2><p class="lead" style="margin:0">만들고 있는 영상과 올린 영상. 각 카드에서 그 영상의 쇼츠·블로그·관련 영상으로 바로 갑니다.</p></div>
+  <a class="btn pri" href="{{ url_for('studio.topics_page') }}">＋ 새 영상 (주제에서 대본 만들기)</a>
 </div>
-{% endif %}
+{% if not keys.tts or not keys.claude %}<div class="warnbox">{% if not keys.tts %}음성(Google TTS) 키가 없어 「음성 넣어 완성」을 쓸 수 없습니다. {% endif %}{% if not keys.claude %}Claude 키가 없어 AI 대본·쇼츠 장면 선택을 쓸 수 없습니다.{% endif %}</div>{% endif %}
 
-<h2>① 만들 영상 고르기</h2>
-<div class="card">
-  <div class="row">
-    <input type="text" id="nt" placeholder="주제를 써서 추가 (예: 登録実務講習はいつ申し込む？)" style="flex:1;min-width:240px">
-    <select id="nm"><option value="6">6분</option><option value="8">8분</option><option value="10" selected>10분</option><option value="12">12분</option><option value="15">15분</option></select>
-    <button class="btn" onclick="addTopic()">추가</button>
-    <button class="btn pri" onclick="suggest()" {% if not keys.claude %}disabled title="Claude 키가 필요합니다"{% endif %}>잘 되는 주제에서 AI로 후보 뽑기</button>
-    {% if bench %}<a class="btn" href="{{ url_for('studio.bench') }}">벤치마크 보기</a>{% endif %}
-    <button class="btn" onclick="call({op:'bench'})" title="경쟁 채널 영상 목록·조회수를 새로 모읍니다 (수 분)">벤치마크 다시 수집</button>
-    <span class="small">{% if bench_at %}수집: {{ bench_at }}{% else %}벤치마크 데이터 없음 — 먼저 「벤치마크 다시 수집」{% endif %}</span>
-  </div>
-  <p class="small">채팅에서 정한 주제도 여기에 나옵니다. 「대본 만들기」를 누르면 AI가 대본·YouTube 문구·블로그 정보까지 만들어 아래 목록에 나옵니다.</p>
-  <div id="topics"></div>
-  <div class="job" id="job"></div><button class="btn" id="stopbtn" style="display:none;background:#c0392b;color:#fff;border-color:#c0392b;margin-top:6px" onclick="stopJob()">■ 이 작업 중지</button>
+<div class="ftabs" id="ft">
+  <button class="on" data-f="all">전체 <span class="hint" id="c_all"></span></button>
+  <button data-f="work">제작 중</button>
+  <button data-f="up">업로드 완료</button>
+  <button data-f="arch">지난 영상</button>
 </div>
 
-<h2>② 만들고 있는 영상</h2>
-<div class="card">
+<div class="grid" id="grid">
+{% set order = steps|map(attribute=0)|list %}
 {% for it in items %}
-  <div class="vid">
-    <div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a>
-      <div class="small">{{ it.n }}장{% if it.total %}・{{ (it.total//60)|int }}분 {{ (it.total%60)|int }}초{% endif %}{% if it.created %}・생성 {{ it.created }}{% endif %}</div>
-      <div class="steps">{% set ns = namespace(on=true) %}{% for k, lab in steps %}<span class="{{ 'on' if ns.on else '' }}">{{ lab }}</span>{% if k == it.status %}{% set ns.on = false %}{% endif %}{% endfor %}</div>
+{% set cur = order.index(it.status) if it.status in order else 0 %}
+<div class="v" data-state="{{ 'arch' if it.archived else ('up' if it.url else 'work') }}" data-name="{{ it.name }}">
+  <a class="th" href="{{ url_for('studio.edit', name=it.name) }}">
+    {% if it.thumb %}<img src="{{ url_for('studio.file', name=it.name, fn=it.thumb) }}" alt="" loading="lazy">{% endif %}
+    {% if it.total %}<span class="dur">{{ (it.total//60)|int }}:{{ '%02d'|format((it.total%60)|int) }}</span>{% endif %}
+    {% if it.archived %}<span class="st chip">지난 영상</span>{% elif it.url %}<span class="st chip ok">업로드 완료</span>{% else %}<span class="st chip warn">{{ steps[cur][1] }} 완료</span>{% endif %}
+  </a>
+  <div class="bd">
+    <a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a>
+    <div class="meta">{{ it.n }}장{% if it.created %} · {{ it.created[:10] }}{% endif %} · <span style="color:#9aa3b2">{{ it.name }}</span></div>
+    {% if not it.archived %}<div class="steps">{% for k, lab in steps %}<span class="{{ 'on' if loop.index0 <= cur else ('cur' if loop.index0 == cur+1 else '') }}">{{ lab }}</span>{% endfor %}</div>{% endif %}
+    <div class="links">
+      {% if it.url %}<a class="chip ok" href="{{ it.url }}" target="_blank" rel="noopener">▶ YouTube</a>{% endif %}
+      {% if it.blog %}<a class="chip pri" href="{{ it.blog }}" target="_blank" rel="noopener">✎ 블로그</a>{% endif %}
+      {% if it.shorts %}<a class="chip short" href="{{ url_for('studio.shorts_page') }}#{{ it.name }}">▮ 쇼츠 {{ it.shorts|length }}개</a>{% else %}<a class="chip" href="{{ url_for('studio.shorts_page') }}#{{ it.name }}" title="쇼츠 탭에서 이 영상의 쇼츠를 만들 수 있습니다">쇼츠 없음</a>{% endif %}
     </div>
-    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">열기 →</a>
+    {% if it.related %}<div class="rel">관련 영상:
+      {% for r in it.related %}<a href="{{ url_for('studio.edit', name=r) }}" title="{{ r }}">{{ labels.get(r, r)|truncate(22, True, '…') }}</a>{% if urls.get(r) %}<span style="color:var(--ok)" title="URL 등록됨">●</span>{% else %}<span style="color:#d9534f" title="URL 미등록 (설명란에 안 들어감)">○</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</div>{% endif %}
   </div>
+  <div class="ft">
+    <a class="btn sm pri" href="{{ url_for('studio.edit', name=it.name) }}">열기</a>
+    <a class="btn sm short" href="{{ url_for('studio.shorts_page') }}#{{ it.name }}">쇼츠</a>
+    <span class="sp"></span>
+    {% if it.video %}<a class="btn sm ghost" href="{{ url_for('studio.file', name=it.name, fn=it.video) }}?dl=1">mp4</a>{% endif %}
+  </div>
+</div>
 {% else %}
-  <p class="small">아직 없습니다. 위에서 주제를 골라 「대본 만들기」를 누르거나, 채팅으로 만든 대본이 들어오면 여기에 나옵니다.</p>
+<p class="hint">아직 영상이 없습니다. 「새 영상」에서 주제를 골라 대본을 만들어 주세요.</p>
 {% endfor %}
 </div>
-
-<h2>학습 자료 → 블로그 (takken.ekunblog.com)</h2>
-<div class="card">
-  <p class="small">학습 사이트(:8788)의 자료를 블로그 글로 올립니다. 영상에서 들어온 사람이 보는 용도라 보기 편한 형태로 만들었습니다. 오답 횟수·이유 같은 개인 기록은 올리지 않습니다.
-  같은 글이 있으면 갱신하므로 몇 번 눌러도 글은 1개씩입니다. 해설 영상 URL 이 URL 대장에 들어가 있으면 글에 영상이 임베드됩니다.</p>
-  {% for p in study %}<div class="vid"><div>{% if p.url %}<a class="t" href="{{ p.url }}" target="_blank" style="font-size:14px">{{ p.title }}</a><div class="small">발행 {{ p.at }}</div>{% else %}<span style="font-size:14px">{{ p.title }}</span><div class="small">미발행</div>{% endif %}</div></div>{% endfor %}
-  <p><button class="btn pri" onclick="if(confirm('학습 자료 글 {{ study|length }}개를 블로그에 발행(갱신)할까요? 음성·PDF 업로드 때문에 몇 분 걸립니다.')) call({op:'study'})">전부 발행·갱신</button></p>
-</div>
-
-<h2>지난 영상 (쇼츠 잘라내기용)</h2>
-<div class="card">
-  <details><summary>{{ archived|length }}편 — 열어서 슬라이드를 고르면 홍보용 쇼츠를 만들 수 있습니다</summary>
-  {% for it in archived %}
-  <div class="vid"><div><a class="t" href="{{ url_for('studio.edit', name=it.name) }}">{{ it.label }}</a><div class="small">{{ it.n }}장</div></div>
-    <a class="btn" href="{{ url_for('studio.edit', name=it.name) }}">쇼츠 만들기 →</a></div>
-  {% endfor %}
-  </details>
-</div>
-{% if bench_missing %}<div class="warn">벤치마크 분석이 아직 없습니다. VPS 에서 <code>bash coaching/bench/run_bench.sh</code> 를 실행하면 표시됩니다.</div>{% endif %}
 </div>
 <script>
-let TOPICS = {{ topics|tojson }}, JOB = null;
-const esc = s => (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const fmtV = n => n >= 10000 ? (n/10000).toFixed(1).replace(/\.0$/, "") + "만 회" : n + "회";
-const SRC = {ai:"AI 제안", chat:"채팅", manual:"직접 입력"};
-function draw(){
-  const box = document.getElementById("topics");
-  const list = TOPICS.filter(t => t.status !== "skip");
-  box.innerHTML = list.length ? "" : '<p class="small">후보가 아직 없습니다.</p>';
-  list.forEach(t => {
-    const d = document.createElement("div"); d.className = "tp";
-    d.innerHTML = `<div><span class="src ${t.source}">${SRC[t.source]||t.source}</span><span class="t">${esc(t.title)}</span>
-        <span class="small">・약 ${t.minutes||10}분</span>
-        ${t.why ? `<div class="small">${esc(t.why)}</div>` : ""}
-        ${(t.refs||[]).length ? `<div class="refs"><b>참고 영상</b>${t.refs.map(r => `<div>・<a href="${esc(r.url)}" target="_blank" rel="noopener">[${esc(r.channel)}] ${esc(r.title)}</a>
-            <span class="small">조회수 ${fmtV(r.views)} · 그 채널 평소의 ${r.ratio}배${r.date ? " · " + r.date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3") : ""}</span></div>`).join("")}</div>`
-          : (t.source === "ai" ? `<div class="small" style="color:#999">참고 영상 기록 없음 (출처 표시 전에 뽑은 후보)</div>` : "")}${t.notes ? `<details><summary class="small">방침 메모</summary><div class="small">${esc(t.notes)}</div></details>` : ""}</div>
-      <div class="row">${t.status === "done" && t.spec ? `<a class="btn" href="/studio/v/${t.spec}">대본 열기</a>`
-          : t.status === "making" && JOB && JOB.running && JOB.topic === t.id ? `<span class="small">대본 만드는 중… ${JOB.elapsed}초</span>`
-          : t.status === "making" ? `<span class="small" style="color:#c0392b">중단됨</span> <button class="btn pri" data-op="make">다시 만들기</button>`
-          : `<button class="btn pri" data-op="make" {% if not keys.claude %}disabled{% endif %}>대본 만들기</button>`}
-        <button class="btn" data-op="skip">보류</button></div>`;
-    d.querySelector('[data-op="make"]')?.addEventListener("click", () => call({op:"make", id:t.id}));
-    d.querySelector('[data-op="skip"]').addEventListener("click", () => call({op:"update", id:t.id, status:"skip"}));
-    box.appendChild(d);
-  });
-}
-async function call(body){
-  const r = await fetch("/studio/api/topics", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
-  const d = await r.json(); if (!d.ok){ alert(d.error); return; }
-  if (d.topics && !["make","suggest","bench","study"].includes(body.op)){ TOPICS = d.topics; draw(); } else { TOPICS = (await (await fetch("/studio/api/topics",{method:"POST",headers:{"Content-Type":"application/json"},body:'{"op":"list"}'})).json()).topics; draw(); poll(true); }
-}
-async function stopJob(){ if (!confirm("진행 중인 작업을 중지할까요?")) return;
-  const r = await fetch("/studio/api/job/stop", {method:"POST"}); const d = await r.json(); if (!d.ok) alert(d.error); poll(true); }
-function addTopic(){ const t = document.getElementById("nt").value.trim(); if (!t) return;
-  call({op:"add", title:t, minutes:+document.getElementById("nm").value}); document.getElementById("nt").value = ""; }
-function suggest(){ call({op:"suggest"}); }
-let timer = null, seen = false;
-async function poll(kick){
-  const el = document.getElementById("job");
-  const tick = async () => {
-    const j = await (await fetch("/studio/api/job")).json();
-    JOB = j; draw();
-    if (!j.name){ return; }
-    el.style.display = "block";
-    el.textContent = (j.running ? `${j.label} 실행 중… ${j.elapsed}초\n` : (j.rc === 0 ? `${j.label} 완료\n` : `${j.label} 실패 (코드 ${j.rc})\n`)) + j.log;
-    el.scrollTop = el.scrollHeight; document.getElementById("stopbtn").style.display = j.running ? "" : "none";
-    if (j.running) seen = true;
-    if (!j.running && timer){ clearInterval(timer); timer = null; if (seen && ["script","suggest","bench","study"].includes(j.kind)) location.reload(); }
-  };
-  await tick(); if (!timer && (JOB.running || kick)) timer = setInterval(tick, 3000);
-}
-draw();
-poll();   // 작업 중이면 진행 로그, 끝났으면 마지막 결과를 보여준다
+const cards = [...document.querySelectorAll("#grid .v")];
+document.getElementById("c_all").textContent = cards.length;
+document.querySelectorAll("#ft button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#ft button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+  const f = b.dataset.f; cards.forEach(c => c.style.display = (f === "all" || c.dataset.state === f) ? "" : "none");
+  try { localStorage.setItem("studio_ft", f); } catch(e){}
+});
+try { const f = localStorage.getItem("studio_ft"); if (f && f !== "all") document.querySelector(`#ft button[data-f="${f}"]`)?.click(); } catch(e){}
 </script>
 {% endblock %}
