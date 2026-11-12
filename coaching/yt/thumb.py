@@ -87,11 +87,23 @@ def _data_uri(path):
     b = io.BytesIO(); im.save(b, "JPEG", quality=85)
     return "data:image/jpeg;base64," + base64.b64encode(b.getvalue()).decode()
 
+def _r_diag():
+    """GET /v1/account で鍵が有効か・どのアカウントかを確認（値は出さない）"""
+    import urllib.request, urllib.error
+    try:
+        req = urllib.request.Request("https://api.replicate.com/v1/account", headers={"Authorization": "Bearer " + _rkey(), "User-Agent": "takken-studio/1.0"})
+        with urllib.request.urlopen(req, timeout=30) as r: a = json.load(r)
+        return f"진단: 토큰 유효 (계정 {a.get('username')}, type={a.get('type')}). 403 이면 replicate.com/account/billing 에서 결제수단 등록이 필요한 모델일 수 있습니다"
+    except urllib.error.HTTPError as e:
+        return f"진단: /v1/account 가 HTTP {e.code} → 토큰이 잘못됐거나 폐기됨. .replicate_api_token 을 새 토큰으로 다시 저장하세요"
+    except Exception as e:
+        return f"진단 실패: {str(e)[:100]}"
+
 def _replicate(prompt, refs, quality="medium", log=print, vert=False):
     """Replicate の公式モデルを同期実行（Prefer: wait → 足りなければ urls.get をポーリング）。戻り値 (画像bytes, 使ったモデル)"""
     import urllib.request, urllib.error
-    hdr = {"Authorization": "Bearer " + _rkey(), "Content-Type": "application/json", "Prefer": "wait=60"}
-    last = None
+    hdr = {"Authorization": "Bearer " + _rkey(), "Content-Type": "application/json", "Prefer": "wait=60", "User-Agent": "takken-studio/1.0"}
+    last = None; diag_done = False
     for model in R_MODELS:
         try:
             log(f"  Replicate 모델: {model}" + (f" (참고 {len(refs)}장)" if refs else ""))
@@ -108,9 +120,12 @@ def _replicate(prompt, refs, quality="medium", log=print, vert=False):
             out = pred["output"]; url = out[0] if isinstance(out, list) else out
             with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "takken-studio"}), timeout=120) as r: return r.read(), model
         except urllib.error.HTTPError as e:
-            try: detail = json.loads(e.read().decode("utf-8", "replace")).get("detail") or ""
-            except Exception: detail = e.reason
-            last = f"{model}: HTTP {e.code} {str(detail)[:160]}"; log(f"  ✗ {last}")
+            body = e.read().decode("utf-8", "replace")
+            try: detail = json.loads(body).get("detail") or json.loads(body).get("title") or body[:300]
+            except Exception: detail = body[:300] or e.reason
+            last = f"{model}: HTTP {e.code} {str(detail)[:300]}"; log(f"  ✗ {last}")
+            if e.code in (401, 402, 403) and not diag_done:                 # 鍵・残高・権限の問題 → アカウント情報を出して原因を見せる
+                diag_done = True; log("  " + _r_diag())
             if e.code in (401, 402): break                                # 鍵・残高の問題は次のモデルでも同じ
         except Exception as e:
             last = f"{model}: {str(e)[:160]}"; log(f"  ✗ {last}")
