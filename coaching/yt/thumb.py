@@ -178,7 +178,7 @@ def _guide_prompt(spec, cfg, vert, with_text, preset):
         p += [f"周囲に関連するビジュアルを少数配置：{bg}。", preset["extra"],
               "小さなスマホ画面で一瞬で意味が分かる構図。細かい情報を詰め込みすぎない。",
               "画面右側や下部に重なるアプリUIを考慮し、重要な文字は中央寄り。",
-              "自然な日本語を正確に記し、指定外の数字や断定は追加しない。誤字・文字化け・無関係なロゴ・透かしを入れない。"]
+              "自然な日本語を正確に記し、指定外の数字や断定は追加しない。誤字・文字化け・無関係なロゴ・透かしを入れない。", SAFE_V]
         return "\n".join(x for x in p if x is not None)
     p = ["日本の宅建・資格試験・不動産業界を扱うYouTubeチャンネル向けに、非常に目立つ、プロ品質のサムネイル画像を1枚制作してください。", "",
          f"【動画テーマ】\n{theme}", "", "【画像サイズ・向き】\n横長16:9", ""]
@@ -199,7 +199,11 @@ def _guide_prompt(spec, cfg, vert, with_text, preset):
           f"【背景】\n{bg}", "",
           "【配置】\n中心に巨大なメインコピー、右側に関連ビジュアル、下部に短い補足情報カードまたはバナー。重要な要素を端で切らない。十分な余白を確保する。", "",
           "【禁止事項】\n誤字、文字化け、架空の数字、指定していない文字、意味のない細かい文字、無関係なロゴ、透かし、過度な装飾は入れない。想像で統計・合格点・採用条件を補完しない。実在企業のロゴは入れない。必ず1枚の完成したサムネイルを出力する。"]
+    p.append(SAFE_V if vert else SAFE_H)
     return "\n".join(x for x in p if x is not None)
+
+SAFE_H = "【セーフエリア】最終的に 16:9 に切り出す。上下それぞれ 8% の帯には文字・バッジ・情報ボックスを置かず、重要な要素はすべて中央 84% の範囲に収める。文字は端で切れないこと。"
+SAFE_V = "【セーフエリア】最終的に 9:16 に切り出す。左右それぞれ 6% と上下 8% の帯には文字を置かず、重要な要素は中央に収める。"
 
 def prompt_for(spec, cfg, with_text=True, vert=False):
     preset = PRESETS.get(cfg.get("preset") or "guide") or PRESETS["guide"]
@@ -224,6 +228,7 @@ def prompt_for(spec, cfg, with_text=True, vert=False):
         p.append("禁止: 上記以外の文字・英語・ロゴ・実在の会社名を入れない。文字の誤字脱字や創作をしない。文字は切れないように余白を取る。")
     else:
         p.append("文字・数字・ロゴは一切描かない。" + ("上 3 分の 1 は後から文字を載せるので、明るく単純な空間にして要素を置かない。" if vert else "左側 6 割は後から文字を載せるので、明るく単純な空間（淡いグラデーションや薄い街並み）にして要素を置かない。") + "最下部 20% も帯を載せるので空けておく。")
+    p.append(SAFE_V if vert else SAFE_H)
     return "\n".join(p)
 
 def _multipart(fields, files):
@@ -259,10 +264,13 @@ def pick_model(log=print):
         if avail: return avail[0]
     return "gpt-image-1"
 
+_size_idx = {}          # モデル → 16:9 サイズを拒否したら 1
+
 def _call(prompt, refs, quality="medium", log=print, model=None, vert=False):
     import urllib.request, urllib.error
     hdr = {"Authorization": "Bearer " + _key()}
-    gsize = "1024x1536" if vert else "1536x1024"
+    sizes = (["1024x1792", "1024x1536"] if vert else ["1792x1024", "1536x1024"])   # 先に 16:9 / 9:16 を試し、受け付けないモデルは 3:2 / 2:3（あとでトリミング）
+    gsize = (sizes[1] if _size_idx.get(model) else sizes[0])
     model = model or pick_model(log)
     log(f"  모델: {model}")
     if model.startswith("dall-e"):                                   # 参照画像・品質指定が違う。日本語文字も苦手
@@ -282,6 +290,9 @@ def _call(prompt, refs, quality="medium", log=print, model=None, vert=False):
     except urllib.error.HTTPError as e:
         try: detail = json.loads(e.read().decode("utf-8", "replace")).get("error", {}).get("message", "")[:300]
         except Exception: detail = e.reason
+        if e.code == 400 and "size" in detail.lower() and not _size_idx.get(model) and not model.startswith("dall-e"):
+            _size_idx[model] = 1; log(f"  {model} 은 {gsize} 를 받지 않음 → 3:2 로 생성 후 트리밍")
+            return _call(prompt, refs, quality, log, model=model, vert=vert)
         if e.code in (400, 403, 404) and ("does not exist" in detail or "not have access" in detail or "verif" in detail.lower()) and model != "dall-e-3":
             log(f"  {model} 사용 불가 ({detail[:120]}) → dall-e-3 로 다시 시도")
             return _call(prompt, [], quality, log, model="dall-e-3", vert=vert)
