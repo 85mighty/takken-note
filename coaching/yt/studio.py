@@ -553,7 +553,7 @@ def api_thumb(name):
                    "points": [str(x).strip() for x in (a.get("points") or []) if str(x).strip()][:3], "person": a.get("person") or "woman",
                    "quality": a.get("quality") if a.get("quality") in ("medium", "high", "low") else "medium", "use_refs": bool(a.get("use_refs", True)),
                    "provider": a.get("provider") if a.get("provider") in ("replicate", "openai", "auto") else "auto", "cover": bool(a.get("cover", True)),
-                   "preset": a.get("preset") if a.get("preset") in thumb.PRESETS else "guide", "model": a.get("model") if a.get("model") in dict(thumb.MODEL_CHOICES) else "auto"}
+                   "preset": a.get("preset") if a.get("preset") in thumb.PRESETS else "guide", "model": a.get("model") if a.get("model") in dict(thumb.MODEL_CHOICES) else "gpt-image-2"}
             if short: sp.setdefault("thumb_shorts", {})[short] = cfg
             else: sp["thumb"] = cfg
             _write(p, sp)
@@ -563,7 +563,7 @@ def api_thumb(name):
         sp = _load(name); cfg0 = ((sp.get("thumb_shorts") or {}).get(short) if short else sp.get("thumb")) or {}
     hist = sorted(glob.glob(os.path.join(hist_dir, "*.png")), key=os.path.getmtime, reverse=True)[:8]
     res = {"ok": True, "thumb": cfg0, "suggest": thumb.suggest_short(sp, short) if short else thumb.suggest(sp), "openai": bool(thumb._key()), "providers": thumb.providers(),
-           "hist": [{"file": histrel + os.path.basename(h), "mtime": int(os.path.getmtime(h))} for h in hist], "refs": len(thumb.references(sp)),
+           "hist": [{"file": histrel + os.path.basename(h), "mtime": int(os.path.getmtime(h))} for h in hist], "refs": len(thumb.references(sp, vert=bool(short))),
            "covered": bool(short and os.path.exists(sp_["raw"])), "presets": [[k, v["label"]] for k, v in thumb.PRESETS.items()], "models": thumb.MODEL_CHOICES}
     if not os.path.exists(tp): return jsonify(file=None, **res)
     return jsonify(file=rel, mtime=int(os.path.getmtime(tp)), **res)

@@ -498,7 +498,7 @@ async function loadThumb(){
   [...$("#th_prov").options].forEach(o => { if (o.value !== "auto") o.disabled = !pv[o.value]; });
   if (t.style) $("#th_style").value = t.style;
   if (!$("#th_lines").value) thSuggest();
-  $("#th_refn").textContent = d.refs ? `(${d.refs}장 있음)` : "(아직 없음)";
+  $("#th_refn").textContent = d.refs ? `(${d.refs}장: 채널 참고 이미지 + 기존 썸네일)` : "(아직 없음)";
   $("#th_hist").innerHTML = (d.hist || []).map(h => `<img src="${fileUrl(h.file, h.mtime)}" title="이걸로 쓰기" style="width:60px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:4px;cursor:pointer" onclick="useThumb('${h.file}')">`).join("");
   thMode();
   if (!pv.openai && !pv.replicate){ [...$("#th_mode").options].forEach(o => { if (o.value !== "plain") o.disabled = true; }); $("#th_mode").value = "plain"; thMode(); $("#th_note").textContent = "Replicate 토큰(.replicate_api_token)도 OpenAI 키(.openai_api_key)도 없어 AI 생성은 쓸 수 없습니다. 단색 배경이나 내 이미지 올리기를 쓰세요."; }

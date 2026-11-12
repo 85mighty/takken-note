@@ -131,9 +131,13 @@ def _replicate(prompt, refs, quality="medium", log=print, vert=False):
             last = f"{model}: {str(e)[:160]}"; log(f"  ✗ {last}")
     raise RuntimeError("Replicate 실패: " + (last or "모델 없음"))
 
-def references(spec, n=2):
-    """スタイル参照: ほかの動画で「自分で上げた」または「AIで作って採用した」サムネイル（新しい順に n 枚）"""
+REFS_DIR = os.path.join(HERE, "thumb_refs")      # 手で選んだ参考サムネ: h_*.jpg = 横, v_*.jpg = 縦
+
+def references(spec, n=2, vert=False):
+    """スタイル参照: thumb_refs の手選びサムネ（向きが合うもの）＋ ほかの動画で「自分で上げた」「AIで採用した」サムネイル（新しい順）"""
     import vkit as V
+    cur = sorted(glob.glob(os.path.join(REFS_DIR, ("v_" if vert else "h_") + "*.jpg")) + glob.glob(os.path.join(REFS_DIR, ("v_" if vert else "h_") + "*.png")))
+    if vert: return cur[:3]                                              # ショートは手選びだけ（生成物は別フォルダに散るので）
     out = []
     for p in glob.glob(os.path.join(HERE, "specs", "*.json")) + glob.glob(os.path.join(HERE, "specs", "_archive", "*.json")):
         try: sp = json.load(open(p, encoding="utf-8"))
@@ -142,7 +146,7 @@ def references(spec, n=2):
         th = sp.get("thumb") or {}
         f = os.path.join(V.OUT, sp.get("outdir", ""), "thumbnail.png")
         if os.path.exists(f) and (th.get("custom") or th.get("mode") in ("ai", "ai_bg")): out.append((os.path.getmtime(f), f))
-    return [f for _, f in sorted(out, reverse=True)[:n]]
+    return cur[:2] + [f for _, f in sorted(out, reverse=True)[:n]]
 
 # スタイルのプリセット（docs/THUMB_STYLE.md のマスタープロンプトをもとに。スタジオのドロップダウンで選ぶ）
 PRESETS = {
@@ -469,7 +473,7 @@ def apply_cover(mp4, png, raw=None, sec=1.0, log=print):
     log(f"  쇼츠 첫 {sec:g}초에 썸네일을 넣었습니다: {os.path.basename(mp4)}")
     return mp4
 
-MODEL_CHOICES = [("auto", "자동 (Replicate 순서 → 없으면 OpenAI)"), ("gpt-image-2", "OpenAI gpt-image-2"), ("bytedance/seedream-4.5", "Replicate Seedream 4.5"),
+MODEL_CHOICES = [("gpt-image-2", "OpenAI gpt-image-2 (기본)"), ("auto", "자동 (OpenAI → 없으면 Replicate)"), ("bytedance/seedream-4.5", "Replicate Seedream 4.5"),
                  ("google/nano-banana-pro", "Replicate Nano Banana Pro"), ("bytedance/seedream-4", "Replicate Seedream 4"), ("qwen/qwen-image-2512", "Replicate Qwen-Image 2512"),
                  ("ideogram-ai/ideogram-v3-turbo", "Replicate Ideogram v3"), ("gpt-image-1", "OpenAI gpt-image-1"), ("dall-e-3", "OpenAI dall-e-3 (글자는 합성)")]
 
@@ -481,6 +485,7 @@ def make_ai(spec, cfg, log=print, short=None):
     av = providers()
     prov = cfg.get("provider") or "auto"
     want = cfg.get("model") or "auto"                                 # ドロップダウンで選んだモデル
+    if want == "auto" and av["openai"]: want = "gpt-image-2"           # 既定は gpt-image-2（日本語の文字が最も正確だった）
     if want != "auto":
         prov = "openai" if (want.startswith("gpt-image") or want.startswith("dall-e")) else "replicate"
         if prov == "replicate": R_MODELS = [want] + [m for m in R_MODELS if m != want]
@@ -488,7 +493,7 @@ def make_ai(spec, cfg, log=print, short=None):
     if prov == "auto": prov = "replicate" if av["replicate"] else "openai"
     if prov == "replicate" and not av["replicate"]: raise RuntimeError("Replicate 토큰(.replicate_api_token)이 없습니다")
     if prov == "openai" and not av["openai"]: raise RuntimeError("OpenAI 키(.openai_api_key)가 없습니다")
-    refs = references(spec) if cfg.get("use_refs", True) else []
+    refs = references(spec, vert=vert) if cfg.get("use_refs", True) else []
     quality = cfg.get("quality") or "medium"
     if prov == "replicate":
         pr = prompt_for(spec, cfg, with_text=(mode == "ai"), vert=vert)
