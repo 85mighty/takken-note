@@ -359,6 +359,7 @@ def api_save(name):
     if isinstance(meta.get("related"), list): sp["related"] = [str(x) for x in meta["related"] if str(x).strip()]
     if "illust_off" in meta: sp["illust_off"] = bool(meta["illust_off"])
     if "motion_off" in meta: sp["motion_off"] = bool(meta["motion_off"])
+    if "short_character" in meta: sp["short_character"] = bool(meta["short_character"])
     if "status" in meta and meta["status"] in [s for s, _ in STEPS]: sp["status"] = meta["status"]
     if isinstance(meta.get("youtube"), dict) and meta["youtube"].get("url"):      # URL は台帳にも入れる（他の動画の関連リンクになる）
         import registry
@@ -457,8 +458,8 @@ def api_run(name, kind):
     if kind == "short":
         i = int(a.get("i") or 0)
         if i < 1: abort(400)
-        argv = ["shorts.py", p, str(i)] + (["--hook", str(a["hook"])] if a.get("hook") else [])
-        return _start(name, kind, f"쇼츠 #{i}", argv)
+        argv = ["shorts.py", p, str(i)] + (["--hook", str(a["hook"])] if a.get("hook") else []) + (["--character"] if a.get("character") else (["--no-character"] if a.get("character") is False else []))
+        return _start(name, kind, f"쇼츠 #{i}" + (" (AI 캐릭터)" if a.get("character") else ""), argv)
     if kind == "short_auto":
         n = max(1, min(3, int(a.get("n") or 1)))
         return _start(name, "short", f"쇼츠 (AI가 핵심 장면 선택 ×{n})", ["short_pick.py", p, "--n", str(n)])
@@ -578,6 +579,35 @@ def api_ytext(name):
 def api_shorts(name):
     sp = _load(name)
     return jsonify(ok=True, shorts=_shorts_of(sp))
+
+@bp.route("/api/mascot", methods=["GET", "POST"])
+def api_mascot():
+    """話すキャラクターの立ち絵 (mascot/default.png): 生成（裏の作業）/ 自分の画像を上げる / 状態"""
+    import character as CH
+    if request.method == "POST":
+        if "file" in request.files:
+            from PIL import Image
+            im = Image.open(request.files["file"].stream).convert("RGB")
+            if im.width > 1536: im = im.resize((1536, round(im.height * 1536 / im.width)))
+            for ext in ("png", "jpg"):
+                f = os.path.join(CH.MASCOT_DIR, f"default.{ext}")
+                if os.path.exists(f): os.remove(f)
+            im.save(os.path.join(CH.MASCOT_DIR, "default.png"))
+            json.dump({"desc": "(업로드)", "at": time.strftime("%Y-%m-%d %H:%M")}, open(os.path.join(CH.MASCOT_DIR, "default.json"), "w", encoding="utf-8"), ensure_ascii=False)
+        else:
+            a = request.get_json(force=True) or {}
+            return _start("mascot", "mascot", "마스코트 생성", ["character.py", "--mascot", str(a.get("desc") or "")])
+    p = CH.mascot_path(); meta = {}
+    try: meta = json.load(open(os.path.join(CH.MASCOT_DIR, "default.json"), encoding="utf-8"))
+    except Exception: pass
+    return jsonify(ok=True, file=("/studio/mascot/" + os.path.basename(p) + f"?v={int(os.path.getmtime(p))}") if p else None, meta=meta, hedra=CH.available(),
+                   illust=__import__("illust").provider())
+
+@bp.route("/mascot/<fn>")
+def mascot_file(fn):
+    import character as CH
+    if not re.fullmatch(r"default\.(png|jpg)", fn): abort(404)
+    return send_from_directory(CH.MASCOT_DIR, fn)
 
 @bp.route("/api/short_url", methods=["POST"])
 def api_short_url():

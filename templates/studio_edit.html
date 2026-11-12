@@ -213,6 +213,8 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
       <button onclick="run('short_auto',{n:3})" style="border-color:var(--short);color:var(--short)" {% if not keys.claude %}disabled{% endif %}>3개</button>
       <a class="btn" href="{{ url_for('studio.shorts_page') }}#{{ name }}">쇼츠 탭에서 보기</a>
     </div>
+    <p class="hint" style="margin:0 0 6px"><label style="display:inline-flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="shchar"> <b>AI 캐릭터 넣기</b> (Hedra · 마스코트가 음성에 맞춰 말함 · 60초당 약 $1.5)</label>
+      <span id="shchar_st" class="hint"></span> · <a href="{{ url_for('studio.style_page') }}#mascot">마스코트 설정</a></p>
     <p class="hint">장면을 직접 고르려면 아래 대본의 각 장면에 있는 「쇼츠로 만들기」. 올린 뒤 URL을 넣으면 본편 설명란·블로그에서 연결할 수 있습니다.</p>
     <div id="shorts" class="shl"></div></div>
   </div>
@@ -316,19 +318,20 @@ function fillMeta(){
   $("#yt_url").value = yt.url || ((REG.videos || []).find(v => v.key === NAME) || {}).url || "";
   $("#bl_slug").value = bl.slug || ""; $("#bl_title").value = bl.title || ""; $("#bl_ex").value = bl.excerpt || "";
   $("#blurl").innerHTML = bl.url ? `발행됨: <a href="${esc(bl.url)}" target="_blank">${esc(bl.url)}</a>` : "아직 발행하지 않았습니다";
-  $("#illoff").checked = !!spec.illust_off; $("#motoff").checked = !!spec.motion_off;
+  $("#illoff").checked = !!spec.illust_off; $("#motoff").checked = !!spec.motion_off; $("#shchar").checked = !!spec.short_character;
+  fetch("/studio/api/mascot").then(r => r.json()).then(m => { $("#shchar_st").textContent = (m.hedra ? "Hedra 키 있음" : "Hedra 키 없음") + " · " + (m.file ? "마스코트 있음" : "마스코트 없음"); if (!m.hedra || !m.file) $("#shchar").disabled = true; });
   $("#tlen").textContent = `${(yt.title||"").length}자`;
   const rel = new Set(spec.related || []);
   $("#rel").innerHTML = (REG.videos || []).filter(v => !v.short && v.key !== NAME).map(v =>
     `<label><input type="checkbox" value="${esc(v.key)}" ${rel.has(v.key) ? "checked" : ""}> ${esc(v.label || v.yt_title || v.key)} ${v.url ? "" : '<span class="nourl">URL 미등록</span>'}</label>`).join("");
   ["#yt_title","#yt_desc","#yt_tags","#bl_slug","#bl_title","#bl_ex"].forEach(s => $(s).oninput = () => { setDirty(true); if (s === "#yt_title") $("#tlen").textContent = `${$(s).value.length}자`; });
   $("#rel").querySelectorAll("input").forEach(c => c.onchange = () => setDirty(true));
-  $("#illoff").onchange = () => setDirty(true); $("#motoff").onchange = () => setDirty(true);
+  $("#illoff").onchange = () => setDirty(true); $("#motoff").onchange = () => setDirty(true); $("#shchar").onchange = () => setDirty(true);
 }
 function meta(){
   return {youtube:{title:$("#yt_title").value, description:$("#yt_desc").value, tags:$("#yt_tags").value},
           blog:{slug:$("#bl_slug").value.trim(), title:$("#bl_title").value, excerpt:$("#bl_ex").value},
-          related:[...$("#rel").querySelectorAll("input:checked")].map(c => c.value), illust_off:$("#illoff").checked, motion_off:$("#motoff").checked};
+          related:[...$("#rel").querySelectorAll("input:checked")].map(c => c.value), illust_off:$("#illoff").checked, motion_off:$("#motoff").checked, short_character:$("#shchar").checked};
 }
 function render(){
   const box = $("#slides"); box.innerHTML = "";
@@ -380,7 +383,7 @@ async function op(kind, k, div){
     const sec = prompt(`#${k+1} 을 AI로 여러 장으로 나눕니다 (읽기 원고는 한 글자도 바뀌지 않고 끊는 위치와 화면만 새로 만듭니다).\n한 장의 목표 길이(초)를 넣어주세요:`, "25");
     if (!sec) return; if (dirty && !(await save())) return; run("reslice", {i:k+1, sec:+sec}); return;
   }
-  if (kind === "short"){ if (dirty && !(await save())) return; return run("short", {i:k+1, hook:S[k].short_hook || ""}); }
+  if (kind === "short"){ if (dirty && !(await save())) return; return run("short", {i:k+1, hook:S[k].short_hook || "", character:$("#shchar").checked}); }
   if (kind === "up" && k > 0){ [S[k-1], S[k]] = [S[k], S[k-1]]; [R[k-1], R[k]] = [R[k], R[k-1]]; }
   else if (kind === "down" && k < S.length-1){ [S[k+1], S[k]] = [S[k], S[k+1]]; [R[k+1], R[k]] = [R[k], R[k+1]]; }
   else if (kind === "dup"){ S.splice(k+1, 0, JSON.parse(JSON.stringify(S[k]))); R.splice(k+1, 0, {...R[k], in_video:false, edited:true}); }

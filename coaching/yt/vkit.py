@@ -183,8 +183,14 @@ def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name, width=
     boxes = [o for o in ops if o["type"] == "box"]
     for o in [o for o in ops if o["type"] != "box"]:
         idx = 3 + n
-        extra += ["-loop", "1", "-framerate", str(FPS), "-i", o["png"]]
         ox, oy = int(o.get("x", 0)), int(o.get("y", 0))
+        if o["type"] == "video":                                               # 動画を重ねる（話すキャラクターなど）
+            extra += ["-i", o["file"]]
+            T = f"{o.get('t', 0):.2f}"
+            fc += (f"[{idx}:v]scale={int(o['w'])}:{int(o['h'])},setsar=1,fps={FPS},format=rgba[l{n}];"
+                   f"[{cur}][l{n}]overlay=x={ox}:y={oy}:enable='gte(t\\,{T})':eof_action=repeat[bg{n+1}];")
+            cur = f"bg{n+1}"; n += 1; continue
+        extra += ["-loop", "1", "-framerate", str(FPS), "-i", o["png"]]
         if o["type"] == "fade":
             T = f"{o['t']:.2f}"
             fc += (f"[{idx}:v]format=rgba,fade=t=in:st={T}:d={fade}:alpha=1[l{n}];"

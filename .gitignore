@@ -34,3 +34,4 @@ coaching/yt/illust_provider.txt
 .pixabay_api_key
 .env.studio
 .replicate_api_token
+.hedra_api_key

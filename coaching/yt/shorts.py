@@ -61,7 +61,10 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
     im.crop((0, 0, SW, min(im.size[1], ch + 40))).save(png)
     return png
 
-def background(slide_png, hook, out, long_label="", crop169=True):
+CHAR_H = 608                       # 話すキャラクター（16:9 → 1080×608）を下部に置くときの高さ
+
+def background(slide_png, hook, out, long_label="", crop169=True, char_h=0):
+    """char_h>0 なら、スライドは上部に収め（高さ上限）、下に char_h ぶんの空きを残す（あとで動画を重ねる）"""
     from PIL import Image, ImageDraw
     im = Image.new("RGB", (SW, SH), "white"); d = ImageDraw.Draw(im)
     d.rectangle([0, 0, SW, TOP], fill=NAVY)
@@ -80,7 +83,13 @@ def background(slide_png, hook, out, long_label="", crop169=True):
     if bb:                                       # 余白を切って文字を大きく
         sl = sl.crop((max(0, bb[0] - 30), max(0, bb[1] - 30), min(sl.size[0], bb[2] + 30), min(sl.size[1], bb[3] + 30)))
     sl = sl.resize((SW, int(sl.size[1] * SW / sl.size[0])))
-    im.paste(sl, (0, SLIDE_Y)); d.line([0, SLIDE_Y + sl.size[1], SW, SLIDE_Y + sl.size[1]], fill=(220, 220, 220), width=3)
+    if char_h:
+        maxh = SH - 300 - char_h - SLIDE_Y - 20
+        if sl.size[1] > maxh: sl = sl.resize((int(sl.size[0] * maxh / sl.size[1]), maxh))
+        im.paste(sl, ((SW - sl.size[0]) // 2, SLIDE_Y))
+        d.rectangle([0, SH - 300 - char_h, SW, SH - 300], fill=(236, 240, 247))     # キャラ動画の下地（動画が来るまでの色）
+    else:
+        im.paste(sl, (0, SLIDE_Y)); d.line([0, SLIDE_Y + sl.size[1], SW, SLIDE_Y + sl.size[1]], fill=(220, 220, 220), width=3)
     f2, f3 = _font(54), _font(38, False)
     d.rectangle([0, SH - 300, SW, SH], fill=(255, 243, 196))
     t = "続きは本編で ▶ 概要欄のリンクから"
@@ -89,7 +98,7 @@ def background(slide_png, hook, out, long_label="", crop169=True):
         lab = long_label if len(long_label) <= 24 else long_label[:23] + "…"
         d.text(((SW - d.textlength(lab, font=f3)) / 2, SH - 160), lab, font=f3, fill=(90, 90, 90))
     im.save(out)
-    return SLIDE_Y + sl.size[1]
+    return (SH - 300 - char_h) if char_h else SLIDE_Y + sl.size[1]
 
 _TRANSITION = re.compile(r"^(こんにちは|まず|次に|つぎに|そして|さて|では|最後に|続いて|つづいて|ここで|それでは|今日は|きょうは|[0-9０-９一二三四五六七八九十]+\s*つ[めも目]|[①-⑳]|(第)?[0-9０-９一二三四五六七八九十]+に)")
 
@@ -101,9 +110,11 @@ def desc_line(speech):
     pick = next((x for x in good if "【" in x), None) or (good[0] if good else (sents[0] if sents else ""))
     return subs_plain(pick).strip()
 
-def make(path, i, hook=None, log=print):
+def make(path, i, hook=None, log=print, character=None):
+    """character=True: Hedra で話すキャラクターを下部に重ねる（None なら spec の short_character に従う）"""
     import build_spec, registry, vkit as V
     spec = json.load(open(path, encoding="utf-8"))
+    if character is None: character = bool(spec.get("short_character"))
     G = build_spec.setup(spec)
     s = spec["slides"][i - 1]
     key = G.slide_key(s.get("title", ""), s.get("sub", ""), s["_body"], s.get("speech", ""))
@@ -123,7 +134,10 @@ def make(path, i, hook=None, log=print):
     if spec.get("short_target") and not v: log(f"※ 本編 {spec['short_target']} が URL 대장에 없습니다 → 링크 없이 만듭니다")
     long_title = v.get("yt_title") or (spec.get("youtube") or {}).get("title") or v.get("label") or spec.get("label", "")
     narrow = render_narrow(G, s.get("title", ""), s.get("sub", ""), s["_body"])       # 縦向きに描き直せれば文字が大きい方を使う
-    bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow)
+    import character as CH
+    use_char = bool(character and CH.available() and CH.mascot_path())
+    if character and not use_char: log("  ※ 캐릭터 생략: Hedra 키(.hedra_api_key) 또는 마스코트(mascot/default.png)가 없습니다")
+    bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow, char_h=CHAR_H if use_char else 0)
     # 音声と字幕の時刻は本編と同じ TTS から。cached_tts は同じ読み上げ文なら本編で作った音声と「文ごとの実測時刻」をそのまま返す
     # （以前は文字数で按分していたため、話す速さが文ごとに違うと字幕が遅れた）
     sents = V.split_sentences(s.get("speech", "")) or [""]
@@ -139,13 +153,23 @@ def make(path, i, hook=None, log=print):
         total = V.dur(m4a)
         lens = [max(1, len(x)) for x in sents]; span = max(1.0, total - 1.5); t, tp = 0.4, {}
         for k, n in enumerate(lens): tp[f"s{k}"] = t; t += span * n / sum(lens)
+    layers = []
+    if use_char:                                                                       # 話すキャラクター（失敗したら通常のショート）
+        try:
+            cmp4 = base + "_char.mp4"
+            CH.talk(CH.mascot_path(), m4a, cmp4, aspect="16:9", resolution=spec.get("short_character_res") or "540p", log=log)
+            layers = [{"type": "video", "file": cmp4, "x": 0, "y": SH - 300 - CHAR_H, "w": SW, "h": CHAR_H, "t": 0}]
+        except Exception as e:
+            log(f"  ✗ 캐릭터 생성 실패 → 캐릭터 없이 만듭니다: {str(e)[:200]}")
+            use_char = False; bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow)
     import subs
     st = dict(subs.load_style(spec.get("sub_style")))
     st.update(size=max(62, min(int(st["size"] * 0.85), 88)), max_chars=12, max_lines=1)   # 縦は1行・やや小さめ（スライドと下の帯の間に収める）
-    st["bottom"] = SH - ((bottom + SH - 300) // 2) - subs.band_height(st) // 2   # スライドと下の帯の間の真ん中に字幕
+    if use_char: st["bottom"] = 300 + 28                                                 # キャラ動画の下端に字幕を重ねる
+    else: st["bottom"] = SH - ((bottom + SH - 300) // 2) - subs.band_height(st) // 2      # スライドと下の帯の間の真ん中に字幕
     old = V.SUB_STYLE; V.SUB_STYLE = st
     try:
-        V.encode_subtitled(base + "_bg.png", m4a, "0", total, sents, tp, base + ".mp4", odir, os.path.basename(base), width=SW, height=SH)
+        V.encode_subtitled(base + "_bg.png", m4a, "0", total, sents, tp, base + ".mp4", odir, os.path.basename(base), width=SW, height=SH, layers=layers)
     finally:
         V.SUB_STYLE = old
     url = v.get("url") or ("" if spec.get("short_target") else (spec.get("youtube") or {}).get("url")) or ""
@@ -158,7 +182,7 @@ def make(path, i, hook=None, log=print):
     return {"video": base + ".mp4", "title": title, "description": desc, "dur": round(total, 1), "url_missing": not url}
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(); ap.add_argument("spec"); ap.add_argument("slide", type=int); ap.add_argument("--hook")
+    ap = argparse.ArgumentParser(); ap.add_argument("spec"); ap.add_argument("slide", type=int); ap.add_argument("--hook"); ap.add_argument("--character", action="store_true", help="Hedra の話すキャラクターを重ねる"); ap.add_argument("--no-character", action="store_true")
     a = ap.parse_args()
     p = a.spec if os.path.exists(a.spec) else spec_path(a.spec)
-    make(p, a.slide, a.hook, log=lambda m: print(m, flush=True))
+    make(p, a.slide, a.hook, log=lambda m: print(m, flush=True), character=(True if a.character else (False if a.no_character else None)))
