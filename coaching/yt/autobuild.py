@@ -85,7 +85,24 @@ def main():
             time.sleep(10)
         print(time.strftime("%F %T"), f"자동 제작 대기 끝 (busy={busy()})", flush=True)
         print(f"자동 제작 시작: {sp['name']} {steps}", flush=True)
-        try: run(sp["name"], steps)
+        try:
+            import notify
+            label = name
+            try: label = json.load(open(os.path.join(SPECS, name + ".json"), encoding="utf-8")).get("label") or name
+            except Exception: pass
+            st = [x for x in steps if x != "thumb"]
+            if any(x in ("build", "draft") or x.startswith("short") for x in st):
+                notify.send(f"🎬 자동 제작 시작: {label}\n단계: {' → '.join(st)}", silent=True)
+            t0 = time.time()
+            run(sp["name"], steps)
+            log = os.path.join(JOBDIR, "auto.log")
+            rc = open(log + ".rc").read().strip() if os.path.exists(log + ".rc") else "?"
+            mins = (time.time() - t0) / 60
+            if rc == "0":
+                notify.send(f"✅ 완성: {label}\n({' → '.join(st)}, {mins:.0f}분)\n스튜디오: {notify.studio_link(name)}")
+            else:
+                tail = "".join(open(log, encoding="utf-8", errors="replace").readlines()[-8:]) if os.path.exists(log) else ""
+                notify.send(f"❌ 실패 (코드 {rc}): {label}\n{tail[-1200:]}\n스튜디오: {notify.studio_link(name)}")
         finally:
             try: fcntl.flock(lockf, fcntl.LOCK_UN); lockf.close()
             except Exception: pass

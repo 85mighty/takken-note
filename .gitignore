@@ -35,3 +35,5 @@ coaching/yt/illust_provider.txt
 .env.studio
 .replicate_api_token
 .hedra_api_key
+.telegram_bot_token
+.telegram_chat_id
