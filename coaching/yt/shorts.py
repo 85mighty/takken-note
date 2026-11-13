@@ -173,7 +173,7 @@ def make(path, i, hook=None, log=print, character=None):
     finally:
         V.SUB_STYLE = old
     url = v.get("url") or ("" if spec.get("short_target") else (spec.get("youtube") or {}).get("url")) or ""
-    title = f"{hook.replace(chr(10), ' ')} #宅建 #宅建士"                        # ショートの題名: フック + タグ2つだけ
+    title = f"{hook.replace(chr(10), ' ')} {spec.get('short_tags') or '#宅建 #宅建士'}"   # ショートの題名: フック + タグ2つだけ（宅建以外は spec.short_tags）
     desc = (s.get("short_desc") or desc_line(s.get("speech") or "") or hook.replace(chr(10), " "))[:70]   # 概要欄は1行だけ（リンクなし）
     open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n")
     for f in (m4a, base + ".m4a", base + "_bg.png"):
