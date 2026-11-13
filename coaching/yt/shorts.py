@@ -110,6 +110,36 @@ def desc_line(speech):
     pick = next((x for x in good if "【" in x), None) or (good[0] if good else (sents[0] if sents else ""))
     return subs_plain(pick).strip()
 
+def thumb_prompt(spec, s, hook, desc):
+    """ChatGPT に貼るショート用サムネイルのプロンプト（docs/THUMB_STYLE.md・docs/SHORTS_RULES.md の形）。サムネイルは自動では作らない"""
+    src = desc + " " + subs_plain(s.get("speech") or "")
+    src = re.sub(r"[0-9０-９]+\s*点満点", "", src)                                  # 「100点満点」は数字に数えない
+    nums = []
+    for n in re.findall(r"[0-9０-９][0-9０-９,，.．]*\s*(?:%|％|点|万円|円|人|時間|か月)", src):
+        if n not in nums: nums.append(n)
+    big = next((n for n in nums if n.endswith(("%", "％"))), nums[0] if nums else "")   # 割合 → それ以外の順
+    label = spec.get("short_badge") or (spec.get("label") or "").replace("【ショート】", "").split("｜")[0].split(" ")[0][:14]
+    lines = [x for x in hook.split("\n") if x.strip()]
+    pts = []
+    for n in nums:
+        if n not in pts and n != big: pts.append(n)
+        if len(pts) >= 3: break
+    return "\n".join([
+        "日本の資格試験を扱うYouTubeチャンネルの「ショート動画」用サムネイルを1枚作ってください。縦長9:16（1080×1920）。", "",
+        f"【テーマ】\n{desc}", "",
+        "【画像内に入れる文字：この表記を一字一句そのまま。ほかの文字・数字は入れない】",
+        f"最上部の赤い帯（白文字）：{label}",
+        f"その下（白に太い黒フチ）：{next((x for x in lines if x.strip() != label), '')}",
+        (f"画面中央・いちばん大きく（黄色に太い黒フチと赤い縁取り、強い影）：{big}" if big else f"画面中央・いちばん大きく（黄色に太い黒フチ）：{lines[-1] if lines else ''}"),
+        (f"その下の赤い吹き出し（白文字）：{lines[-1]}" if big and len(lines) > 1 else ""),
+        ("小さな情報カード（白地・紺文字・左にチェックマーク）：" + "／".join(pts) if pts else ""),
+        "", "【ビジュアルスタイル】",
+        "日本の人気資格試験解説YouTubeのような、赤・黄色・濃紺・白・黒の高コントラストなデザイン。文字は極太の日本語ゴシック体。太い黒フチ、細い白フチ、強いドロップシャドウ。",
+        "いちばん大きな文字はスマホの小さな画面でも一瞬で読める、画面幅の8割ほどの大きさ。黄色いブラシストローク、集中線、光のアクセントを適度に。", "",
+        "【人物・背景】\n中央より下に、テーマに合う表情（驚き・喜び・考え込む）の日本人（写真のようにリアルな上半身）。背景はテーマに関係する場所を少しぼかして。", "",
+        "【配置】\n重要な文字は画面の中央寄り。左右それぞれ6%と上下8%には文字を置かない（ショートの画面UIに隠れないように）。", "",
+        "【禁止事項】\n誤字、文字化け、指定していない文字・数字、英語、実在企業のロゴ、透かしは入れない。数字を変えたり追加したりしない。"])
+
 def make(path, i, hook=None, log=print, character=None):
     """character=True: Hedra で話すキャラクターを下部に重ねる（None なら spec の short_character に従う）"""
     import build_spec, registry, vkit as V
@@ -175,7 +205,9 @@ def make(path, i, hook=None, log=print, character=None):
     url = v.get("url") or ("" if spec.get("short_target") else (spec.get("youtube") or {}).get("url")) or ""
     title = f"{hook.replace(chr(10), ' ')} {spec.get('short_tags') or '#宅建 #宅建士'}"   # ショートの題名: フック + タグ2つだけ（宅建以外は spec.short_tags）
     desc = (s.get("short_desc") or desc_line(s.get("speech") or "") or hook.replace(chr(10), " "))[:70]   # 概要欄は1行だけ（リンクなし）
-    open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n")
+    pin = f"詳しくは本編で▶ {url}" if url else "（本編の URL を登録すると、ここに固定コメント用の一文が入ります）"
+    tp = thumb_prompt(spec, s, hook, desc)
+    open(base + ".txt", "w", encoding="utf-8").write(f"【タイトル】\n{title}\n\n【概要欄】\n{desc}\n\n【固定コメント】\n{pin}\n\n【ChatGPT サムネイル用プロンプト（9:16）】\n{tp}\n")
     for f in (m4a, base + ".m4a", base + "_bg.png"):
         if os.path.exists(f): os.remove(f)
     log(f"쇼츠 완성: {base}.mp4  {total:.0f}초" + (" (60초를 넘습니다. 쇼츠는 3분까지 올릴 수 있습니다)" if total > 60 else ""))

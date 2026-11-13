@@ -34,7 +34,7 @@ def ask(spec, n, log=print):
     for i, s in enumerate(spec["slides"], 1):
         rows.append(f"[{i}] 見出し: {s.get('title') or '（表紙）'}\n本文: {_plain(s.get('body',''))[:220]}\n読み上げ: {(s.get('speech') or '')[:160]}")
     prompt = (f"動画「{spec.get('label','')}」のスライド一覧です。YouTube ショート（60秒・縦）として切り出したとき、最も再生されそうな（意外性・数字・結論がある）スライドを {n} 枚選び、"
-              f"それぞれに視聴者の指を止めるフック（日本語・2行・各行12字以内・疑問形か断定形。改行は \\n）と、"
+              f"それぞれに視聴者の指を止めるフック（日本語・2行・各行12字以内・疑問形か断定形。合格率・点数・金額・時間などの数字があれば必ず1行目に入れる。改行は \\n）と、"
               f"概要欄に載せる1行（desc: 日本語 30〜60字・1文・その場面で分かることを具体的に。「2つめ、実務です」のようなつなぎの文は不可。リンク・タグ・絵文字なし）を付けてください。表紙・まとめ・写真だけの場面は選ばない。\n\n" + "\n\n".join(rows))
     schema = {"type": "object", "additionalProperties": False, "required": ["picks"],
               "properties": {"picks": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["i", "hook", "desc", "reason"],
