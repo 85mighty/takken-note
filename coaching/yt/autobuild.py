@@ -31,10 +31,10 @@ def run(name, steps):
     p = os.path.join(SPECS, name + ".json")
     cmds = {"illust": [PY, "-u", "build_spec.py", p, "--illust", "0"], "draft": [PY, "-u", "build_spec.py", p, "--draft"], "build": [PY, "-u", "build_spec.py", p],
             "short": [PY, "-u", "shorts.py", p, "1"], "short_auto": [PY, "-u", "short_pick.py", p],
-            "thumb": [PY, "-u", "thumb.py", p, "--ai"],
             "blog": [PY, "-u", "blogify.py", p, "--publish"]}
     for st in steps:                                                          # "short:6" = 6枚目をショートに
         if st.startswith("short:") and st[6:].isdigit(): cmds[st] = [PY, "-u", "shorts.py", p, st[6:]]
+    steps = [s for s in steps if s != "thumb"]                                # サムネイルは自動で作らない（スタジオで手動）
     chain = " && ".join(shlex.join(cmds[s]) for s in steps if s in cmds)
     os.makedirs(JOBDIR, exist_ok=True)
     log = os.path.join(JOBDIR, "auto.log"); q = shlex.quote
