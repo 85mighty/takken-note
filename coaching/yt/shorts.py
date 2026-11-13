@@ -131,7 +131,7 @@ def thumb_prompt(spec, s, hook, desc):
         f"最上部の赤い帯（白文字）：{label}",
         f"その下（白に太い黒フチ）：{next((x for x in lines if x.strip() != label), '')}",
         (f"画面中央・いちばん大きく（黄色に太い黒フチと赤い縁取り、強い影）：{big}" if big else f"画面中央・いちばん大きく（黄色に太い黒フチ）：{lines[-1] if lines else ''}"),
-        (f"その下の赤い吹き出し（白文字）：{lines[-1]}" if big and len(lines) > 1 else ""),
+        (f"その下の赤い吹き出し（白文字）：{lines[-1]}" if big and len(lines) > 1 and lines[-1] != next((x for x in lines if x.strip() != label), "") else ""),
         ("小さな情報カード（白地・紺文字・左にチェックマーク）：" + "／".join(pts) if pts else ""),
         "", "【ビジュアルスタイル】",
         "日本の人気資格試験解説YouTubeのような、赤・黄色・濃紺・白・黒の高コントラストなデザイン。文字は極太の日本語ゴシック体。太い黒フチ、細い白フチ、強いドロップシャドウ。",
