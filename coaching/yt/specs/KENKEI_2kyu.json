@@ -162,5 +162,24 @@
   "excerpt": "建設業経理士2級（第39回・11/13合格発表）に受かった人へ。転職に使えるかは「使える、ただし使い方がある」。経審W5で登録2級が0.4人分になる仕組み、登録経理講習（7時間・18,000円・5年）、資格手当（月3,000〜10,000円）、派遣からの3つのルートと面接での言い方、1級か宅建か。",
   "url": "https://takken.ekunblog.com/kensetsugyo-keirishi-2kyu-tenshoku-keishin/"
  },
- "auto_done": "2026-11-13 03:05"
+ "auto_done": "2026-11-13 03:05",
+ "thumb_shorts": {
+  "KENKEI_2kyu_s13": {
+   "lines": [
+    "簿記2級があれば",
+    "建設業経理士は不要？"
+   ],
+   "style": "navy",
+   "mode": "ai",
+   "badge": "",
+   "points": [],
+   "person": "woman",
+   "quality": "high",
+   "use_refs": true,
+   "provider": "auto",
+   "cover": true,
+   "preset": "career",
+   "model": "gpt-image-2"
+  }
+ }
 }
