@@ -1,0 +1,375 @@
+{
+ "channel": "https://www.youtube.com/@nippon-real",
+ "videos": [
+  {
+   "key": "R8_goukaku",
+   "label": "合格点予想まとめ 第1弾",
+   "match": [
+    "合格点予想まとめ",
+    "各社"
+   ],
+   "url": "https://youtu.be/jw57lLO9m7M",
+   "yt_title": "【2026年 宅建】合格点予想まとめ｜各社の予想・難易度講評・過去10年の合格点と11月25日までにやること"
+  },
+  {
+   "key": "R8_goukaku2",
+   "label": "合格点予想まとめ 第2弾",
+   "match": [
+    "合格点予想まとめ",
+    "第2弾"
+   ],
+   "url": "https://youtu.be/TN7nZMSVw5I",
+   "yt_title": "【2026年 宅建】合格点予想まとめ 第2弾｜1週間で予想はどう動いた？割れ問・問33の扱いと、点数別の今の立ち位置（10/25 update）"
+  },
+  {
+   "key": "R8_keikou",
+   "label": "令和7年と令和8年で試験は何が変わったのか",
+   "match": [
+    "令和7年と令和8年"
+   ],
+   "url": "https://youtu.be/i_SYXmaZ5Ao",
+   "yt_title": "【2026年 宅建】令和7年と令和8年で試験は何が変わったのか｜過去問が通用しなかった理由と、合格点が30点台前半に落ちた年の共通点"
+  },
+  {
+   "key": "R8_happyou",
+   "label": "合格発表の日に何をどう見るか",
+   "match": [
+    "合格発表の日"
+   ],
+   "url": "https://youtu.be/-ScrkRK2v6w",
+   "yt_title": "【2026年 宅建】合格発表の日に何をどう見るか｜11月25日 9時30分の確認手順・合格証書・登録実務講習・資格登録・宅建士証までの費用と期間"
+  },
+  {
+   "key": "R8_q33",
+   "label": "割れ問「問33」正解は1か4か",
+   "match": [
+    "問33"
+   ],
+   "url": "https://youtu.be/Wqeoqjk-2Sg",
+   "yt_title": "【2026年 宅建】割れ問「問33」正解は1か4か｜専任の宅建士・個数問題を肢ごとに検証、自己採点への影響と没問の可能性"
+  },
+  {
+   "key": "R8_merit",
+   "label": "宅建に受かったら何が変わる？",
+   "match": [
+    "受かったら"
+   ],
+   "url": "https://youtu.be/0GjwirBrt-8",
+   "yt_title": "【宅建】受かったら何が変わる？｜宅建士だけの3つの仕事・資格手当の相場・年収・不動産以外での使い道"
+  },
+  {
+   "key": "R8_menjo",
+   "label": "5問免除（登録講習）完全ガイド",
+   "match": [
+    "5問免除"
+   ],
+   "url": "https://youtu.be/aOjRMBf75Jo?si=_JCHz6S87M4vnj9u"
+  },
+  {
+   "key": "R8_kenri",
+   "label": "権利関係 問1〜問14 解答解説",
+   "match": [
+    "権利関係",
+    "問1"
+   ],
+   "url": "https://youtu.be/O-CPIyizphA",
+   "yt_title": "【2026年 宅建 解答解説】権利関係 問1〜問14｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_horei",
+   "label": "法令上の制限 問15〜問22 解答解説",
+   "match": [
+    "法令上の制限",
+    "問15"
+   ],
+   "url": "https://youtu.be/EtIyq64dBYs",
+   "yt_title": "【2026年 宅建 解答解説】法令上の制限 問15〜問22｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_zei",
+   "label": "税・その他 問23〜25・問46〜50 解答解説",
+   "match": [
+    "税",
+    "問23"
+   ],
+   "url": "https://youtu.be/5j4rSH1O0A4",
+   "yt_title": "【2026年 宅建 解答解説】税・その他 問23〜25・問46〜50｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_gyoho",
+   "label": "宅建業法 問26〜問45 解答解説",
+   "match": [
+    "宅建業法",
+    "問26"
+   ],
+   "url": "https://youtu.be/jIJCqT3l2Fs",
+   "yt_title": "【2026年 宅建 解答解説】宅建業法 問26〜問45 全20問｜令和8年度 本試験を1問ずつ解説（全選択肢○×つき）"
+  },
+  {
+   "key": "R8_full",
+   "label": "令和8年度 解答速報 全50問",
+   "match": [
+    "解答速報",
+    "合格点数"
+   ],
+   "url": "https://youtu.be/TCha9TdbU9w",
+   "yt_title": "令和8年度宅建士試験解答速報　合格点数31点か30点"
+  },
+  {
+   "key": "PTyLS-G7e7Q",
+   "label": "【2026年宅建】建築基準法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "yt_title": "【2026年宅建】建築基準法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "url": "https://youtu.be/PTyLS-G7e7Q",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "4dtxr5zO16Q",
+   "label": "【2026年宅建】都市計画法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "yt_title": "【2026年宅建】都市計画法｜頻出・重要ポイント総まとめ｜聞き流しで試験対策！",
+   "url": "https://youtu.be/4dtxr5zO16Q",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "XzyLpMVJGI4",
+   "label": "看護師を目指すならどの学校？大学・専門・短大の違いと選び方",
+   "yt_title": "看護師を目指すならどの学校？大学・専門・短大の違いと選び方",
+   "url": "https://youtu.be/XzyLpMVJGI4",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "k0y_Pgv1ry4",
+   "label": "看護師給料いくらか1年目〜10年目までの手取りを全公開！",
+   "yt_title": "看護師給料いくらか1年目〜10年目までの手取りを全公開！",
+   "url": "https://youtu.be/k0y_Pgv1ry4",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "azoyc4BTOcA",
+   "label": "【2025年最新版】日本の看護師になるには？国家試験・職場のリアル・将来性まで徹",
+   "yt_title": "【2025年最新版】日本の看護師になるには？国家試験・職場のリアル・将来性まで徹底解説！",
+   "url": "https://youtu.be/azoyc4BTOcA",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "_2XrR0HLzj4",
+   "label": "【シニア住宅の真実】実は過酷？シルバータウンの現実と後悔の声",
+   "yt_title": "【シニア住宅の真実】実は過酷？シルバータウンの現実と後悔の声",
+   "url": "https://youtu.be/_2XrR0HLzj4",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "A2qTZ-Jy0Yw",
+   "label": "2025年4月から、すべての企業に「65歳までの雇用確保」が義務化されます！",
+   "yt_title": "2025年4月から、すべての企業に「65歳までの雇用確保」が義務化されます！",
+   "url": "https://youtu.be/A2qTZ-Jy0Yw",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "N09_8vzFdso",
+   "label": "【速報】1人2万円支給は本当？2025年からの現金給付の全貌をわかりやすく解説！",
+   "yt_title": "【速報】1人2万円支給は本当？2025年からの現金給付の全貌をわかりやすく解説！",
+   "url": "https://youtu.be/N09_8vzFdso",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "YrrYluLI6lY",
+   "label": "日本年金、こう変わる！2025年からの3つの重要ポイント【最新版】",
+   "yt_title": "日本年金、こう変わる！2025年からの3つの重要ポイント【最新版】",
+   "url": "https://youtu.be/YrrYluLI6lY",
+   "short": false,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "430Va3MKT5g",
+   "label": "宅建2026 自己採点32点は受かる？｜合格点予想と比べると #宅建 #shor",
+   "yt_title": "宅建2026 自己採点32点は受かる？｜合格点予想と比べると #宅建 #shorts",
+   "url": "https://youtube.com/shorts/430Va3MKT5g",
+   "short": true,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "1HBpXyXYABY",
+   "label": "宅建2026 自己採点31点は受かる？｜合格点予想と比べると #宅建 #shor",
+   "yt_title": "宅建2026 自己採点31点は受かる？｜合格点予想と比べると #宅建 #shorts",
+   "url": "https://youtube.com/shorts/1HBpXyXYABY",
+   "short": true,
+   "auto": true,
+   "match": []
+  },
+  {
+   "key": "R8_chinkan2w",
+   "blog_url": "https://takken.ekunblog.com/chintai-kanrishi-2weeks-after-takken/",
+   "label": "賃管士11/15 直前2週間勉強法",
+   "title": "賃貸不動産経営管理士は11月15日｜宅建を受けた人があと2週間で間に合わせる勉強法【宅建と重なる範囲・重ならない範囲】",
+   "url": "https://youtu.be/yH_cBI9ObNU",
+   "yt_title": "賃貸不動産経営管理士は11月15日｜宅建を受けた人があと2週間で間に合わせる勉強法【宅建と重なる範囲・重ならない範囲】"
+  },
+  {
+   "key": "R8_kokugo",
+   "blog_url": "https://takken.ekunblog.com/takken-r8-kokugo-shiken/",
+   "label": "令和8年度は「国語の試験」だったのか",
+   "title": "令和8年度の宅建は「国語の試験」だったのか？｜予想合格点31〜34点・「知識があっても解けない」の正体を受験者の声と数字で検証",
+   "url": "https://youtu.be/qEjUx7fHsG4",
+   "yt_title": "令和8年度の宅建は「国語の試験」だったのか？｜予想合格点31〜34点・「知識があっても解けない」の正体を受験者の声と数字で検証"
+  },
+  {
+   "key": "R8_yomikata",
+   "blog_url": "https://takken.ekunblog.com/takken-r8-yomikata/",
+   "label": "「国語の試験」第2弾｜「誰が・いつ・何を」で読み直す",
+   "title": "令和8年の宅建問題を「誰が・いつ・何を」で読み直す｜問2・問11・問42で練習する「知識があっても解けない」の越え方【国語の試験 第2弾】",
+   "url": "https://youtu.be/F2loxwSoZYg",
+   "yt_title": "令和8年の宅建問題を「誰が・いつ・何を」で読み直す｜問2・問11・問42で練習する「知識があっても解けない」の越え方【国語の試験 第2弾】"
+  },
+  {
+   "key": "STUDY_jikan",
+   "blog_url": "https://takken.ekunblog.com/takken-benkyo-jikan/",
+   "label": "宅建合格者は1日何時間勉強した？｜300時間の内訳と6か月・4か月・3か月の計画",
+   "title": "宅建に合格した人は1日何時間勉強した？｜合計300時間の内訳・科目別配分・6か月/4か月/3か月のモデル計画と「時間はあったのに落ちる」3パターン【2027年合格】",
+   "url": "https://youtu.be/zA-D4rBHtW0",
+   "yt_title": "宅建に合格した人は1日何時間勉強した？｜合計300時間の内訳・科目別配分・6か月/4か月/3か月のモデル計画と「時間はあったのに落ちる」3パターン【2027年合格】"
+  },
+  {
+   "key": "CAREER_ote",
+   "label": "大手不動産に入るには｜宅建は必須？学歴・年齢・経験のリアル",
+   "title": "大手不動産に入るには？宅建は必須？学歴・年齢・経験のリアル｜三井不動産・三菱地所・住友不動産・東急・野村の採用条件と年収を整理",
+   "blog_url": "https://takken.ekunblog.com/ote-fudosan-hairu-takken/",
+   "url": "https://youtu.be/M03R8_Z6svo",
+   "yt_title": "大手不動産に入るには？宅建は必須？学歴・年齢・経験のリアル｜三井不動産・三菱地所・住友不動産・東急・野村の採用条件と年収を整理"
+  },
+  {
+   "key": "aOjRMBf75Jo",
+   "label": "【宅建】5問免除（登録講習）完全ガイド｜対象者・申込手順・いつまでに・試験当日は",
+   "yt_title": "【宅建】5問免除（登録講習）完全ガイド｜対象者・申込手順・いつまでに・試験当日は途中退出できる？",
+   "url": "https://youtu.be/aOjRMBf75Jo",
+   "short": false,
+   "auto": true
+  },
+  {
+   "key": "Xt8ad7OVLS0",
+   "label": "宅建合格者は 1日何時間勉強した？ #shorts #宅建",
+   "yt_title": "宅建合格者は 1日何時間勉強した？ #shorts #宅建",
+   "url": "https://youtube.com/shorts/Xt8ad7OVLS0",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "N6tvUiGHb3Y",
+   "label": "宅建2026 自己採点35点以上は受かる？｜合格点予想と比べると #宅建 #sh",
+   "yt_title": "宅建2026 自己採点35点以上は受かる？｜合格点予想と比べると #宅建 #shorts",
+   "url": "https://youtube.com/shorts/N6tvUiGHb3Y",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "bWsfLIL0NlE",
+   "label": "宅建2026 自己採点34点は受かる？｜合格点予想と比べると #宅建 #shor",
+   "yt_title": "宅建2026 自己採点34点は受かる？｜合格点予想と比べると #宅建 #shorts",
+   "url": "https://youtube.com/shorts/bWsfLIL0NlE",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "ieQyp9cRPlI",
+   "label": "宅建2026 自己採点33点は受かる？｜合格点予想と比べると #宅建 #shor",
+   "yt_title": "宅建2026 自己採点33点は受かる？｜合格点予想と比べると #宅建 #shorts",
+   "url": "https://youtube.com/shorts/ieQyp9cRPlI",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "CHINKAN_eve",
+   "label": "賃管士 試験前日・当日の最終チェック｜宅建組が落とす論点5つ",
+   "title": "賃管士 試験前日・当日の最終チェック｜宅建を受けた人が落とす論点5つ・設備の数字・120分の時間配分【11月15日 賃貸不動産経営管理士】",
+   "url": "https://youtu.be/xW8jmbGDRkU",
+   "yt_title": "賃管士 試験前日・当日の最終チェック｜宅建を受けた人が落とす論点5つ・設備の数字・120分の時間配分【11月15日 賃貸不動産経営管理士】"
+  },
+  {
+   "key": "zu8Wnmw-mSc",
+   "label": "大手不動産に入るのに 宅建は必須？#宅建  #shorts",
+   "yt_title": "大手不動産に入るのに 宅建は必須？#宅建  #shorts",
+   "url": "https://youtube.com/shorts/zu8Wnmw-mSc",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "CAREER_hiseiki",
+   "blog_url": "https://takken.ekunblog.com/hiseiki-fudosan-part-haken/",
+   "label": "パート・派遣・契約社員から不動産業界に入るには｜宅建なしでも応募できる仕事と時給の実例",
+   "title": "パート・派遣・契約社員から不動産業界に入るには｜宅建なしでも応募できる仕事・時給の実例・正社員になるルート【視聴者の質問に回答】",
+   "url": "https://youtu.be/1ifaGclRWpo",
+   "yt_title": "パート・派遣・契約社員から不動産業界に入るには｜宅建なしでも応募できる仕事・時給の実例・正社員になるルート【視聴者の質問に回答】"
+  },
+  {
+   "key": "R8_goukaku3",
+   "blog_url": "https://takken.ekunblog.com/takken-r8-goukakuten-yosou-november/",
+   "label": "合格点予想まとめ 第3弾｜11月の最新状況：何が変わって、何が変わっていないか",
+   "title": "宅建 合格点予想【11月最新】何が変わった？下げた2社・据え置き5社｜33〜34点が中心・受験者24.6万人・自己採点別にやること・問33・11/25の見方【令和8年度 第3弾】",
+   "url": "https://youtu.be/d4po5UV6wrM",
+   "yt_title": "宅建 合格点予想【11月最新】何が変わった？下げた2社・据え置き5社｜33〜34点が中心・受験者24.6万人・自己採点別にやること・問33・11/25の見方【令和8年度 第3弾】"
+  },
+  {
+   "key": "GYOSEI_goukaku",
+   "blog_url": "https://takken.ekunblog.com/gyoseishoshi-r8-goukakuten-kijutsu-ashikiri/",
+   "label": "行政書士試験（11/8）合格点はどうなる？各社講評・記述の配点・足切り・合格率予想",
+   "title": "行政書士試験（11/8）合格点はどうなる？｜180点は動く？補正は？各社講評の科目別難易度・記述3問の予想配点・基礎知識の足切り・自己採点の点数別の見方・合格率予想【令和8年度・最新】",
+   "url": "https://youtu.be/Vs6PMw6UiiI",
+   "yt_title": "行政書士試験（11/8）合格点はどうなる？｜180点は動く？補正は？各社講評の科目別難易度・記述3問の予想配点・基礎知識の足切り・自己採点の点数別の見方・合格率予想【令和8年度・最新】"
+  },
+  {
+   "key": "CAREER_jitsumu",
+   "blog_url": "https://takken.ekunblog.com/takken-goukaku-go-genjitsu-toroku-jitsumu/",
+   "label": "宅建に受かった後の現実｜登録の手順と費用・実務でやること・未経験の就職/転職戦略",
+   "title": "宅建に受かった後の現実｜登録の手順と費用（約6万円・3か月）・宅建士にしかできない3つの仕事・職種別の現実・未経験の年代別転職戦略【合格発表後にやること】",
+   "url": "https://youtu.be/wHLgVz_K9mA",
+   "yt_title": "宅建に受かった後の現実｜登録の手順と費用（約6万円・3か月）・宅建士にしかできない3つの仕事・職種別の現実・未経験の年代別転職戦略【合格発表後にやること】"
+  },
+  {
+   "key": "STUDY_kaidoku",
+   "label": "過去問だけ解いても落ちる理由｜2027年合格のための基本書の回し方",
+   "title": "過去問だけ解いても落ちる理由｜2027年合格のための基本書の回し方（3回の読み方・過去問との往復・科目別・12月からの配分）【令和8年度の反省から】"
+  },
+  {
+   "key": "HGYe5JEpiX8",
+   "label": "宅建だけで 時給500円上がる？ #宅建 #宅建士",
+   "yt_title": "宅建だけで 時給500円上がる？ #宅建 #宅建士",
+   "url": "https://youtube.com/shorts/HGYe5JEpiX8",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "DUPEUcEJ0z0",
+   "label": "合格点を上げた会社 まさかのゼロ社？#宅建士 #shorts",
+   "yt_title": "合格点を上げた会社 まさかのゼロ社？#宅建士 #shorts",
+   "url": "https://youtube.com/shorts/DUPEUcEJ0z0",
+   "short": true,
+   "auto": true
+  },
+  {
+   "key": "CHINKAN_3days",
+   "blog_url": "https://takken.ekunblog.com/chinkan-r8-ato3ka-houkaisei-suji20/"
+  },
+  {
+   "key": "KENKEI_2kyu",
+   "blog_url": "https://takken.ekunblog.com/kensetsugyo-keirishi-2kyu-tenshoku-keishin/"
+  }
+ ],
+ "fetched_at": "2026-11-11 07:40"
+}

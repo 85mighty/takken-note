@@ -1,0 +1,124 @@
+# 宅建 오답노트
+
+宅建士(일본 부동산거래사) 과거문제 오답노트 개인용 웹앱. 상세 요구사항은 `takken-note-spec.md`.
+
+## 실행
+
+```bash
+pip install flask pdfplumber weasyprint
+python3 app.py
+# → http://localhost:8788
+```
+
+PDF 출력에는 일본어 폰트가 필요: `apt-get install fonts-noto-cjk` (Noto Sans CJK JP).
+
+## VPS 배포 (PM2)
+
+최초 1회:
+
+```bash
+git clone https://github.com/85mighty/takken-note.git
+cd takken-note
+git checkout claude/epic-mccarthy-gvvh3q   # (main에 머지했으면 생략)
+sudo apt-get install -y fonts-noto-cjk      # PDF 일본어 폰트
+echo '원하는비밀번호' > .takken_password      # 로그인 비밀번호 (git 무시 대상)
+./deploy.sh
+```
+
+이후 업데이트·재기동은 `./deploy.sh` 한 번이면 됩니다
+(VPS에 쌓인 오답 기록을 자동 커밋 → pull → pm2 재기동).
+
+### 자동 배포 (선택)
+
+VPS가 5분마다 GitHub을 확인해서 새 커밋이 있으면 스스로 배포하게 하려면 (1회 설정):
+
+```bash
+( crontab -l 2>/dev/null | grep -v autodeploy ; echo "*/5 * * * * $HOME/takken-note/autodeploy.sh" ) | crontab -
+```
+
+배포 이력은 `autodeploy.log`에 남습니다. 해제: `crontab -e`에서 해당 줄 삭제.
+
+- 접속: `http://<VPS-IP>:8788` — 아이폰/아이패드 Safari에서 「홈 화면에 추가」 하면 앱처럼 사용
+- 비밀번호는 `.takken_password` 파일 (git 무시 대상 — `ecosystem.config.js`가 읽음). 설정하면 로그인(90일 유지)이 걸립니다. **외부에 열 때 필수**. `ecosystem.config.js` 자체는 수정하지 말 것 (수정하면 업데이트 pull이 막힘)
+- 방화벽에서 8788 포트 허용 필요 (예: `sudo ufw allow 8788`)
+- 환경변수: `HOST`(기본 127.0.0.1, 외부 공개는 0.0.0.0), `PORT`(기본 8788)
+
+## 화면
+
+| 경로 | 기능 |
+|---|---|
+| `/` | 오답 목록 + 필터(연도·분야 복수선택, 細目 부분일치, 誤答≥N, 이유 태그) + 細目 인라인 편집 |
+| `/review?...&mode=instant` | 바로 풀기 — 선택지 클릭 즉시 채점, 틀리면 오늘 날짜 자동 기록 |
+| `/review?...&mode=exam` | 시험 모드 — 다 풀고 「채점하기」로 일괄 채점·기록, 결과는 인쇄 가능 |
+| `/stats` | 細目별 누적 誤答(가장 중요), 연도×분야 정답수, 이유 태그 비율 |
+| `/register` | 틀린 번호 일괄 등록(재풀이 누적), 새 연도 PDF 업로드·파싱 |
+| `/pdf?...` | 현재 필터 그대로 오답노트 PDF 다운로드 (`make_pdf.py`) |
+
+목록 화면의 필터가 「바로 풀기 / 시험 모드 / PDF 출력」 버튼에 그대로 이어진다.
+아이폰·아이패드 대응(터치 타깃 확대, 좁은 화면 레이아웃).
+
+## 새 연도 추가 절차
+
+1. `/register` → 「새 연도 PDF 추가」에 연도 라벨(예: `R5`)과 텍스트형 과거문제 PDF 업로드
+   - 정답표 형식은 2가지 자동 인식: `問N` 헤더형(R7식), 숫자 그리드형(R6식)
+   - 스캔본(이미지) PDF는 파싱 불가 — 에러만 표시 (OCR 미지원)
+2. 업로드 직후 목록(誤答≥0 필터)으로 이동됨 → 노란 줄(細目 미입력)을 표에서 바로 입력
+3. 문제를 풀고 `/register` → 「틀린 번호 등록」에 번호 입력 (같은 연도 재풀이도 동일, 횟수 누적)
+
+CLI로도 가능:
+
+```bash
+python3 parse_takken.py R5_question_answer.pdf R5 r5.json
+python3 -c "import json, db; db.add_year(json.load(open('r5.json')))"
+```
+
+## 데이터
+
+- `takken_db.json` 단일 파일이 전체 DB (git으로 이력 관리). 스키마는 spec 참조
+- 모든 읽기/쓰기는 `db.py` 경유 — 나중에 SQLite로 옮길 때 이 모듈만 교체
+- `wrong_dates` 길이 = 틀린 횟수. `error_reason`은 `태그　메모` 형식 (태그: 知識/実行エラー/語彙/初見)
+
+## 파일
+
+| 파일 | 내용 |
+|---|---|
+| `app.py` | Flask 웹앱 (포트 8788) |
+| `db.py` | 데이터 접근 모듈 |
+| `parse_takken.py` | 과거문제 PDF → JSON 파서 |
+| `make_pdf.py` | DB → 오답노트 PDF (WeasyPrint) |
+| `takken_db.json` | 문제·오답 DB |
+| `R6_question_answer.pdf` | R6 원본 문제 PDF (파서 검증용 원본) |
+| `R7_question_answer.pdf` | ※ 원본이 아니라 `make_pdf.py`로 생성한 오답노트 PDF 샘플 |
+
+## 学習 탭 음성 (都市計画法・建築基準法 暗記ノート)
+
+- 과목은 `coaching/subjects.py`에 등록 (toshi=都市計画法 `toshi_gen.py`, kenki=建築基準法 `kenki_gen.py`). 노트 PDF: `python3 coaching/kenki_gen.py study|test 출력.pdf`.
+- 기본 음성은 Open JTalk(무료 합성음)로 `coaching/make_audio.py --subject kenki`가 생성 → `static/audio/`.
+- 읽기 확정판 台本: `python3 coaching/make_kana.py --subject kenki` → `coaching/kenki_kana.json` (한자→히라가나, 보정표 `FIX`).
+- 더 자연스러운 음성은 ElevenLabs로 교체 가능 (`coaching/make_audio_eleven.py`, 같은 파일명으로 덮어쓰므로 사이트 변경 불필요):
+  ```bash
+  cd ~/takken-note && sudo apt-get install -y ffmpeg
+  echo 'sk_xxxx' > .eleven_api_key            # elevenlabs.io → Profile → API Keys
+  python3 coaching/make_audio_eleven.py --list      # 일본어 목소리 찾기
+  python3 coaching/make_audio_eleven.py --subject toshi --voice 이름  # 都市計画法 (약 11,000자)
+  python3 coaching/make_audio_eleven.py --subject kenki               # 建築基準法 (약 13,000자)
+  git add static/audio && git commit -m "ElevenLabs 音声" && git push origin HEAD
+  ```
+- 한자 읽기가 틀리면 스크립트의 `READINGS`에 `"用語": "よみ"`를 추가하고 `--force`로 재생성.
+
+### Google 음성으로 바꾸기 (숫자·단위·분수·한자 읽기가 정확)
+- Cloud Text-to-Speech: Google Cloud Console → 프로젝트 → 「Cloud Text-to-Speech API」 사용 설정 → 사용자 인증 정보 → API 키.
+  ```bash
+  cd ~/takken-note && echo 'AIza...' > .google_api_key && ./deploy.sh     # 이후 배포마다 Google 사용
+  echo 'ja-JP-Neural2-D' > .google_voice    # 목소리 변경 (남성 Neural2-C/D, 여성 Neural2-B, 고품질 Chirp3-HD-Charon 등)
+  ```
+- 키 없이 Google 번역 음성(여성)으로: `echo gtts > .tts_engine && ./deploy.sh`
+- ElevenLabs로 되돌리기: `echo eleven > .tts_engine && ./deploy.sh`
+- 현재 사이트 음성: Google ja-JP-Neural2-D (2026-10-15). 서버에 Google 키가 없으면 deploy.sh는 음성을 그대로 유지한다.
+
+### 暗記ノート 動画 (음성에 맞춰 페이지가 스크롤되는 16:9 mp4)
+- 생성(VPS, Google 키 필요): `sudo apt-get install -y poppler-utils` 후
+  `cd ~/takken-note && .venv/bin/python3 coaching/make_video.py --subject toshi && .venv/bin/python3 coaching/make_video.py --subject kenki`
+  → `static/video/<key>_note.mp4` (git 관리 밖). 파일이 있으면 学習 탭에 자동으로 플레이어와 저장 버튼이 뜬다.
+- 암기노트를 고쳤으면 PDF(`coaching/<key>_gen.py study static/docs/<key>_note.pdf`)를 먼저 다시 만들고 실행.
+

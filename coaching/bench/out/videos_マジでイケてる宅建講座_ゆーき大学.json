@@ -1,0 +1,917 @@
+{
+ "name": "マジでイケてる宅建講座【ゆーき大学】",
+ "url": "https://www.youtube.com/channel/UC9FTrf3ryoNxs01o_a2FE6g",
+ "self": false,
+ "collected_at": "2026-10-29 14:26",
+ "videos": [
+  {
+   "id": "wHd9gpIdwx4",
+   "title": "【賃貸不動産経営管理士 2024】宅建とのダブル合格をねらえ！コツを解説",
+   "view_count": 7445,
+   "duration": 320,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "WG8H6q-EUZk",
+   "title": "【賃貸管理士 2026】１ヶ月で間に合う？気になる試験内容を総ざらい！！",
+   "view_count": null,
+   "duration": 251,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "WqVj8dhWgEY",
+   "title": "令和８年度、宅建合格点は34点ではない？",
+   "view_count": null,
+   "duration": 356,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "q0tGGsbUHuM",
+   "title": "【宅建 2026】試験、よく頑張りました！！",
+   "view_count": null,
+   "duration": 1186,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "9mKWnaQ9fSI",
+   "title": "【宅建 入門編】最重要の得点源！わかりやすい区分所有法の講義スタート（権利関係）",
+   "view_count": null,
+   "duration": 545,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ZqbmbFajWSE",
+   "title": "【宅建 入門編】不動産登記法スタート！必ず押さえたい３つのコツ（権利関係）",
+   "view_count": null,
+   "duration": 375,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "UuHjfo9k9k8",
+   "title": "【宅建 民法 #8】サクッと根抵当権を攻略！普通の抵当権と何が違うの？",
+   "view_count": null,
+   "duration": 881,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "PYlXzSBAlsk",
+   "title": "【宅建 民法 #7】絶対にマスターしたい抵当権！抵当権消滅請求や順位もわかりやすく解説",
+   "view_count": null,
+   "duration": 1832,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "zzHQux27OGk",
+   "title": "【宅建 民法 #6】必ず押さえたい相隣関係・共有をわかりやすく解説",
+   "view_count": null,
+   "duration": 1068,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "v8pyTQew8YU",
+   "title": "【宅建 民法 #5】物権変動ってなんだ？サクッと対抗要件を理解して最重要分野を得意にする",
+   "view_count": null,
+   "duration": 1422,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "fhRBqyhue0k",
+   "title": "【宅建 民法 #4】時効の援用とは？完成猶予・更新の改正もわかりやすく解説",
+   "view_count": null,
+   "duration": 1703,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "TRccLGzq7wY",
+   "title": "【宅建 民法 #3】チャンス到来！苦手な代理もコツさえつかめばサクッと解ける",
+   "view_count": null,
+   "duration": 1531,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "rB3aondNmVY",
+   "title": "【宅建 民法 #1】制限行為能力者を完全マスター！権利関係でスタートダッシュを決めろ",
+   "view_count": null,
+   "duration": 1434,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "Q-PktuBGxwY",
+   "title": "【宅建 民法 #2】実は簡単です！意思表示の５類型を完全マスターして苦手意識を無くす方法",
+   "view_count": null,
+   "duration": 1426,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "OWDPHtnOuAI",
+   "title": "【宅建 入門編】土地・建物は〇〇で簡単攻略 !?わかりやすい入門編（税その他）",
+   "view_count": null,
+   "duration": 381,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "NS_ttjzWcME",
+   "title": "【宅建 入門編】コツをお話します！不動産鑑定評価と地価公示法の入門編（税その他）",
+   "view_count": null,
+   "duration": 461,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "b8VoXohWSXI",
+   "title": "【宅建 税その他 #2】必ず得点！住宅金融支援機構法をわかりやすく解説",
+   "view_count": null,
+   "duration": 1038,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "KXRsKn-x-uo",
+   "title": "【宅建 入門編】初心者向け！所得税・印紙税・登録免許税！税法のコツ（税その他）",
+   "view_count": null,
+   "duration": 328,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "BroUwPEFW1s",
+   "title": "【宅建 税その他 #1】初心者向けに不動産取得税・固定資産税を解説！地方税などの税法の軽減措置が大事",
+   "view_count": null,
+   "duration": 1010,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "nu67F3klH40",
+   "title": "【宅建 入門編】建築基準法の重要ポイント！建蔽率、容積率、高さ制限、防火地域、用途制限をわかりやすく解説（法令上の制限）",
+   "view_count": null,
+   "duration": 600,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ILZtdUTIVyA",
+   "title": "【宅建 法令上の制限 #4】建築基準法の２項道路を攻略！単体規定と集団規定など重要部分を重点解説",
+   "view_count": null,
+   "duration": 1251,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ZGF65wroVtI",
+   "title": "【宅建 法令上の制限 #3】ついに建築基準法！建築確認の攻略に役立つ無料レジメを概要欄からゲットできます",
+   "view_count": null,
+   "duration": 983,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "V-5xov_zMAY",
+   "title": "【宅建 入門編】土地区画整理法スタート！土地区画整理組合や仮換地とは？（法令上の制限）",
+   "view_count": null,
+   "duration": 376,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "GKAVeK_hs_k",
+   "title": "【宅建 入門編】得点源！国土利用計画法をわかりやすく解説（法令上の制限）",
+   "view_count": null,
+   "duration": 445,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "uzhiaI-uyZ4",
+   "title": "【宅建 法令上の制限 #6】盛土規制法の切土、盛土、擁壁をわかりやすく解説",
+   "view_count": null,
+   "duration": 1568,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "wU1IjQZodq8",
+   "title": "【宅建 法令上の制限 #5】農地法３条、４条、５条をサクッとマスター",
+   "view_count": null,
+   "duration": 1074,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "iCtbdPFhW4Q",
+   "title": "【宅建 入門編】わかりやすい！都市計画決定と開発許可制度の違いとは？",
+   "view_count": null,
+   "duration": 511,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ov3MMNQFIbo",
+   "title": "【宅建 法令上の制限 #2】都市計画法の13種類の用途地域をサクッと攻略（都市計画法）",
+   "view_count": null,
+   "duration": 1045,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "wHKEFcwD3u0",
+   "title": "【宅建 法令上の制限 #0】超簡単！挫折せずに法令上の制限を攻略する方法とは？",
+   "view_count": null,
+   "duration": 579,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ztItk3fAaNg",
+   "title": "【宅建 入門編】住宅瑕疵担保履行法と品確法の概要（宅建業法）",
+   "view_count": null,
+   "duration": 428,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ztgQU4gju7Y",
+   "title": "【宅建 入門編】注意！監督処分や罰則のよくある勘違い（宅建業法）",
+   "view_count": null,
+   "duration": 324,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "vYwsCUFOTVI",
+   "title": "【宅建 宅建業法 #13】８種制限の簡単攻略！クーリングオフ、手付金等の保全措置",
+   "view_count": null,
+   "duration": 1300,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "DYHOrkFTnwQ",
+   "title": "【宅建 宅建業法 #12】７パターンで覚える報酬の制限！空き家の報酬とは？",
+   "view_count": null,
+   "duration": 1170,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "2rrUkA5EMZI",
+   "title": "【宅建 宅建業法 #11】最重要分野！37条書面を攻略せよ！",
+   "view_count": null,
+   "duration": 767,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "FLMc-0bdE0s",
+   "title": "【宅建 宅建業法 #10】最凶の敵！35条書面をゴロで攻略せよ！",
+   "view_count": null,
+   "duration": 770,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "FVnAvyOXk58",
+   "title": "【宅建 宅建業法 #9】35条書面の覚え方！重要事項説明のポイントを解説",
+   "view_count": null,
+   "duration": 875,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "U8sjTmshQhI",
+   "title": "【宅建 宅建業法 #8】 媒介契約書って何？三大書面の攻略のコツ",
+   "view_count": null,
+   "duration": 778,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "t4tGBU3Y-_I",
+   "title": "【宅建 宅建業法 #7】保証協会と営業保証金の違いは？",
+   "view_count": null,
+   "duration": 1003,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "Xc1t9t-zz0c",
+   "title": "【宅建 宅建業法 #6】営業保証金と保証協会は何が違う？",
+   "view_count": null,
+   "duration": 1000,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "huuYilD2hwI",
+   "title": "【宅建 宅建業法 #5】事務所と案内所の違いを総整理",
+   "view_count": null,
+   "duration": 841,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "WmSXt9f8G9s",
+   "title": "【宅建 宅建業法 #4】宅地建物取引士の登録事項を総ざらい",
+   "view_count": null,
+   "duration": 782,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "yxUWZFAxgvU",
+   "title": "【宅建 宅建業法 #3】免許の欠格要件！難所はゴロで攻略できる？",
+   "view_count": null,
+   "duration": 1530,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "g75x1TNuAO0",
+   "title": "【宅建 宅建業法 #2】一撃クリア！免許の登録や免許換えを一気に攻略",
+   "view_count": null,
+   "duration": 1207,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "8izTP0-fIuA",
+   "title": "【宅建 法令上の制限 #1】都市計画法がスタート！テーマ全体に関わる重要分野です（都市計画法）",
+   "view_count": null,
+   "duration": 1631,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "qmTbZRQer6U",
+   "title": "【宅建 宅建業法 #1】一気に攻略！宅地建物取引業とは？図でわかりやすく解説します",
+   "view_count": null,
+   "duration": 1022,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "PRpTPhYSQ1M",
+   "title": "【宅建 入門編】最重要の得点源！わかりやすい区分所有法の講義スタート（権利関係）",
+   "view_count": null,
+   "duration": 545,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "F4xpuT311F4",
+   "title": "【宅建 入門編】不動産登記法スタート！必ず押さえたい３つのコツ（権利関係）",
+   "view_count": null,
+   "duration": 375,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "G7LJyxaAoFE",
+   "title": "【宅建 民法】サクッと根抵当権を攻略！普通の抵当権と何が違うの？",
+   "view_count": null,
+   "duration": 881,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "PwHpm7J3_f0",
+   "title": "【宅建 民法】絶対にマスターしたい抵当権！抵当権消滅請求や順位もわかりやすく解説",
+   "view_count": null,
+   "duration": 1939,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "-yax1Ke0FsA",
+   "title": "【宅建 民法】必ず押さえたい相隣関係・共有をわかりやすく解説",
+   "view_count": null,
+   "duration": 1068,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ewora9Pvq0Y",
+   "title": "【宅建 民法】物権変動ってなんだ？サクッと対抗要件を理解して最重要分野を得意にする",
+   "view_count": null,
+   "duration": 1422,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "MfD0xRZmOO4",
+   "title": "【宅建 民法】時効の援用とは？完成猶予・更新の改正もわかりやすく解説",
+   "view_count": null,
+   "duration": 1703,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "VUD6AvNsAAU",
+   "title": "【宅建 民法】チャンス到来！苦手な代理もコツさえつかめばサクッと解ける",
+   "view_count": null,
+   "duration": 1479,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "NTm_Pzur4Do",
+   "title": "【宅建 民法】実は簡単です！意思表示の５類型を完全マスターして苦手意識を無くす方法",
+   "view_count": null,
+   "duration": 1426,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "6_Zyy1BP8ww",
+   "title": "【宅建 入門編】土地・建物は〇〇で簡単攻略 !?わかりやすい入門編（税その他）",
+   "view_count": null,
+   "duration": 385,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "aBFXlJZbMMk",
+   "title": "【宅建 入門編】コツをお話します！不動産鑑定評価と地価公示法の入門編（税その他）",
+   "view_count": null,
+   "duration": 461,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "0_d3m6R32N8",
+   "title": "【宅建 税その他】必ず得点！住宅金融支援機構法をわかりやすく解説",
+   "view_count": null,
+   "duration": 1017,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "Hsuw3FjZt_k",
+   "title": "【宅建 入門編】初心者向け！所得税・印紙税・登録免許税！税法のコツ（税その他）",
+   "view_count": null,
+   "duration": 328,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "UT9Ks529zqA",
+   "title": "【宅建 税その他】初心者向けに不動産取得税・固定資産税を解説！地方税などの税法の軽減措置が大事",
+   "view_count": null,
+   "duration": 1176,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "F59qHeOAXYk",
+   "title": "【宅建 入門編】建築基準法の重要ポイント！建蔽率、容積率、高さ制限、防火地域、用途制限をわかりやすく解説（法令上の制限）",
+   "view_count": null,
+   "duration": 600,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "sDlro-Tc4Ro",
+   "title": "【宅建 法令上の制限】建築基準法の２項道路を攻略！単体規定と集団規定など重要部分を重点解説",
+   "view_count": null,
+   "duration": 1251,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "IdZtM8kKGRo",
+   "title": "【宅建 法令上の制限】ついに建築基準法！建築確認の攻略に役立つ無料レジメを概要欄からゲットできます",
+   "view_count": null,
+   "duration": 983,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "TuDFM3NuH0Y",
+   "title": "【宅建 入門編】わかりやすい！都市計画決定と開発許可制度の違いとは？",
+   "view_count": null,
+   "duration": 511,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "hsEcX9oJQ1o",
+   "title": "【宅建 入門編】土地区画整理法スタート！土地区画整理組合や仮換地とは？（法令上の制限）",
+   "view_count": null,
+   "duration": 376,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "-rRqgZD8DfI",
+   "title": "【宅建 入門編】得点源！国土利用計画法をわかりやすく解説（法令上の制限）",
+   "view_count": null,
+   "duration": 445,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "xLhyNRCW1Jk",
+   "title": "【宅建 法令上の制限】盛土規制法の切土、盛土、擁壁をわかりやすく解説",
+   "view_count": null,
+   "duration": 1467,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "5ZZ8C2osblQ",
+   "title": "【宅建 法令上の制限】農地法３条、４条、５条をサクッとマスター",
+   "view_count": null,
+   "duration": 1073,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "eKCK6g-S7S0",
+   "title": "【宅建 法令上の制限】都市計画法の13種類の用途地域をサクッと攻略（都市計画法）",
+   "view_count": null,
+   "duration": 1045,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ooe5bIrhy1w",
+   "title": "【宅建 法令上の制限】都市計画法がスタート！テーマ全体に関わる重要分野です（都市計画法）",
+   "view_count": null,
+   "duration": 1631,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "o45ik1_Whws",
+   "title": "【宅建 入門編】住宅瑕疵担保履行法と品確法の概要（宅建業法）",
+   "view_count": null,
+   "duration": 428,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "IB9vYiO0Gh8",
+   "title": "【宅建 入門編】注意！監督処分や罰則のよくある勘違い（宅建業法）",
+   "view_count": null,
+   "duration": 335,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "2jcsksfbCmo",
+   "title": "【宅建 宅建業法】８種制限の簡単攻略！クーリングオフ、手付金等の保全措置",
+   "view_count": null,
+   "duration": 1260,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "0El0KKi0DOQ",
+   "title": "【宅建 宅建業法】７パターンで覚える報酬の制限！空き家の報酬とは？",
+   "view_count": null,
+   "duration": 1170,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "016jLl3z0T8",
+   "title": "【宅建 宅建業法】最重要分野！37条書面を攻略せよ！",
+   "view_count": null,
+   "duration": 767,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "qqQytv-Djgo",
+   "title": "【宅建 宅建業法】最凶の敵！35条書面をゴロで攻略せよ！",
+   "view_count": null,
+   "duration": 699,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "6GmGd9Hg6qQ",
+   "title": "【宅建 宅建業法】35条書面の覚え方！重要事項説明のポイントを解説",
+   "view_count": null,
+   "duration": 875,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "VcGeSvnESHA",
+   "title": "【宅建 宅建業法】 媒介契約書って何？三大書面の攻略のコツ",
+   "view_count": null,
+   "duration": 778,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "bDnheeFUVVM",
+   "title": "【宅建 宅建業法】保証協会と営業保証金の違いは？",
+   "view_count": null,
+   "duration": 1003,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "cDvMRuwegT8",
+   "title": "【宅建 宅建業法】事務所と案内所の違いを総整理",
+   "view_count": null,
+   "duration": 841,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "0Z24eIfMgfI",
+   "title": "【宅建 宅建業法】営業保証金と保証協会は何が違う？",
+   "view_count": null,
+   "duration": 1000,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "5JiEnwOibzA",
+   "title": "【宅建 宅建業法】宅地建物取引士の登録事項を総ざらい",
+   "view_count": null,
+   "duration": 785,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "WKtocW8nUwY",
+   "title": "【宅建 宅建業法】免許の欠格要件！難所はゴロで攻略できる？",
+   "view_count": null,
+   "duration": 1565,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "6diuH3kLlMU",
+   "title": "【宅建 宅建業法】一撃クリア！免許の登録や免許換えを一気に攻略",
+   "view_count": null,
+   "duration": 1211,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "UWBxePNaF_w",
+   "title": "【宅建2026 民法 #1】制限行為能力者を完全マスター！権利関係でスタートダッシュを決めろ",
+   "view_count": null,
+   "duration": 1194,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "sMCJdJpxd9A",
+   "title": "【宅建 宅建業法】一気に攻略！宅地建物取引業とは？図でわかりやすく解説します",
+   "view_count": null,
+   "duration": 1022,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "5HEzZC1O1f4",
+   "title": "【宅建 2024】300時間を大事に使えば一発合格できる。勉強時間の配分が超大事",
+   "view_count": null,
+   "duration": 454,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "PDLLLRb49nM",
+   "title": "【宅建 2027 宅建業法 #0】合格者は何点とってる？宅建の入門講義",
+   "view_count": null,
+   "duration": 498,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "Tacrj4K2bPU",
+   "title": "宅建と行政書士はどっちが難しい？合格率、難易度、ダブル受験の注意点を徹底解説",
+   "view_count": null,
+   "duration": 476,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "1F8kOqUNArU",
+   "title": "【宅建】権利関係スタート！制限行為能力者をサクッと攻略する方法（民法 ①）",
+   "view_count": null,
+   "duration": 1187,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "ENZ9EyrUV9A",
+   "title": "【宅建】※ここに辿り着いた人へ神様が特別に味方してラクに合格する方法を教えます（宅建一発合格編）",
+   "view_count": null,
+   "duration": 379,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "JCnMJhpxs4w",
+   "title": "【賃貸不動産経営管理士】知らなきゃ大損！試験委員はこの本から全ての問題を作っている",
+   "view_count": null,
+   "duration": 364,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "GwyquTC3rwA",
+   "title": "【賃貸不動産経営管理士】いつから勉強すればいいの？人によって変わる絶妙なタイミング",
+   "view_count": null,
+   "duration": 373,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "uiKbPE1YIaQ",
+   "title": "【宅建】手遅れになる前に！明日からできる正しい過去問のまわし方はこれだ",
+   "view_count": null,
+   "duration": 477,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "w-7n7g4rRg8",
+   "title": "【宅建】※注意喚起※ イナズマ合格法だけでは足りないから永久保存して！",
+   "view_count": null,
+   "duration": 457,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "2cqc1CZDQTs",
+   "title": "【宅建】一発合格者に聞いた！初学者に必要な参考書・テキスト・問題集はこの３冊です（ゆーき大学のおすすめ）",
+   "view_count": null,
+   "duration": 388,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "OgkykRwJqY8",
+   "title": "【宅建士】正しい宅建の勉強法をズバリ伝授する講座です！",
+   "view_count": null,
+   "duration": 962,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "qEupynERj7Y",
+   "title": "【宅建受験生へ】行政書士を受験した感想をお話します！",
+   "view_count": null,
+   "duration": 874,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "_Inon-xUw7c",
+   "title": "【宅建】間違った音で時間を無駄にしてませんか？",
+   "view_count": null,
+   "duration": 481,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "NETyaczHAhk",
+   "title": "【勉強用・作業用BGM】集中力・記憶力を向上させるオルゴール（120分宅建タイム）",
+   "view_count": null,
+   "duration": 7200,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "EElb6VSYYfE",
+   "title": "【宅建試験】宅建業法で20点取れた勉強法を公開する。宅建絶対合格！",
+   "view_count": null,
+   "duration": 709,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  },
+  {
+   "id": "A_6eFb1NmjU",
+   "title": "【即改善】デキる人の記憶術を丸パクりして宅建試験に楽に合格しよう【賃貸不動産経営管理士など宅建以外でも使えます】",
+   "view_count": null,
+   "duration": 434,
+   "upload_date": null,
+   "like_count": null,
+   "comment_count": null
+  }
+ ]
+}

@@ -1,0 +1,744 @@
+{% extends "studio_base.html" %}
+{% block title %}{{ label }}｜스튜디오{% endblock %}
+{% block body %}
+<style>
+main{max-width:none!important}
+.ed{max-width:1400px;margin:0 auto}
+.bar{position:sticky;top:52px;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ptabs{display:flex;gap:2px;border-bottom:2px solid var(--line);margin:0 0 12px}
+.ptabs button{border:0;background:none;padding:8px 12px;font-weight:800;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-2px;border-radius:0;font-size:14px}
+.ptabs button.on{color:var(--pri);border-bottom-color:var(--pri)}
+.ptabs button.short.on{color:var(--short);border-bottom-color:var(--short)}
+.pane{display:none}.pane.on{display:block}
+.crumb{font-size:13px;color:var(--mute)}.crumb a{text-decoration:none;font-weight:700}
+.bar h2{margin:0 10px 0 0;font-size:18px}
+button,.btn{padding:7px 13px;border-radius:8px;border:1px solid var(--pri);background:#fff;color:var(--pri);font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block;font-size:14px;font-family:inherit}
+button.pri,.btn.pri{background:#1a3d7c;color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+.dirty{color:#c0392b;font-weight:bold}
+.stepper{display:flex;gap:0;margin:12px 0;flex-wrap:wrap}
+.stepper div{flex:1;min-width:120px;text-align:center;padding:8px 6px;background:#e9ecf2;color:#667;font-size:13px;font-weight:bold;border-right:2px solid #f5f6f8;cursor:pointer}
+.stepper div.done{background:#1a3d7c;color:#fff}
+.stepper div.cur{background:#ffd166;color:#222}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+@media(max-width:960px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px}
+.card h3{margin:0 0 8px;font-size:16px;color:#1a3d7c}
+video{width:100%;background:#000;border-radius:8px}
+.tabs button{border-radius:8px 8px 0 0;border-bottom:0}
+.tabs button.on{background:#1a3d7c;color:#fff}
+.job{background:#0f1b33;color:#dfe6f3;border-radius:8px;padding:10px 12px;font:12px/1.45 monospace;white-space:pre-wrap;max-height:240px;overflow:auto}
+.job b{color:#ffd166}
+.hint{font-size:12px;color:#777}
+.warn{background:#fff3c4;border-left:5px solid #e0a800;padding:6px 10px;border-radius:6px;font-size:12px;margin:6px 0}
+label{display:block;font-size:12px;color:#555;margin:8px 0 2px}
+input[type=text],textarea,select{width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:6px;padding:6px 8px;font-size:14px;font-family:inherit}
+textarea.body{font:12px/1.45 monospace;min-height:110px}
+textarea.speech{min-height:110px;line-height:1.6}
+textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
+.copyrow{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:10px}
+.copyrow b{font-size:13px}
+.rel{max-height:160px;overflow:auto;border:1px solid #eee;border-radius:6px;padding:4px 8px;font-size:13px}
+.rel label{display:flex;gap:6px;align-items:center;margin:3px 0;color:#222;font-size:13px}
+.rel .nourl{color:#c0392b;font-size:11px}
+.sl{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:14px;border:1px solid #ddd;border-radius:10px;padding:12px;margin:12px 0;background:#fff}
+@media(max-width:900px){.sl{grid-template-columns:1fr}}
+.sl.mod{border-color:#c0392b;box-shadow:0 0 0 2px #f5c6c0}
+.sl .hd{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sl .no{font-weight:bold;font-size:16px;color:#1a3d7c}
+.tm{cursor:pointer;color:#1a3d7c;text-decoration:underline;font-size:13px}
+.badge{font-size:12px;padding:2px 8px;border-radius:10px;background:#e8f0ff;color:#1a3d7c}
+.badge.chg{background:#ffe8e4;color:#c0392b}
+.sl .ops{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.sl .ops button{padding:4px 10px;font-size:12px;border-color:#bbb;color:#333;font-weight:normal}
+.img{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:top;border:1px solid #ccc;border-radius:6px;background:#eee}
+.noimg{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px dashed #bbb;border-radius:6px;color:#888;font-size:13px}
+.ill{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-top:10px;padding:8px;background:#f8f9fb;border-radius:8px}
+.ill img{width:110px;height:82px;object-fit:contain;background:#fff;border:1px solid #ddd;border-radius:6px}
+.imres{margin:6px 0}.imgrid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.imgrid a{width:120px;font-size:11px;color:#555;text-decoration:none;text-align:center}
+.imgrid img{width:120px;height:80px;object-fit:contain;background:#fff;border:1px solid #ddd;border-radius:6px;display:block}.imgrid a:hover img{border-color:#1a3d7c}
+.ill .none{width:110px;height:82px;display:flex;align-items:center;justify-content:center;border:1px dashed #ccc;border-radius:6px;font-size:11px;color:#999;text-align:center}
+.ill textarea{min-height:52px;font-size:12px}
+.ill .r{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.ill .r select{width:auto;font-size:12px;padding:3px 6px}
+.ill .r button{padding:3px 9px;font-size:12px}
+.short{display:flex;gap:6px;align-items:center;margin-top:8px}
+.short input{font-size:12px}
+.short button{padding:4px 10px;font-size:12px;white-space:nowrap}
+.cnt{font-size:12px;color:#666;text-align:right}
+#ed{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:none;align-items:center;justify-content:center}
+#ed .box{background:#fff;border-radius:12px;padding:12px;display:grid;grid-template-columns:1152px 270px;gap:12px;max-height:96vh;overflow:auto}
+@media(max-width:1480px){ #ed .box{grid-template-columns:864px 260px} #cvwrap{width:864px!important;height:486px!important}}
+#cvwrap.pv .ovx{visibility:hidden}
+#cvwrap{position:relative;width:1152px;height:648px;background:#fff;border:1px solid #999;overflow:hidden;background-size:100% auto;background-repeat:no-repeat;user-select:none}
+.ovx{position:absolute;display:flex;align-items:center;box-sizing:border-box;line-height:1.3;white-space:pre-wrap;word-break:break-all;overflow:hidden;cursor:move;outline:1px dashed rgba(26,61,124,.5);font-family:inherit}
+.ovx.sel{outline:2px solid #1a3d7c}
+.ovx .rz{position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;background:#1a3d7c;cursor:nwse-resize;border-radius:3px}
+#props label{margin:6px 0 2px}
+#props input[type=text],#props input[type=number],#props select,#props textarea{font-size:12px;padding:4px 6px}
+#props .two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#props button,.edbar button{padding:4px 9px;font-size:12px}
+.edbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.sl.playing{outline:3px solid #ffd166}
+.shl{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.shl .it .two{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#000}.shl .it .two video,.shl .it .two img{width:100%;aspect-ratio:9/16;max-height:380px;object-fit:contain;background:#000;display:block}
+.shl .it .two .ph{display:flex;align-items:center;justify-content:center;color:#889;font-size:12px;aspect-ratio:9/16;max-height:380px;background:#1a2233}
+.shl .it textarea{width:100%;min-height:58px;font-size:12px;margin-top:6px}.shl .it .hs{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}.shl .it .hs img{width:34px;aspect-ratio:9/16;object-fit:cover;border:1px solid #ccc;border-radius:3px;cursor:pointer}
+.shl .it{border:1px solid var(--line);border-radius:10px;overflow:hidden}.shl .it .b{padding:8px;font-size:12px}.shl .it b{display:block;font-size:13px;margin-bottom:4px}.shl .it .u{display:flex;gap:4px;margin-top:6px}.shl .it .u input{flex:1;font-size:12px;padding:3px 6px;min-width:0}.shl .it .u button{padding:3px 8px;font-size:12px}
+.shl video{aspect-ratio:9/16;max-height:360px}
+.shl pre{white-space:pre-wrap;font-size:11px;background:#f5f5f5;padding:6px;border-radius:6px;max-height:120px;overflow:auto}
+</style>
+<div class="ed">
+<div class="crumb" style="margin:0 0 4px">{% if short_target %}<a href="{{ url_for('studio.shorts_page') }}">쇼츠</a> › 본편: <a href="{{ url_for('studio.edit', name=short_target) }}">{{ short_target_label }}</a>{% else %}<a href="{{ url_for('studio.index') }}">롱폼</a> › {{ name }}{% endif %}</div>
+<div class="bar">
+  <h2>{{ label }}</h2>
+  <button class="pri" onclick="save()">저장</button>
+  <button onclick="resliceAll()" title="읽기 원고가 긴 슬라이드를 AI가 여러 장으로 나눕니다 (원고 내용은 바뀌지 않음)">AI로 전체 더 잘게</button>
+  <span id="dirty"></span>
+  {% if not short_target %}<a class="btn" style="margin-left:auto;border-color:var(--short);color:var(--short)" href="{{ url_for('studio.shorts_page') }}#{{ name }}">▮ 이 영상의 쇼츠 <span id="shn"></span></a>{% else %}<span style="margin-left:auto"></span>{% endif %}
+  <a href="{{ url_for('studio.index') }}">← 목록</a>
+</div>
+{% if archived %}<div class="warn">지난 영상입니다. 슬라이드의 「쇼츠로 만들기」로 홍보용 쇼츠를 만들 수 있습니다 (음성 있는 영상이 없으면 그 1장만 음성을 만듭니다).</div>{% endif %}
+<div class="stepper" id="stepper"></div>
+
+<div class="grid">
+<div>
+  <div class="card">
+    <div class="tabs"><button id="tab-d" onclick="showTab('draft')">초안 영상</button><button id="tab-f" onclick="showTab('final')">완성 영상</button></div>
+    <video id="vid" controls preload="metadata"></video>
+    <div id="vinfo" class="hint"></div>
+  </div>
+  <div class="card"><div class="job" id="job">대기 중</div><div style="margin-top:6px"><button id="stopbtn" style="display:none;background:#c0392b;color:#fff;border-color:#c0392b" onclick="stopJob()">■ 이 작업 중지</button></div></div>
+</div>
+<div>
+  <div class="ptabs"><button class="on" data-p="make" onclick="pane('make')">제작</button><button data-p="yt" onclick="pane('yt')">YouTube 문구</button><button data-p="th" onclick="pane('th')">롱폼 썸네일</button><button data-p="bl" onclick="pane('bl')">블로그</button><button class="short" data-p="sh" onclick="pane('sh')">쇼츠 <span id="shn2"></span></button></div>
+  <div class="pane on" id="pane-make">
+  <div class="card">
+    <h3>영상 만들기</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="run('illust',{i:0})" {% if keys.illust == 'none' %}disabled title="일러스트 키가 없습니다"{% endif %}>일러스트 만들기 (공간 있는 곳만)</button>
+      <label style="display:inline-flex;align-items:center;gap:4px;margin:0;font-size:12px;color:#555">생성처
+        <select id="ill_prov" style="width:auto;font-size:12px;padding:3px 6px" onchange="setProv(this.value)">
+          <option value="auto" {% if keys.illust_choice == 'auto' %}selected{% endif %}>자동 (Gemini→OpenAI→Claude)</option>
+          <option value="gemini" {% if keys.illust_choice == 'gemini' %}selected{% endif %} {% if not keys.illust_avail.gemini %}disabled{% endif %}>Gemini (이라스토야 풍){% if not keys.illust_avail.gemini %} - 키 없음{% endif %}</option>
+          <option value="openai" {% if keys.illust_choice == 'openai' %}selected{% endif %} {% if not keys.illust_avail.openai %}disabled{% endif %}>OpenAI gpt-image{% if not keys.illust_avail.openai %} - 키 없음{% endif %}</option>
+          <option value="claude" {% if keys.illust_choice == 'claude' %}selected{% endif %} {% if not keys.illust_avail.claude %}disabled{% endif %}>Claude (SVG 그림){% if not keys.illust_avail.claude %} - 키 없음{% endif %}</option>
+        </select></label>
+      <button class="pri" onclick="run('draft')">② 초안 영상 만들기 (음성 없음)</button>
+      <button class="pri" onclick="run('build')" {% if not keys.tts %}disabled title="음성 키가 없습니다"{% endif %}>③ 음성 넣어 완성</button>
+    </div>
+    <p class="hint">초안 = 슬라이드 + 자막만 (수십 초~). 자막·글 배치·일러스트를 보고 괜찮으면 「음성 넣어 완성」. 바뀐 슬라이드만 다시 만듭니다.
+    　<label style="display:inline"><input type="checkbox" id="illoff"> 이 영상은 일러스트 없음</label>
+    　<label style="display:inline" title="표의 행·항목·포인트 박스가 읽는 문장에 맞춰 차례로 나타납니다"><input type="checkbox" id="motoff"> 모션 끄기 (요소를 한 번에 표시)</label></p>
+    <div id="dl"></div>
+  </div>
+  </div>
+  <div class="pane" id="pane-yt">
+  <div class="card">
+    <h3>YouTube 에 올릴 문구</h3>
+    <label>제목 <span class="hint" id="tlen"></span></label><input type="text" id="yt_title">
+    <label>설명란 템플릿 ({{ '{{chapters}}' }} 목차・{{ '{{blog}}' }} 블로그・{{ '{{related}}' }} 관련 영상 은 자동으로 들어갑니다)</label>
+    <textarea class="desc" id="yt_desc"></textarea>
+    <label>태그 (쉼표로 구분)</label><input type="text" id="yt_tags">
+    <label>관련 영상 (설명란·블로그에 URL 과 함께 들어감)</label><div class="rel" id="rel"></div>
+    <div class="copyrow"><b>붙여넣기용 (URL·목차 포함)</b><span><button onclick="copyTxt('title')">제목</button> <button onclick="copyTxt('description')">설명란</button> <button onclick="copyTxt('tags')">태그</button></span></div>
+    <div id="ywarn"></div>
+    <textarea class="desc" id="yt_out" readonly style="background:#fafafa"></textarea>
+    <label>업로드한 영상 URL (넣으면 대장에 저장. 다른 영상의 관련 링크·블로그 임베드에 쓰입니다)</label>
+    <div style="display:flex;gap:6px"><input type="text" id="yt_url" placeholder="https://youtu.be/..."><button onclick="saveUrl()">저장</button></div>
+    <p class="hint">URL 을 모르면 <a href="{{ url_for('studio.registry_page') }}">URL 대장</a> 의 「채널에서 가져오기」로 자동으로 채워집니다.</p>
+  </div>
+
+  </div>
+  <div class="pane" id="pane-th">
+  <div class="card">
+    <h3>롱폼 썸네일 <span class="hint" style="font-weight:normal">(16:9 · 1280×720 · YouTube 업로드 시 직접 올림)</span></h3>
+    <p class="hint" style="margin:0 0 8px">쇼츠의 썸네일은 「쇼츠」 탭에서 각 쇼츠마다 따로 만듭니다 (9:16).</p>
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:start">
+      <div>
+        <img id="th_img" style="width:260px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:8px;background:#eee" alt="">
+        <div class="hint" id="th_info" style="margin-top:4px">썸네일 없음</div>
+        <a id="th_dl" class="btn" style="display:none;margin-top:6px;font-size:12px;padding:4px 10px" href="#">다운로드 (1280×720)</a>
+        <div id="th_hist" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px"></div>
+      </div>
+      <div>
+        <label style="margin-top:0">큰 글자 (줄마다 한 줄, 2~3줄 · 일본어) <span class="cp" style="cursor:pointer;color:var(--pri);font-size:11px;text-decoration:underline" onclick="thSuggest()">제목에서 자동 채우기</span></label><textarea id="th_lines" style="min-height:66px;font-size:13px"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label>오른쪽 위 빨간 배지 (예: 11月最新! / 11/8 実施)</label><input type="text" id="th_badge" placeholder="비우면 없음"></div>
+          <div><label>인물</label><select id="th_person" style="width:100%"><option value="woman">여성 (스ーツ)</option><option value="man">남성 (스ーツ)</option><option value="none">없음</option></select></div>
+        </div>
+        <label>아래 정보 박스 3개 (쉼표로 구분 · 각 9자 이내)</label><input type="text" id="th_points" placeholder="登録の手順, 3つの仕事, 年代別戦略">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+          <select id="th_preset" style="width:auto;max-width:300px" title="스타일 프리셋 (docs/THUMB_STYLE.md)"></select>
+          <select id="th_model" style="width:auto;max-width:260px" title="이미지 모델"></select>
+          <select id="th_prov" style="width:auto;display:none" title="그림을 그리는 서비스"><option value="auto">자동 (Replicate 우선)</option><option value="replicate">Replicate (Seedream 4.5 → Nano Banana Pro)</option><option value="openai">OpenAI (gpt-image-2)</option></select>
+          <select id="th_mode" style="width:auto">
+            <option value="ai">AI 전체 생성 (OpenAI · 글자까지)</option>
+            <option value="ai_bg">AI 배경 + 글자는 정확히 합성</option>
+            <option value="plain">단색 배경 (API 없이)</option>
+          </select>
+          <select id="th_quality" style="width:auto" title="OpenAI 품질"><option value="medium">보통 (≈$0.06)</option><option value="high">고품질 (≈$0.25)</option></select>
+          <select id="th_style" style="width:auto;display:none"><option value="navy">남색</option><option value="red">빨강</option><option value="white">흰색</option></select>
+          <label style="margin:0;display:inline-flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" id="th_refs" checked> 기존 썸네일을 스타일 참고로 <span id="th_refn" class="hint"></span></label>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <button class="pri" onclick="makeThumb()" id="th_btn">썸네일 만들기</button>
+          <label style="margin:0;display:inline"><input type="file" id="th_file" accept="image/*" style="display:none" onchange="uploadThumb(this)"><button onclick="$('#th_file').click()">내 이미지 올리기</button></label>
+        </div>
+        <p class="hint" id="th_note">AI 생성은 30~90초 걸리고 끝나면 여기에 나옵니다. 마음에 안 들면 다시 눌러 몇 장 만들고, 왼쪽 아래 작은 그림(이력)에서 골라 쓰세요. 글자가 틀리면 「AI 배경 + 글자 합성」이 안전합니다.</p>
+      </div>
+    </div>
+    <p class="hint">업로드는 YouTube 스튜디오에서 직접 합니다. 올린 뒤 「YouTube 문구」 탭의 「업로드한 영상 URL」에 주소만 넣어주세요.</p>
+  </div>
+  </div>
+  <div class="pane" id="pane-bl">
+  <div class="card">
+    <h3>블로그 (takken.ekunblog.com)</h3>
+    <label>슬러그 (URL 끝부분・영문 소문자와 하이픈)</label><input type="text" id="bl_slug">
+    <label>글 제목</label><input type="text" id="bl_title">
+    <label>요약 (도입문・설명란 첫머리에도 사용)</label><textarea id="bl_ex" style="min-height:60px"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="pri" onclick="blog(false)" {% if not keys.wp %}disabled title="WordPress 계정이 없습니다"{% endif %}>블로그에 발행·갱신</button>
+      <button onclick="blog(true)" {% if not keys.wp %}disabled{% endif %}>임시글로 저장</button>
+    </div>
+    <p class="hint" id="blurl"></p>
+    <p class="hint">발행하면 글 URL 이 저장되어 YouTube 설명란의 「ブログで詳しく」에 자동으로 들어갑니다. 영상 URL 을 넣은 뒤 다시 누르면 글에 영상이 임베드됩니다.</p>
+  </div>
+
+  </div>
+  <div class="pane" id="pane-sh">
+  <div class="card"><h3>이 영상에서 만든 쇼츠 <span class="hint" style="font-weight:normal">(각 쇼츠에 9:16 썸네일 · 영상 첫 1초에 삽입)</span></h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button onclick="run('short_auto',{n:1})" style="background:var(--short);color:#fff;border-color:var(--short)" {% if not keys.claude %}disabled{% endif %}>＋ 쇼츠 만들기 (AI가 핵심 장면 선택)</button>
+      <button onclick="run('short_auto',{n:3})" style="border-color:var(--short);color:var(--short)" {% if not keys.claude %}disabled{% endif %}>3개</button>
+      <a class="btn" href="{{ url_for('studio.shorts_page') }}#{{ name }}">쇼츠 탭에서 보기</a>
+    </div>
+    <p class="hint" style="margin:0 0 6px"><label style="display:inline-flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="shchar"> <b>AI 캐릭터 넣기</b> (Hedra · 마스코트가 음성에 맞춰 말함 · 60초당 약 $1.5)</label>
+      <span id="shchar_st" class="hint"></span> · <a href="{{ url_for('studio.style_page') }}#mascot">마스코트 설정</a></p>
+    <p class="hint">장면을 직접 고르려면 아래 대본의 각 장면에 있는 「쇼츠로 만들기」. 올린 뒤 URL을 넣으면 본편 설명란·블로그에서 연결할 수 있습니다.</p>
+    <div id="shorts" class="shl"></div></div>
+  </div>
+</div>
+</div>
+
+<div id="ed"><div class="box">
+  <div>
+    <div id="cvwrap" onmousedown="cvDown(event)"></div>
+    <div class="edbar">
+      <input type="text" id="ill_prompt" placeholder="그림 설명 (일본어) 예: 2週間のカレンダーに勉強の予定を書き込む受験生" style="width:360px;font-size:12px;padding:4px 6px">
+      <button onclick="genIll(false)" id="ill_btn" {% if keys.illust == 'none' %}disabled title="일러스트 키가 없습니다"{% endif %}>+그림 만들기</button>
+      <button onclick="genIll(true)" {% if keys.illust == 'none' %}disabled{% endif %} title="같은 설명으로 다른 그림">다른 그림</button>
+      <span style="border-left:1px solid #ccc;height:22px"></span>
+      <input type="text" id="imq" placeholder="실제 로고·사진 검색 예: 住友不動産 ロゴ" style="width:230px;font-size:12px;padding:4px 6px" onkeydown="if(event.key==='Enter')imgSearch()">
+      <select id="imk" style="font-size:12px"><option value="logo">로고</option><option value="photo">사진</option></select>
+      <button onclick="imgSearch()" id="im_btn" title="출처: {{ keys.img|join(' → ') }}">이미지 검색</button>
+      <span style="border-left:1px solid #ccc;height:22px"></span>
+      <button onclick="addOv('text')">+텍스트</button><button onclick="addOv('box')">+상자</button><button onclick="addOv('yellow')">+노란 강조</button><button onclick="addOv('arrow')">+화살표</button>
+      <button style="background:#c0392b;color:#fff;border-color:#c0392b" onclick="delOv()">선택 삭제</button>
+      <span style="border-left:1px solid #ccc;height:22px"></span>
+      <button onclick="edAlign('h')" title="선택 요소를 화면 좌우 가운데로">좌우 가운데</button><button onclick="edAlign('v')" title="선택 요소를 화면 상하 가운데로">상하 가운데</button><button onclick="edAlign('c')">정가운데</button>
+      <span style="border-left:1px solid #ccc;height:22px"></span>
+      <button onclick="edExplode()" title="제목·항목·표 셀·강조 상자를 전부 개별 요소로 바꿉니다">다시 분해</button>
+      <button onclick="edRestore()" id="ed_restore">원래 자동 레이아웃으로</button>
+      <span style="flex:1"></span>
+      <button id="ed_undo" onclick="edUndo()" title="되돌리기 (⌘Z / Ctrl+Z)" disabled>↶ 되돌리기</button><button id="ed_redo" onclick="edRedo()" title="다시 실행 (⇧⌘Z / Ctrl+Y)" disabled>↷ 다시</button>
+      <button onclick="edPreview()">미리보기</button><button class="pri" onclick="edSave()">저장</button><button onclick="edClose()">닫기</button>
+    </div>
+    <p class="hint">열면 자동 레이아웃이 요소로 분해됩니다(AI 안 씀). 그림은 설명을 쓰고 「+그림 만들기」→ 끌어서 배치. 드래그=이동, 오른쪽아래 파란점=크기, 더블클릭=글 편집, 방향키=2px 이동(Shift=20px), Delete=삭제, ⌘Z=되돌리기(⇧⌘Z=다시). 「미리보기」는 완성 그림을 보여주고, 화면을 클릭하면 편집으로 돌아옵니다. 「저장」을 누르기 전에는 아무것도 바뀌지 않습니다.</p>
+  </div>
+  <div id="props"></div>
+</div></div>
+<details id="slides-box" ontoggle="slidesToggled()">
+<summary style="cursor:pointer;font-size:17px;font-weight:800;color:var(--pri);padding:10px 0;list-style:none;display:flex;align-items:center;gap:10px"><span class="tri">▸</span> 대본 (슬라이드) <span id="sl-n" class="hint" style="font-weight:normal"></span><span class="hint" style="font-weight:normal;margin-left:auto">펼쳐서 장면별로 편집 · 쇼츠로 만들기</span></summary>
+<p class="hint">빨간 테두리 = 지난번 출력 이후 바뀐 슬라이드. 본문은 HTML. 일러스트는 「공간 있는 곳만」 자동으로 들어갑니다 (배치는 자동 / 위 가운데 / 오른쪽에 두고 본문 왼쪽 / 없음 중 선택).</p>
+<div id="slides"></div>
+</details>
+<style>#slides-box[open] summary .tri{transform:rotate(90deg)} #slides-box summary .tri{display:inline-block;transition:transform .15s} #slides-box summary::-webkit-details-marker{display:none}</style>
+</div>
+<script>
+const NAME = {{ name|tojson }}, STEPS = {{ steps|tojson }};
+let spec = null, rows = [], dirty = false, poll = null, video = null, draft = null, tab = null, ytx = null, REG = null;
+const $ = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = t => t==null ? "—" : `${String(Math.floor(t/60)).padStart(2,"0")}:${String(Math.floor(t%60)).padStart(2,"0")}`;
+const fileUrl = (f, v) => `/studio/file/${NAME}/${f}` + (v ? `?v=${v}` : "");
+const post = (u, b) => fetch(u, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(b||{})}).then(r => r.json());
+
+async function load(){
+  const d = await (await fetch(`/studio/api/spec/${NAME}`)).json();
+  spec = d.spec; rows = d.rows; video = d.video; draft = d.draft;
+  if (!REG) REG = await (await fetch("/studio/api/registry")).json();
+  setDirty(false); render(); fillMeta(); stepper(); showTab(tab || (video ? "final" : "draft")); showJob(d.job); loadYtext(); loadShorts(); loadThumb();
+  $("#sl-n").textContent = `${spec.slides.length}장`;
+  if (!slidesInit){ slidesInit = true; let open = false; try { open = localStorage.getItem("studio_slides_" + NAME) === "1"; } catch(e){}
+    if (/^#s\d+$/.test(location.hash)) open = true;
+    if (open) $("#slides-box").open = true; }
+  if ($("#slides-box").open) autoPreview();
+  if (/^#s\d+$/.test(location.hash)){ const el = document.querySelector(location.hash); if (el) setTimeout(() => el.scrollIntoView({behavior:"smooth"}), 300); }
+}
+let pvBusy = false, slidesInit = false;
+function slidesToggled(){
+  const o = $("#slides-box").open; try { localStorage.setItem("studio_slides_" + NAME, o ? "1" : "0"); } catch(e){}
+  if (o && spec) autoPreview();
+}
+document.addEventListener("click", e => {                       // 쇼츠 카드의 「장면 #9」 같은 링크는 접힌 대본을 펼치고 이동
+  const a = e.target.closest('a[href^="#s"]'); if (!a) return;
+  const el = document.querySelector(a.getAttribute("href")); if (!el) return;
+  $("#slides-box").open = true; e.preventDefault(); setTimeout(() => el.scrollIntoView({behavior:"smooth"}), 50);
+});
+async function autoPreview(){            // 画像がないスライドは開いたときに順に描く（ボタンを押さなくてよい）
+  if (pvBusy) return; pvBusy = true;
+  try {
+    for (let k = 0; k < spec.slides.length; k++){
+      const r = rows[k]; if (!r || r.thumb || r.preview_local || r.edited) continue;
+      const d = await post(`/studio/api/preview/${NAME}/${k+1}`, spec.slides[k]);
+      if (!d.ok) continue;
+      r.preview_local = d.png; r.pv_t = d.t;
+      const img = $(`#slides .sl:nth-child(${k+1}) .img, #slides .sl:nth-child(${k+1}) .noimg`);
+      if (img){ const el = document.createElement("img"); el.className = "img"; el.src = fileUrl(d.png, d.t); img.replaceWith(el); }
+    }
+  } finally { pvBusy = false; }
+}
+function stepper(){
+  const order = STEPS.map(s => s[0]), cur = order.indexOf(spec.status || "script");
+  $("#stepper").innerHTML = STEPS.map(([k, lab], i) => `<div class="${i <= cur ? "done" : (i === cur+1 ? "cur" : "")}">${i+1}. ${lab}</div>`).join("");
+}
+function showTab(t){
+  tab = t; const v = t === "final" ? video : draft;
+  $("#tab-d").className = t === "draft" ? "on" : ""; $("#tab-f").className = t === "final" ? "on" : "";
+  const el = $("#vid");
+  if (v){ const u = fileUrl(v.file, v.mtime); if (el.dataset.src !== u){ el.src = u; el.dataset.src = u; }
+          $("#vinfo").textContent = `${t === "final" ? "완성" : "초안"} ${v.built_at}・${fmt(v.total)}`; }
+  else { el.removeAttribute("src"); el.dataset.src = ""; $("#vinfo").textContent = t === "final" ? "아직 음성으로 완성하지 않았습니다." : "아직 초안이 없습니다. 「초안 영상 만들기」를 눌러주세요."; }
+  $("#dl").innerHTML = video ? `<a class="btn" href="${fileUrl(video.file, video.mtime)}&dl=1">완성 영상 다운로드 (mp4)</a>` : "";
+}
+function fillMeta(){
+  const yt = spec.youtube || {}, bl = spec.blog || {};
+  $("#yt_title").value = yt.title || ""; $("#yt_desc").value = yt.description || ""; $("#yt_tags").value = (yt.tags || []).join(", ");
+  $("#yt_url").value = yt.url || ((REG.videos || []).find(v => v.key === NAME) || {}).url || "";
+  $("#bl_slug").value = bl.slug || ""; $("#bl_title").value = bl.title || ""; $("#bl_ex").value = bl.excerpt || "";
+  $("#blurl").innerHTML = bl.url ? `발행됨: <a href="${esc(bl.url)}" target="_blank">${esc(bl.url)}</a>` : "아직 발행하지 않았습니다";
+  $("#illoff").checked = !!spec.illust_off; $("#motoff").checked = !!spec.motion_off; $("#shchar").checked = !!spec.short_character;
+  fetch("/studio/api/mascot").then(r => r.json()).then(m => { $("#shchar_st").textContent = (m.hedra ? "Hedra 키 있음" : "Hedra 키 없음") + " · " + (m.file ? "마스코트 있음" : "마스코트 없음"); if (!m.hedra || !m.file) $("#shchar").disabled = true; });
+  $("#tlen").textContent = `${(yt.title||"").length}자`;
+  const rel = new Set(spec.related || []);
+  $("#rel").innerHTML = (REG.videos || []).filter(v => !v.short && v.key !== NAME).map(v =>
+    `<label><input type="checkbox" value="${esc(v.key)}" ${rel.has(v.key) ? "checked" : ""}> ${esc(v.label || v.yt_title || v.key)} ${v.url ? "" : '<span class="nourl">URL 미등록</span>'}</label>`).join("");
+  ["#yt_title","#yt_desc","#yt_tags","#bl_slug","#bl_title","#bl_ex"].forEach(s => $(s).oninput = () => { setDirty(true); if (s === "#yt_title") $("#tlen").textContent = `${$(s).value.length}자`; });
+  $("#rel").querySelectorAll("input").forEach(c => c.onchange = () => setDirty(true));
+  $("#illoff").onchange = () => setDirty(true); $("#motoff").onchange = () => setDirty(true); $("#shchar").onchange = () => setDirty(true);
+}
+function meta(){
+  return {youtube:{title:$("#yt_title").value, description:$("#yt_desc").value, tags:$("#yt_tags").value},
+          blog:{slug:$("#bl_slug").value.trim(), title:$("#bl_title").value, excerpt:$("#bl_ex").value},
+          related:[...$("#rel").querySelectorAll("input:checked")].map(c => c.value), illust_off:$("#illoff").checked, motion_off:$("#motoff").checked, short_character:$("#shchar").checked};
+}
+function render(){
+  const box = $("#slides"); box.innerHTML = "";
+  spec.slides.forEach((s, k) => {
+    const i = k + 1, r = rows[k] || {state:"changed"};
+    const img = r.preview_local ? fileUrl(r.preview_local, r.pv_t) : (r.thumb ? fileUrl(r.thumb) : null);
+    const chars = (s.speech||"").length;
+    const ok = r.state === "built" && !r.edited;
+    const div = document.createElement("div");
+    div.className = "sl" + (ok ? "" : " mod"); div.id = "s" + i;
+    div.innerHTML = `
+      <div class="hd"><span class="no">#${i}</span>
+        <span class="tm" data-t="${r.start ?? ""}">${r.in_video ? fmt(r.start) + "〜" + fmt(r.start + r.dur) + ` (${Math.round(r.dur)}초)` : (r.dstart != null ? "초안 " + fmt(r.dstart) : "영상에 미반영")}</span>
+        <span class="badge ${ok ? "" : "chg"}">${r.edited ? "편집 중 (미저장)" : (r.state === "built" ? "완성됨" : (r.state === "draft" ? "초안 있음" : "변경 있음"))}</span>
+        <span class="ops"><button data-op="pv">미리보기 이미지</button><button data-op="ed">배치 편집</button><button data-op="split" title="읽기 원고는 그대로 두고 이 슬라이드를 AI가 여러 장으로 나눕니다">AI로 나누기</button><button data-op="up">↑</button><button data-op="down">↓</button><button data-op="dup">복제</button><button data-op="del">삭제</button></span></div>
+      <div>${img ? `<img class="img" src="${img}">` : `<div class="noimg">이미지 만드는 중…</div>`}
+        <div class="short"><input type="text" data-f="short_hook" placeholder="쇼츠 제목 (비우면 슬라이드 제목) — 일본어로" value="${esc(s.short_hook)}"><button data-op="short">쇼츠로 만들기</button></div>
+      </div>
+      <div>
+        <label>제목</label><input type="text" data-f="title" value="${esc(s.title)}">
+        <label>소제목</label><input type="text" data-f="sub" value="${esc(s.sub)}">
+        <label>본문 (HTML)</label><textarea class="body" data-f="body">${esc(s.body)}</textarea>
+        <label>사진 장면 <span class="hint">(비우면 보통 장면. 검색어 예: 試験会場 教室 / AI 생성: ai:試験会場で問題を解く受験生たち)</span></label><input type="text" data-f="photo" value="${esc(s.photo)}" placeholder="전체 화면 사진 + 자막 장면으로 만들기">
+        <label>읽기 원고 (내레이션 = 자막) <span class="hint">【…】로 감싼 부분은 자막에서 노란색</span></label><textarea class="speech" data-f="speech">${esc(s.speech)}</textarea>
+        <div class="cnt">${chars}자・약 ${Math.round(chars/4.3)}초</div>
+      </div>`;
+    div.querySelectorAll("[data-f]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
+      spec.slides[k][el.dataset.f] = el.value; if (!el.value) delete spec.slides[k][el.dataset.f];
+      rows[k].edited = true; setDirty(true);
+      div.classList.add("mod"); const b = div.querySelector(".badge"); b.textContent = "편집 중 (미저장)"; b.classList.add("chg");
+      if (el.dataset.f === "speech") div.querySelector(".cnt").textContent = `${el.value.length}자・약 ${Math.round(el.value.length/4.3)}초`;
+    }));
+    div.querySelector(".tm").addEventListener("click", e => { const t = e.target.dataset.t; if (t !== ""){ showTab("final"); $("#vid").currentTime = +t; $("#vid").play(); window.scrollTo({top:0, behavior:"smooth"}); } });
+    div.querySelectorAll("[data-op]").forEach(b => b.addEventListener("click", () => op(b.dataset.op, k, div)));
+    box.appendChild(div);
+  });
+}
+function setDirty(v){ dirty = v; $("#dirty").innerHTML = v ? '<span class="dirty">● 저장하지 않은 변경이 있습니다</span>' : ""; }
+async function op(kind, k, div){
+  const S = spec.slides, R = rows;
+  if (kind === "pv"){
+    const b = div.querySelector('[data-op="pv"]'); b.textContent = "만드는 중…"; b.disabled = true;
+    const d = await post(`/studio/api/preview/${NAME}/${k+1}`, S[k]); b.textContent = "미리보기 이미지"; b.disabled = false;
+    if (!d.ok){ alert("미리보기 실패:\n" + d.error); return; }
+    R[k].preview_local = d.png; R[k].pv_t = d.t; render(); return;
+  }
+  if (kind === "ed"){ edOpen(k); return; }
+  if (kind === "split"){
+    const sec = prompt(`#${k+1} 을 AI로 여러 장으로 나눕니다 (읽기 원고는 한 글자도 바뀌지 않고 끊는 위치와 화면만 새로 만듭니다).\n한 장의 목표 길이(초)를 넣어주세요:`, "25");
+    if (!sec) return; if (dirty && !(await save())) return; run("reslice", {i:k+1, sec:+sec}); return;
+  }
+  if (kind === "short"){ if (dirty && !(await save())) return; return run("short", {i:k+1, hook:S[k].short_hook || "", character:$("#shchar").checked}); }
+  if (kind === "up" && k > 0){ [S[k-1], S[k]] = [S[k], S[k-1]]; [R[k-1], R[k]] = [R[k], R[k-1]]; }
+  else if (kind === "down" && k < S.length-1){ [S[k+1], S[k]] = [S[k], S[k+1]]; [R[k+1], R[k]] = [R[k], R[k+1]]; }
+  else if (kind === "dup"){ S.splice(k+1, 0, JSON.parse(JSON.stringify(S[k]))); R.splice(k+1, 0, {...R[k], in_video:false, edited:true}); }
+  else if (kind === "del"){ if (S.length <= 1 || !confirm(`#${k+1} 을(를) 삭제할까요?`)) return; S.splice(k, 1); R.splice(k, 1); }
+  else return;
+  R.forEach(r => { r.in_video = false; });
+  setDirty(true); render();
+}
+async function save(){
+  const d = await post(`/studio/api/spec/${NAME}`, {slides: spec.slides, meta: meta()});
+  if (!d.ok){ alert("저장 실패: " + d.error); return false; }
+  await load(); return true;
+}
+async function run(kind, args){
+  if (dirty && !(await save())) return;
+  const d = await post(`/studio/api/run/${NAME}/${kind}`, args);
+  if (!d.ok){ alert(d.error); return; }
+  startPoll();
+}
+async function resliceAll(){
+  const sec = prompt("읽기 원고가 긴 슬라이드를 AI가 여러 장으로 나눕니다 (원고는 그대로, 끊는 위치와 화면만 새로).\n한 장의 목표 길이(초). 이보다 1.3배 이상 긴 슬라이드만 나눕니다:", "25");
+  if (!sec) return; if (dirty && !(await save())) return; run("reslice", {sec:+sec});
+}
+async function edExplode(){
+  if (!confirm("이 화면의 제목·항목·표 셀·강조 상자를 전부 개별 요소로 바꿉니다. 이후에는 본문(HTML) 대신 이 편집창에서 직접 고칩니다. 계속할까요?")) return;
+  const sl = {...spec.slides[ED.k], overlays: ED.ovs};
+  const d = await post(`/studio/api/explode/${NAME}/${ED.k+1}`, sl);
+  if (!d.ok){ alert("분해 실패:\n" + d.error); return; }
+  mark(); ED.lastMark = 0; ED.pending = d.slide; ED.ovs = d.slide.overlays; ED.sel = -1; $("#cvwrap").style.backgroundImage = "none"; edDraw(); edProps();
+  $("#ed_restore").style.display = "";
+}
+async function edRestore(){
+  const o = spec.slides[ED.k]._orig || (ED.pending && ED.pending._orig);
+  if (!o || !confirm("자동 레이아웃으로 되돌립니다 (배치 편집 내용은 사라집니다)")) return;
+  ED.pending = {...spec.slides[ED.k], title:o.title, sub:o.sub, body:o.body, overlays:[]}; delete ED.pending._orig; delete ED.pending.illust_off;
+  if (o.illust_pos) ED.pending.illust_pos = o.illust_pos;
+  mark(); ED.lastMark = 0; ED.ovs = []; ED.sel = -1; edDraw(); edProps();
+  const pv = await post(`/studio/api/preview/${NAME}/${ED.k+1}`, ED.pending);
+  if (pv.ok) $("#cvwrap").style.backgroundImage = `url("${fileUrl(pv.png, pv.t)}")`;
+  $("#ed_restore").style.display = "none";
+}
+async function blog(asDraft){
+  if (!$("#bl_slug").value.trim()){ alert("슬러그를 넣어주세요 (예: takken-5mon-menjo)"); return; }
+  if (!confirm(asDraft ? "블로그에 임시글로 저장할까요?" : "블로그에 공개할까요? (같은 슬러그의 글이 있으면 갱신합니다)")) return;
+  run("blog", {draft: asDraft});
+}
+async function saveUrl(){
+  const u = $("#yt_url").value.trim();
+  if (u && !/^https:\/\/(youtu\.be|(www\.)?youtube\.com)\//.test(u)){ alert("YouTube URL 을 넣어주세요"); return; }
+  const d = await post(`/studio/api/spec/${NAME}`, {meta: {...meta(), youtube: {...meta().youtube, url: u}}});
+  if (!d.ok){ alert(d.error); return; }
+  REG = null; await load();
+}
+function showJob(j){
+  const el = $("#job");
+  if (!j || !j.name){ el.textContent = "대기 중"; return; }
+  const st = j.running ? `<b>${esc(j.label)} 실행 중…</b> ${j.elapsed}초` : (j.rc === 0 ? `<b>${esc(j.label)} 완료</b>` : (j.rc === -15 ? `<b>${esc(j.label)} 중지됨</b>` : `<b>${esc(j.label)} 종료 (코드 ${j.rc})</b>`));
+  $("#stopbtn").style.display = j.running ? "" : "none";
+  if (j.name !== NAME){                              // 作業欄は全体で1つ。別の動画の作業はそれと分かるように短く出す
+    const other = `<a href="/studio/v/${encodeURIComponent(j.name)}">${esc(j.name)}</a>`;
+    el.innerHTML = j.running
+      ? `<span style="color:#8a6d1a">⏳ 지금 <b>다른 영상</b>(${other})의 작업이 진행 중입니다: ${esc(j.label)} ${j.elapsed}초. 끝나면 이 영상의 버튼을 누를 수 있습니다.</span>`
+      : `<span style="color:#777">이 영상의 진행 중인 작업은 없습니다. (마지막 작업은 다른 영상 ${other}의 「${esc(j.label)}」${j.rc === 0 ? " 완료" : ""} — 결과는 그 영상 페이지에 있습니다)</span>`;
+    if (j.running) startPoll(); return;
+  }
+  el.innerHTML = `${st}　${esc(j.name)}\n` + esc(j.log); el.scrollTop = el.scrollHeight;
+  if (j.running) startPoll();
+}
+async function stopJob(){
+  if (!confirm("진행 중인 작업을 중지할까요? (지금까지 만들어진 것은 남습니다)")) return;
+  const d = await post("/studio/api/job/stop"); if (!d.ok) alert(d.error); startPoll();
+}
+function startPoll(){
+  if (poll) return;
+  poll = setInterval(async () => {
+    const j = await (await fetch("/studio/api/job")).json(); showJob(j);
+    if (!j.running){ clearInterval(poll); poll = null; if (j.name === NAME){ if (j.kind === "thumb"){ loadThumb(); loadShorts(); showJob(j); return; } if (j.kind === "draft") tab = "draft"; if (j.kind === "build") tab = "final"; load(); } }
+  }, 3000);
+}
+async function loadYtext(){
+  ytx = await (await fetch(`/studio/api/ytext/${NAME}`)).json();
+  $("#yt_out").value = `【제목】\n${ytx.title}\n\n【설명란】\n${ytx.description}\n\n【태그】\n${ytx.tags}`;
+  $("#ywarn").innerHTML = (ytx.warn || []).map(w => `<div class="warn">${esc(w)}</div>`).join("");
+}
+async function copyTxt(k){
+  if (dirty && !(await save())) return;
+  const t = ytx[k];
+  try { await navigator.clipboard.writeText(t); alert("복사했습니다"); } catch(e){ prompt("복사해 주세요", t); }
+}
+async function setProv(v){ const d = await post("/studio/api/illust_provider", {provider: v}); if (d.ok) alert("일러스트 생성처: " + d.provider + " (모든 영상에 적용)"); }
+let TH = null;
+async function loadThumb(){
+  const d = await (await fetch(`/studio/api/thumb/${NAME}`)).json(); TH = d;
+  if (d.file){ $("#th_img").src = fileUrl(d.file, d.mtime); $("#th_info").textContent = d.thumb.custom ? "내 이미지" : ({ai:"AI 생성", ai_bg:"AI 배경 + 글자 합성", plain:"단색 배경"}[d.thumb.mode] || "자동 생성"); $("#th_dl").href = fileUrl(d.file, d.mtime) + "&dl=1"; $("#th_dl").style.display = "inline-block"; }
+  else { $("#th_img").removeAttribute("src"); $("#th_info").textContent = "썸네일 없음"; $("#th_dl").style.display = "none"; }
+  const t = d.thumb || {};
+  if (t.lines && !$("#th_lines").value) $("#th_lines").value = t.lines.join("\n");
+  if (t.badge != null && !$("#th_badge").value) $("#th_badge").value = t.badge;
+  if (t.points && !$("#th_points").value) $("#th_points").value = t.points.join(", ");
+  if (t.person) $("#th_person").value = t.person;
+  if (t.mode) $("#th_mode").value = t.mode; else if (!d.openai) $("#th_mode").value = "plain";
+  if (t.quality) $("#th_quality").value = t.quality;
+  if (t.provider) $("#th_prov").value = t.provider;
+  const pvv = d.providers || {};
+  if (!$("#th_preset").options.length){
+    $("#th_preset").innerHTML = (d.presets || []).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("");
+    $("#th_model").innerHTML = (d.models || []).map(([k, l]) => { const ok = k === "auto" || ((k.startsWith("gpt-image") || k.startsWith("dall-e")) ? pvv.openai : pvv.replicate); return `<option value="${k}" ${ok ? "" : "disabled"}>${esc(l)}${ok ? "" : " - 키 없음"}</option>`; }).join("");
+    try { const lp = localStorage.getItem("studio_th_preset"), lm = localStorage.getItem("studio_th_model"); if (lp) $("#th_preset").value = lp; if (lm) $("#th_model").value = lm; } catch(e){}
+    $("#th_preset").onchange = () => { try { localStorage.setItem("studio_th_preset", $("#th_preset").value); } catch(e){} };
+    $("#th_model").onchange = () => { try { localStorage.setItem("studio_th_model", $("#th_model").value); } catch(e){} };
+  }
+  if (t.preset) $("#th_preset").value = t.preset;
+  if (t.model) $("#th_model").value = t.model;
+  const pv = d.providers || {};
+  [...$("#th_prov").options].forEach(o => { if (o.value !== "auto") o.disabled = !pv[o.value]; });
+  if (t.style) $("#th_style").value = t.style;
+  if (!$("#th_lines").value) thSuggest();
+  $("#th_refn").textContent = d.refs ? `(${d.refs}장: 채널 참고 이미지 + 기존 썸네일)` : "(아직 없음)";
+  $("#th_hist").innerHTML = (d.hist || []).map(h => `<img src="${fileUrl(h.file, h.mtime)}" title="이걸로 쓰기" style="width:60px;aspect-ratio:16/9;object-fit:cover;border:1px solid #ccc;border-radius:4px;cursor:pointer" onclick="useThumb('${h.file}')">`).join("");
+  thMode();
+  if (!pv.openai && !pv.replicate){ [...$("#th_mode").options].forEach(o => { if (o.value !== "plain") o.disabled = true; }); $("#th_mode").value = "plain"; thMode(); $("#th_note").textContent = "Replicate 토큰(.replicate_api_token)도 OpenAI 키(.openai_api_key)도 없어 AI 생성은 쓸 수 없습니다. 단색 배경이나 내 이미지 올리기를 쓰세요."; }
+  else if (t.used_model) $("#th_info").textContent += ` · ${t.used_model}${t.preset ? " · " + t.preset : ""}`;
+}
+function thSuggest(){ const s = (TH && TH.suggest) || {}; if (s.lines && s.lines.length) $("#th_lines").value = s.lines.join("\n"); if (s.badge) $("#th_badge").value = s.badge; if (s.points && s.points.length) $("#th_points").value = s.points.join(", "); }
+function thMode(){ const m = $("#th_mode").value; $("#th_style").style.display = m === "plain" ? "" : "none"; $("#th_quality").style.display = m === "plain" ? "none" : ""; $("#th_refs").parentElement.style.display = m === "plain" ? "none" : ""; }
+$("#th_mode").onchange = thMode;
+async function makeThumb(){
+  const lines = $("#th_lines").value.split("\n").map(x => x.trim()).filter(Boolean);
+  const body = {lines, style: $("#th_style").value, mode: $("#th_mode").value, badge: $("#th_badge").value, person: $("#th_person").value,
+                points: $("#th_points").value.split(/[,、，]/).map(x => x.trim()).filter(Boolean), quality: $("#th_quality").value, use_refs: $("#th_refs").checked, provider: $("#th_prov").value, preset: $("#th_preset").value, model: $("#th_model").value};
+  $("#th_btn").disabled = true;
+  const d = await post(`/studio/api/thumb/${NAME}`, body); $("#th_btn").disabled = false;
+  if (!d.ok){ alert(d.error); return; }
+  if (body.mode === "plain") loadThumb(); else startPoll();
+}
+async function useThumb(f){ const d = await post(`/studio/api/thumb/${NAME}`, {use: f}); if (!d.ok){ alert(d.error || "실패"); return; } loadThumb(); }
+async function uploadThumb(inp){
+  if (!inp.files[0]) return; const fd = new FormData(); fd.append("file", inp.files[0]);
+  const d = await (await fetch(`/studio/api/thumb/${NAME}`, {method:"POST", body: fd})).json();
+  if (!d.ok){ alert(d.error); return; } loadThumb();
+}
+function pane(k){
+  document.querySelectorAll(".ptabs button").forEach(b => b.classList.toggle("on", b.dataset.p === k));
+  document.querySelectorAll(".pane").forEach(p => p.classList.toggle("on", p.id === "pane-" + k));
+  try { localStorage.setItem("studio_pane_" + NAME, k); } catch(e){}
+}
+try { const k = localStorage.getItem("studio_pane_" + NAME); if (k && document.getElementById("pane-" + k)) pane(k); } catch(e){}
+async function loadShorts(){
+  const d = await (await fetch(`/studio/api/shorts/${NAME}`)).json();
+  const n = d.shorts.length; $("#shn") && ($("#shn").textContent = n ? `${n}개` : ""); $("#shn2").textContent = n ? `(${n})` : "";
+  if (!n){ $("#shorts").innerHTML = `<div class="hint">아직 이 영상의 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 핵심 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>`; return; }
+  $("#shorts").innerHTML = d.shorts.map(s => `<div class="it" data-base="${esc(s.base)}">
+    <div class="two"><video controls preload="none" src="${fileUrl(s.file, s.mtime)}" ${s.poster ? `poster="${fileUrl(s.poster, s.mtime)}"` : ""}></video>
+      ${s.thumb ? `<img class="sth" src="${fileUrl(s.thumb, s.mtime)}" title="쇼츠 썸네일">` : `<div class="ph sth">쇼츠 썸네일<br>아직 없음</div>`}</div>
+    <div class="b"><b>${esc(s.title)}</b>${esc(s.desc)}<div class="hint">${s.slide ? `장면 <a href="#s${s.slide}">#${s.slide}</a> · ` : ""}${s.dur ? s.dur + "초 · " : ""}<a href="${fileUrl(s.file, s.mtime)}&dl=1">mp4 받기</a>${s.thumb ? ` · <a href="${fileUrl(s.thumb, s.mtime)}&dl=1">썸네일 받기</a>` : ""}</div>
+    <div class="u"><input type="url" placeholder="올린 쇼츠 URL" value="${esc(s.url)}" data-key="${esc(s.key)}" data-title="${esc(s.title)}"><button onclick="saveShortUrl(this)">저장</button></div>
+    <div class="hint" style="margin-top:8px"><b>쇼츠 썸네일</b> (9:16 · 줄마다 한 줄)</div><textarea class="stl" placeholder="훅 문구 2~3줄"></textarea>
+    <div class="u"><label style="margin:0;display:inline-flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" class="stc" checked> 영상 첫 1초에 넣기</label><span style="flex:1"></span>
+      <button onclick="makeShortThumb(this)" style="background:var(--short);color:#fff;border-color:var(--short)">썸네일 만들기</button>
+      <label style="margin:0;display:inline"><input type="file" accept="image/*" style="display:none" onchange="uploadShortThumb(this)"><button onclick="this.previousElementSibling.click()">내 이미지</button></label></div>
+    <div class="hs"></div><div class="hint sti"></div></div></div>`).join("");
+  d.shorts.forEach(s => loadShortThumb(s.base));
+}
+async function loadShortThumb(base){
+  const it = $(`#shorts .it[data-base="${base}"]`); if (!it) return;
+  const d = await (await fetch(`/studio/api/thumb/${NAME}?short=${encodeURIComponent(base)}`)).json();
+  const ta = it.querySelector(".stl"); const t = d.thumb || {};
+  if (!ta.value) ta.value = ((t.lines && t.lines.length) ? t.lines : (d.suggest.lines || [])).join("\n");
+  if (t.cover === false) it.querySelector(".stc").checked = false;
+  if (d.file){ const img = it.querySelector(".sth"); const el = document.createElement("img"); el.className = "sth"; el.src = fileUrl(d.file, d.mtime); img.replaceWith(el); }
+  it.querySelector(".hs").innerHTML = (d.hist || []).map(h => `<img src="${fileUrl(h.file, h.mtime)}" title="이걸로 쓰기" onclick="useShortThumb('${base}','${h.file}')">`).join("");
+  it.querySelector(".sti").innerHTML = (d.covered ? `첫 1초에 썸네일이 들어가 있습니다 <a href="#" onclick="restoreShort('${base}');return false">원래 영상으로 되돌리기</a>` : "") + (t.used_model ? ` · ${esc(t.used_model)}` : "");
+}
+function shortThumbBody(it){
+  return {lines: it.querySelector(".stl").value.split("\n").map(x => x.trim()).filter(Boolean), mode: $("#th_mode").value === "plain" ? "plain" : $("#th_mode").value,
+          provider: $("#th_prov").value, quality: $("#th_quality").value, person: $("#th_person").value, use_refs: $("#th_refs").checked, cover: it.querySelector(".stc").checked, style: $("#th_style").value, preset: $("#th_preset").value, model: $("#th_model").value};
+}
+async function makeShortThumb(btn){
+  const it = btn.closest(".it"); const base = it.dataset.base; const body = {...shortThumbBody(it), short: base};
+  if (!body.lines.length){ alert("썸네일 문구를 넣어주세요"); return; }
+  btn.disabled = true; const d = await post(`/studio/api/thumb/${NAME}`, body); btn.disabled = false;
+  if (!d.ok){ alert(d.error); return; }
+  if (body.mode === "plain") loadShorts(); else startPoll();
+}
+async function uploadShortThumb(inp){
+  const it = inp.closest(".it"); if (!inp.files[0]) return; const fd = new FormData(); fd.append("file", inp.files[0]); fd.append("short", it.dataset.base); fd.append("cover", it.querySelector(".stc").checked ? "1" : "0");
+  const d = await (await fetch(`/studio/api/thumb/${NAME}`, {method:"POST", body: fd})).json(); if (!d.ok){ alert(d.error); return; } loadShorts();
+}
+async function useShortThumb(base, f){ const d = await post(`/studio/api/thumb/${NAME}`, {short: base, use: f}); if (!d.ok){ alert(d.error || "실패"); return; } loadShorts(); }
+async function restoreShort(base){ if (!confirm("첫 1초의 썸네일을 빼고 원래 영상으로 되돌릴까요?")) return; const d = await post(`/studio/api/thumb/${NAME}`, {short: base, restore: true}); if (!d.ok){ alert(d.error || "실패"); return; } loadShorts(); }
+async function saveShortUrl(btn){
+  const inp = btn.parentElement.querySelector("input");
+  const d = await post("/studio/api/short_url", {name: NAME, key: inp.dataset.key, url: inp.value.trim(), title: inp.dataset.title});
+  if (!d.ok){ alert(d.error || "저장 실패"); return; } btn.textContent = "저장됨"; setTimeout(() => btn.textContent = "저장", 1500);
+}
+// ---------- 배치 편집 (seido-tube 와 같은 방식) ----------
+const ED = {k:-1, ovs:[], sel:-1, SC:0.6, undo:[], redo:[]};
+function snap(){ return JSON.stringify(ED.ovs); }
+function mark(){                                   // 変更の前に呼ぶ: いまの状態を履歴に積む（連続入力は 400ms まとめる）
+  const now = Date.now(); const cur = snap();
+  if (ED.undo.length && ED.undo[ED.undo.length-1] === cur) return;
+  if (ED.lastMark && now - ED.lastMark < 400 && ED.undo.length){ return; }
+  ED.undo.push(cur); if (ED.undo.length > 100) ED.undo.shift(); ED.redo = []; ED.lastMark = now; undoBtns();
+}
+function undoBtns(){ const u = $("#ed_undo"), r = $("#ed_redo"); if (u){ u.disabled = !ED.undo.length; r.disabled = !ED.redo.length; } }
+function edUndo(){ if (!ED.undo.length) return; ED.redo.push(snap()); ED.ovs = JSON.parse(ED.undo.pop()); ED.sel = Math.min(ED.sel, ED.ovs.length-1); ED.lastMark = 0; edDraw(); edProps(); undoBtns(); }
+function edRedo(){ if (!ED.redo.length) return; ED.undo.push(snap()); ED.ovs = JSON.parse(ED.redo.pop()); ED.sel = Math.min(ED.sel, ED.ovs.length-1); ED.lastMark = 0; edDraw(); edProps(); undoBtns(); }
+async function edOpen(k){
+  ED.k = k; ED.sel = -1; ED.pending = null; ED.pv = false; ED.undo = []; ED.redo = []; ED.lastMark = 0;
+  const sl = spec.slides[k], w = $("#cvwrap"); ED.SC = w.clientWidth / 1920 || 0.6;
+  w.classList.remove("pv"); w.style.backgroundImage = "none"; w.innerHTML = "<p class='hint' style='padding:20px'>요소로 분해하는 중…</p>";
+  $("#ed").style.display = "flex"; $("#props").innerHTML = "";
+  if (!(sl.overlays||[]).length && !sl._orig){           // まだ分解していないスライド → 開いたときに自動で分解（AI は使わない）
+    const d = await post(`/studio/api/explode/${NAME}/${k+1}`, sl);
+    if (!d.ok){ alert("분해 실패:\n" + d.error); edClose(); return; }
+    ED.pending = d.slide; ED.ovs = d.slide.overlays;
+  } else {
+    ED.ovs = JSON.parse(JSON.stringify(sl.overlays || []));
+    if (sl.body || sl.title){                              // 本文が残っているスライドは、本文だけ描いた絵を下に敷く
+      const pv = await post(`/studio/api/preview/${NAME}/${k+1}`, {...sl, overlays: []});
+      if (pv.ok) w.style.backgroundImage = `url("${fileUrl(pv.png, pv.t)}")`;
+    }
+  }
+  $("#ed_restore").style.display = (sl._orig || ED.pending) ? "" : "none";
+  $("#ill_prompt").value = sl.illust || (rows[k] && rows[k].illust_auto) || "";
+  edDraw(); edProps(); undoBtns();
+}
+async function genIll(again){
+  const prompt = $("#ill_prompt").value.trim(); if (!prompt){ alert("그림 설명을 넣어주세요"); return; }
+  const b = $("#ill_btn"); b.disabled = true; b.textContent = "그림 만드는 중… (10~40초)";
+  try {
+    const d = await post(`/studio/api/illust_gen/${NAME}/${ED.k+1}`, {prompt, new: again});
+    if (!d.ok){ alert("그림 생성 실패:\n" + d.error); return; }
+    const cur = ED.ovs[ED.sel]; mark(); ED.lastMark = 0;
+    if (again && cur && cur.img){ cur.img = d.path; }                       // 選択中の絵を差し替え
+    else { ED.ovs.push({img: d.path, x: 1200, y: 300, w: 600, h: 338, opacity: 1}); ED.sel = ED.ovs.length - 1; }
+    if (ED.pending) ED.pending.illust = prompt; else spec.slides[ED.k].illust = prompt;
+    edDraw(); edProps();
+  } finally { b.disabled = false; b.textContent = "+그림 만들기"; }
+}
+async function imgSearch(){
+  const q = $("#imq").value.trim(); if (!q){ alert("검색어를 넣어주세요 (예: 三井不動産 ロゴ)"); return; }
+  const b = $("#im_btn"); b.disabled = true; b.textContent = "검색 중…";
+  let box = $("#imres"); if (!box){ box = document.createElement("div"); box.id = "imres"; box.className = "imres"; $("#ed .edbar").insertAdjacentElement("afterend", box); }
+  try {
+    const r = await fetch(`/studio/api/imgsearch?q=${encodeURIComponent(q)}&kind=${$("#imk").value}`); const d = await r.json();
+    if (!d.ok){ box.innerHTML = `<span class="hint">검색 실패: ${esc(d.error)}</span>`; return; }
+    if (!d.results.length){ box.innerHTML = `<span class="hint">결과 없음 (${esc(d.warn||"")}) — 회사의 정식 명칭으로 다시 시도해 보세요</span>`; return; }
+    box.innerHTML = `<span class="hint">클릭하면 슬라이드에 넣습니다 (출처: ${d.results[0].src}${d.warn ? " · " + esc(d.warn) : ""})</span><div class="imgrid">` +
+      d.results.map((x,i) => `<a href="#" onclick="imgPick(${i});return false" title="${esc(x.title)}"><img src="${esc(x.thumb||x.url)}" loading="lazy"><span>${esc((x.title||"").slice(0,22))}</span></a>`).join("") + `</div>`;
+    ED.imres = {q, results: d.results};
+  } finally { b.disabled = false; b.textContent = "이미지 검색"; }
+}
+async function imgPick(i){
+  const x = ED.imres.results[i]; const d = await post(`/studio/api/imgpick`, {q: ED.imres.q, url: x.url});
+  if (!d.ok){ alert(d.error); return; }
+  const logo = $("#imk").value === "logo";
+  mark(); ED.lastMark = 0; ED.ovs.push({img: d.path, x: logo ? 1380 : 1100, y: logo ? 40 : 300, w: logo ? 420 : 700, h: logo ? 160 : 394, opacity: 1}); ED.sel = ED.ovs.length - 1;
+  edDraw(); edProps();
+}
+function edClose(){ $("#ed").style.display = "none"; }
+const OVBASE = {x:200, y:300, w:700, h:140, size:56, bold:true, color:"#1e1e1e", bg:"transparent", border:"none", radius:0, align:"center", opacity:1, pad:10, text:""};
+function addOv(t){
+  const o = {...OVBASE};
+  if (t === "text") o.text = "テキスト";
+  if (t === "box") Object.assign(o, {text:"ポイント", bg:"#ffffff", border:"6px solid #1a3d7c", radius:14, color:"#1a3d7c"});
+  if (t === "yellow") Object.assign(o, {text:"ここが重要", bg:"#fff3c4", border:"4px solid #e0a800", radius:10, color:"#7a4a00", size:50});
+  if (t === "arrow") Object.assign(o, {text:"➜", size:120, color:"#d32f2f", w:200, h:200, pad:0});
+  mark(); ED.lastMark = 0; ED.ovs.push(o); ED.sel = ED.ovs.length - 1; edDraw(); edProps();
+}
+function delOv(){ if (ED.sel < 0) return; mark(); ED.lastMark = 0; ED.ovs.splice(ED.sel, 1); ED.sel = -1; edDraw(); edProps(); }
+function ovStyle(o, S){
+  const j = {left:"flex-start", right:"flex-end"}[o.align] || "center";
+  return `left:${o.x*S}px;top:${o.y*S}px;width:${o.w*S}px;height:${o.h*S}px;font-size:${o.size*S}px;font-weight:${o.bold?"bold":"normal"};color:${o.color};background:${o.bg};border:${(o.border||"none").replace(/(\d+(\.\d+)?)px/, (m,n)=>(n*S)+"px")};border-radius:${(o.radius||0)*S}px;justify-content:${j};text-align:${o.align};padding:${(o.pad??10)*S}px;opacity:${o.opacity??1};line-height:${o.lh||1.3};${o.border_left?`border-left:${o.border_left.replace(/(\d+(\.\d+)?)px/,(m,n)=>(n*S)+"px")};`:""}${o.border_bottom?`border-bottom:${o.border_bottom.replace(/(\d+(\.\d+)?)px/,(m,n)=>(n*S)+"px")};`:""}${o.stroke?`-webkit-text-stroke:${o.stroke*S}px ${o.stroke_color||"#fff"};`:""}`;
+}
+function edDraw(){
+  const S = ED.SC;
+  $("#cvwrap").innerHTML = ED.ovs.map((o,i) => o.img
+    ? `<div class="ovx ${i===ED.sel?"sel":""}" data-i="${i}" style="left:${o.x*S}px;top:${o.y*S}px;width:${o.w*S}px;height:${o.h*S}px;padding:0;background:url('/studio/illust/${esc(o.img.split("/").pop())}') center/contain no-repeat"><div class="rz" data-rz="1"></div></div>`
+    : `<div class="ovx ${i===ED.sel?"sel":""}" data-i="${i}" style="${ovStyle(o,S)}">${esc(o.text)}<div class="rz" data-rz="1"></div></div>`).join("");
+  $("#cvwrap").querySelectorAll(".ovx").forEach(el => el.addEventListener("dblclick", () => { const i = +el.dataset.i; const t = prompt("문구 (일본어)", ED.ovs[i].text); if (t !== null){ mark(); ED.lastMark = 0; ED.ovs[i].text = t; edDraw(); edProps(); } }));
+}
+function edProps(){
+  const o = ED.ovs[ED.sel], P = $("#props");
+  if (!o){ P.innerHTML = "<p class='hint'>요소를 클릭하면 속성이 나옵니다. 위 버튼으로 요소를 추가하세요.</p>"; return; }
+  if (o.img){ P.innerHTML = `<p class='hint'>일러스트 (드래그로 이동·크기)</p><div class="two"><div><label>X</label><input type="number" value="${o.x}" oninput="edSet('x',this.value)"></div><div><label>Y</label><input type="number" value="${o.y}" oninput="edSet('y',this.value)"></div><div><label>W</label><input type="number" value="${o.w}" oninput="edSet('w',this.value)"></div><div><label>H</label><input type="number" value="${o.h}" oninput="edSet('h',this.value)"></div></div>`; return; }
+  const f = (k, type, extra="") => `<input type="${type}" value="${esc(String(o[k] ?? ""))}" oninput="edSet('${k}', this.value)" ${extra}>`;
+  P.innerHTML = `<label>텍스트</label><textarea oninput="edSet('text', this.value)" style="min-height:56px">${esc(o.text)}</textarea>
+    <div class="two"><div><label>글자 크기(px)</label>${f("size","number")}</div><div><label>굵게</label><input type="checkbox" ${o.bold?"checked":""} onchange="edSet('bold', this.checked)"></div></div>
+    <div class="two"><div><label>글자색</label><input type="color" value="${/^#[0-9a-f]{6}$/i.test(o.color)?o.color:"#1e1e1e"}" oninput="edSet('color', this.value)"></div>
+      <div><label>정렬</label><select onchange="edSet('align', this.value)"><option value="left" ${o.align==="left"?"selected":""}>left</option><option value="center" ${o.align==="center"?"selected":""}>center</option><option value="right" ${o.align==="right"?"selected":""}>right</option></select></div></div>
+    <label>배경 (예: #fff, rgba(255,213,79,.5), transparent)</label>${f("bg","text")}
+    <label>테두리 (예: 6px solid #d32f2f, none)</label>${f("border","text")}
+    <div class="two"><div><label>모서리 둥글기</label>${f("radius","number")}</div><div><label>투명도 0~1</label>${f("opacity","number",'step="0.05" min="0" max="1"')}</div></div>
+    <div class="two"><div><label>글자 테두리(px)</label>${f("stroke","number")}</div><div><label>글자 테두리색</label><input type="color" value="${o.stroke_color||"#ffffff"}" oninput="edSet('stroke_color', this.value)"></div></div>
+    <div class="two"><div><label>X</label>${f("x","number")}</div><div><label>Y</label>${f("y","number")}</div><div><label>W</label>${f("w","number")}</div><div><label>H</label>${f("h","number")}</div></div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px"><button onclick="edQuick('red')">빨강 강조</button><button onclick="edQuick('yellow')">노란 말풍선</button><button onclick="edQuick('navy')">흰 글자+남색 상자</button><button onclick="edQuick('plain')">장식 없음</button></div>`;
+}
+function edSet(k, v){ const o = ED.ovs[ED.sel]; if (!o) return; mark(); o[k] = ["size","radius","opacity","x","y","w","h","pad","stroke"].includes(k) ? parseFloat(v) || 0 : v;
+  if (o.img){ edDraw(); return; } const el = $(`#cvwrap [data-i="${ED.sel}"]`); if (el){ el.style.cssText = ovStyle(o, ED.SC); el.childNodes[0].nodeValue = o.text; } }
+function edQuick(t){ const o = ED.ovs[ED.sel]; if (!o) return; mark(); ED.lastMark = 0;
+  if (t === "red") Object.assign(o, {color:"#d32f2f", bold:true, bg:"transparent", border:"none", stroke:0});
+  if (t === "yellow") Object.assign(o, {color:"#5a3a00", bg:"#fff3c4", border:"4px solid #e0a800", radius:12, stroke:0});
+  if (t === "navy") Object.assign(o, {color:"#ffffff", bg:"#1a3d7c", border:"none", radius:12, stroke:0});
+  if (t === "plain") Object.assign(o, {color:"#1e1e1e", bg:"transparent", border:"none", radius:0, stroke:0});
+  edDraw(); edProps(); }
+function cvDown(e){
+  if (edBackToEdit()) return;
+  const el = e.target.closest(".ovx"); if (!el){ ED.sel = -1; edDraw(); edProps(); return; }
+  ED.sel = +el.dataset.i; edDraw(); edProps(); const o = ED.ovs[ED.sel], S = ED.SC, rz = !!e.target.dataset.rz;
+  mark(); ED.lastMark = 0; const before = snap();
+  const sx = e.clientX, sy = e.clientY, ox = o.x, oy = o.y, ow = o.w, oh = o.h;
+  const mv = ev => { const dx = (ev.clientX - sx) / S, dy = (ev.clientY - sy) / S;
+    if (rz){ o.w = Math.max(40, Math.round(ow + dx)); o.h = Math.max(30, Math.round(oh + dy)); } else { o.x = Math.round(ox + dx); o.y = Math.round(oy + dy); }
+    const d = $(`#cvwrap [data-i="${ED.sel}"]`); if (d){ if (o.img){ d.style.left=o.x*S+"px"; d.style.top=o.y*S+"px"; d.style.width=o.w*S+"px"; d.style.height=o.h*S+"px"; } else d.style.cssText = ovStyle(o, S); } };
+  const up = () => { document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); if (snap() === before){ ED.undo.pop(); undoBtns(); } edProps(); };
+  document.addEventListener("mousemove", mv); document.addEventListener("mouseup", up); e.preventDefault();
+}
+async function edPreview(){
+  const sl = {...(ED.pending || spec.slides[ED.k]), overlays: ED.ovs};
+  const d = await post(`/studio/api/preview/${NAME}/${ED.k+1}`, sl);
+  if (!d.ok){ alert("미리보기 실패:\n" + d.error); return; }
+  const w = $("#cvwrap"); ED.bgEdit = w.style.backgroundImage; ED.pv = true;
+  w.style.backgroundImage = `url("${fileUrl(d.png, d.t)}")`; w.classList.add("pv");
+  rows[ED.k].preview_local = d.png; rows[ED.k].pv_t = d.t;
+}
+function edBackToEdit(){ const w = $("#cvwrap"); if (!ED.pv) return false; ED.pv = false; w.classList.remove("pv"); w.style.backgroundImage = ED.bgEdit || "none"; return true; }
+function edAlign(how){
+  const o = ED.ovs[ED.sel]; if (!o) return; mark(); ED.lastMark = 0;
+  if (how === "h" || how === "c") o.x = Math.round((1920 - o.w) / 2);
+  if (how === "v" || how === "c") o.y = Math.round((1080 - o.h) / 2);
+  if (how === "l") o.x = 110; if (how === "r") o.x = 1920 - 110 - o.w;
+  edDraw(); edProps();
+}
+document.addEventListener("keydown", e => {
+  if ($("#ed").style.display !== "flex") return;
+  const inField = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !inField){ e.preventDefault(); e.shiftKey ? edRedo() : edUndo(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "y" && !inField){ e.preventDefault(); edRedo(); return; }
+  if (ED.sel < 0 || inField) return;
+  if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); delOv(); return; }
+  const d = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]}[e.key]; if (!d) return;   // 扱うキーのときだけ履歴に積む
+  const o = ED.ovs[ED.sel], st = e.shiftKey ? 20 : 2; mark();
+  o.x += d[0] * st; o.y += d[1] * st; e.preventDefault(); edDraw(); edProps();
+});
+function edSave(){
+  if (ED.pending){ spec.slides[ED.k] = ED.pending; }
+  spec.slides[ED.k].overlays = ED.ovs.filter(o => (o.text||"").trim() || o.img || o.box); if (!spec.slides[ED.k].overlays.length) delete spec.slides[ED.k].overlays;
+  rows[ED.k].edited = true; setDirty(true); edClose(); render(); save();
+}
+// 재생 중인 슬라이드를 노랗게
+$("#vid").addEventListener("timeupdate", () => { if (tab !== "final") return; const t = $("#vid").currentTime;
+  rows.forEach((r, k) => { const el = $(`#slides .sl:nth-child(${k+1})`); if (!el) return; el.classList.toggle("playing", r.in_video && t >= r.start && t < r.start + r.dur); }); });
+
+window.addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+load();
+</script>
+{% endblock %}

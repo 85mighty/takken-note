@@ -1,0 +1,116 @@
+{% extends "studio_base.html" %}
+{% block title %}쇼츠｜스튜디오{% endblock %}
+{% block body %}
+<style>
+.g{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin:0 0 16px;overflow:hidden;scroll-margin-top:70px}
+.g .hd{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:#fafbfd}
+.g .hd img{width:96px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:#e9ecf2}
+.g .hd .t{font-weight:800;text-decoration:none;color:var(--ink);font-size:15px;line-height:1.3}
+.g .hd .t:hover{color:var(--pri)}
+.g .hd .m{font-size:12px;color:var(--mute);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.g .hd .ops{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.row{display:flex;gap:14px;padding:14px 16px;overflow-x:auto}
+.s{flex:0 0 250px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.s .pv{position:relative;background:#000;aspect-ratio:9/16;max-height:300px}
+.s .pv video,.s .pv img{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+.s .pv .dur{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.75);color:#fff;font-size:11px;padding:1px 6px;border-radius:4px}
+.s .pv .no{position:absolute;left:6px;top:6px;background:var(--short);color:#fff;font-size:11px;padding:1px 7px;border-radius:999px;font-weight:700}
+.s .bd{padding:10px 11px;display:flex;flex-direction:column;gap:6px;flex:1}
+.s .ti{font-weight:800;font-size:13px;line-height:1.35}
+.s .de{font-size:12px;color:var(--mute);line-height:1.4}
+.s .url{display:flex;gap:4px;margin-top:auto}
+.s .url input{flex:1;font-size:12px;padding:4px 7px;min-width:0}
+.s .ft{display:flex;gap:4px;padding:8px 11px;border-top:1px solid var(--line);background:#fafbfd;flex-wrap:wrap}
+.empty{padding:16px;color:var(--mute);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cp{cursor:pointer;color:var(--pri);font-size:11px;text-decoration:underline}
+.spec{flex:0 0 250px;border:1px dashed var(--short);border-radius:10px;padding:10px 11px;font-size:13px;background:var(--short-2)}
+</style>
+<div class="w">
+<div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+  <div style="flex:1"><h2 class="pg">쇼츠</h2><p class="lead" style="margin:0">본편(롱폼)별로 묶여 있습니다. 쇼츠를 올린 뒤 URL을 넣으면 본편의 고정 댓글·블로그에서 연결할 수 있습니다.</p></div>
+</div>
+<div class="ftabs" id="ft"><button class="on" data-f="all">전체</button><button data-f="has">쇼츠 있는 본편</button><button data-f="none">쇼츠 없는 본편</button></div>
+
+{% for g in groups %}
+<div class="g" id="{{ g.long.name }}" data-has="{{ 'has' if g.shorts or g.short_specs else 'none' }}">
+  <div class="hd">
+    <a href="{{ url_for('studio.edit', name=g.long.name) }}">{% if g.long.thumb %}<img src="{{ url_for('studio.file', name=g.long.name, fn=g.long.thumb) }}" alt="">{% else %}<img alt="">{% endif %}</a>
+    <div>
+      <a class="t" href="{{ url_for('studio.edit', name=g.long.name) }}">{{ g.long.label }}</a>
+      <div class="m"><span>본편 · {{ g.long.name }}</span>{% if g.long.url %}<a class="chip ok" href="{{ g.long.url }}" target="_blank" rel="noopener">▶ YouTube</a>{% else %}<span class="chip warn" title="본편을 올리고 URL을 넣으면 쇼츠 설명란·고정 댓글에 본편 링크가 들어갑니다">본편 URL 미등록</span>{% endif %}{% if g.long.archived %}<span class="chip">지난 영상</span>{% endif %}</div>
+    </div>
+    <div class="ops">
+      <button class="btn sm short pri" onclick="run('{{ g.long.name }}','short_auto',{n:1})" {% if not keys.claude %}disabled title="Claude 키가 필요합니다"{% endif %}>＋ 쇼츠 만들기 (AI가 장면 선택)</button>
+      <button class="btn sm short" onclick="run('{{ g.long.name }}','short_auto',{n:3})" {% if not keys.claude %}disabled{% endif %}>3개</button>
+      <a class="btn sm ghost" href="{{ url_for('studio.edit', name=g.long.name) }}#slides">장면 골라서 만들기</a>
+    </div>
+  </div>
+  {% if g.shorts or g.short_specs %}
+  <div class="row">
+    {% for s in g.shorts %}
+    <div class="s" data-key="{{ s.key }}">
+      <div class="pv">
+        <video controls preload="none" src="{{ url_for('studio.file', name=g.long.name, fn=s.file) }}?v={{ s.mtime }}" {% if s.thumb %}poster="{{ url_for('studio.file', name=g.long.name, fn=s.thumb) }}?v={{ s.mtime }}"{% elif s.poster %}poster="{{ url_for('studio.file', name=g.long.name, fn=s.poster) }}?v={{ s.mtime }}"{% endif %}></video>
+        {% if s.slide %}<a class="no" href="{{ url_for('studio.edit', name=g.long.name) }}#s{{ s.slide }}" title="본편 #{{ s.slide }} 장면">#{{ s.slide }}</a>{% endif %}
+        {% if s.dur %}<span class="dur">{{ s.dur }}초</span>{% endif %}
+      </div>
+      <div class="bd">
+        <div class="ti">{{ s.title }} <span class="cp" onclick="cp(this, {{ s.title|tojson }})">복사</span></div>
+        <div class="de">{{ s.desc }} <span class="cp" onclick="cp(this, {{ s.desc|tojson }})">복사</span></div>
+        <div class="url"><input type="url" placeholder="올린 쇼츠 URL" value="{{ s.url }}" data-key="{{ s.key }}" data-title="{{ s.title }}"><button class="btn sm" onclick="saveUrl('{{ g.long.name }}', this)">저장</button></div>
+      </div>
+      <div class="ft">
+        <a class="btn sm ghost" href="{{ url_for('studio.file', name=g.long.name, fn=s.file) }}?dl=1">mp4 받기</a>
+        {% if s.thumb %}<a class="btn sm ghost" href="{{ url_for('studio.file', name=g.long.name, fn=s.thumb) }}?dl=1">썸네일</a>{% else %}<a class="btn sm ghost" href="{{ url_for('studio.edit', name=g.long.name) }}" title="편집 화면의 쇼츠 탭에서 만듭니다">썸네일 만들기 →</a>{% endif %}
+        {% if s.url %}<a class="btn sm ghost" href="{{ s.url }}" target="_blank" rel="noopener">▶ 열기</a>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% for y in g.short_specs %}
+    <div class="spec">
+      <b>쇼츠 전용 대본</b> · <a href="{{ url_for('studio.edit', name=y.name) }}">{{ y.label }}</a>
+      <div class="hint" style="margin-top:4px">{{ y.name }}{% if y.total %} · {{ y.total|int }}초{% endif %}{% if y.url %} · <a href="{{ y.url }}" target="_blank" rel="noopener">▶ YouTube</a>{% endif %}</div>
+      {% for s in y.shorts %}
+      <video controls preload="none" style="width:100%;aspect-ratio:9/16;max-height:300px;background:#000;border-radius:8px;margin-top:8px" src="{{ url_for('studio.file', name=y.name, fn=s.file) }}?v={{ s.mtime }}" {% if s.thumb %}poster="{{ url_for('studio.file', name=y.name, fn=s.thumb) }}?v={{ s.mtime }}"{% elif s.poster %}poster="{{ url_for('studio.file', name=y.name, fn=s.poster) }}?v={{ s.mtime }}"{% endif %}></video>
+      <div class="hint" style="margin-top:4px"><b>{{ s.title }}</b><br>{{ s.desc }}</div>
+      <div style="margin-top:6px"><a class="btn sm short pri" href="{{ url_for('studio.file', name=y.name, fn=s.file) }}?dl=1">mp4 받기</a></div>
+      {% else %}<div class="hint" style="margin-top:6px">아직 영상이 없습니다 (자동 제작 대기 중이거나, 열어서 「쇼츠로 만들기」).</div>{% endfor %}
+      <div style="margin-top:8px"><a class="btn sm short" href="{{ url_for('studio.edit', name=y.name) }}">열기</a>{% if y.video %} <a class="btn sm ghost" href="{{ url_for('studio.file', name=y.name, fn=y.video) }}?dl=1">mp4</a>{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">아직 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% if orphan %}
+<div class="g"><div class="hd"><div><span class="t">본편이 없는 쇼츠 대본</span></div></div>
+  <div class="row">{% for y in orphan %}<div class="spec"><a href="{{ url_for('studio.edit', name=y.name) }}">{{ y.label }}</a><div class="hint">{{ y.name }} · 본편 {{ y.short_target }} 을 찾을 수 없습니다</div></div>{% endfor %}</div></div>
+{% endif %}
+{% if uploaded %}
+<details class="card"><summary style="cursor:pointer;color:var(--pri);font-weight:700">채널에 올라가 있는 그 밖의 쇼츠 ({{ uploaded|length }}개 · URL 대장에서 가져온 것)</summary>
+  <div style="margin-top:8px;font-size:13px">{% for v in uploaded %}<div>・<a href="{{ v.url }}" target="_blank" rel="noopener">{{ v.label or v.yt_title or v.key }}</a></div>{% endfor %}</div>
+</details>
+{% endif %}
+</div>
+<script>
+const post = (u, b) => fetch(u, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(b||{})}).then(r => r.json());
+async function run(name, kind, args){
+  const d = await post(`/studio/api/run/${name}/${kind}`, args); if (!d.ok){ alert(d.error); return; }
+  alert("시작했습니다. 상단의 「작업 중」 표시가 사라지면 이 페이지를 새로고침하세요."); location.reload();
+}
+async function saveUrl(name, btn){
+  const inp = btn.parentElement.querySelector("input");
+  const d = await post("/studio/api/short_url", {name, key: inp.dataset.key, url: inp.value.trim(), title: inp.dataset.title});
+  if (!d.ok){ alert(d.error || "저장 실패"); return; } btn.textContent = "저장됨"; setTimeout(() => btn.textContent = "저장", 1500);
+}
+async function cp(el, t){ try { await navigator.clipboard.writeText(t); el.textContent = "복사됨"; setTimeout(() => el.textContent = "복사", 1200); } catch(e){ prompt("복사해 주세요", t); } }
+document.querySelectorAll("#ft button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#ft button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+  document.querySelectorAll(".g[data-has]").forEach(g => g.style.display = (b.dataset.f === "all" || g.dataset.has === b.dataset.f) ? "" : "none");
+});
+if (location.hash){ const g = document.querySelector(location.hash); if (g){ g.style.boxShadow = "0 0 0 3px #ffd166"; g.scrollIntoView(); } }
+</script>
+{% endblock %}

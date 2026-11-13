@@ -1,0 +1,5 @@
+flask
+pdfplumber
+weasyprint
+pillow
+anthropic>=2.0.0

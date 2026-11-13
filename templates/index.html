@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}오답 목록 — 宅建 오답노트{% endblock %}
+{% block body %}
+
+<div class="shortcuts">
+  <span class="mut">바로가기:</span>
+  <a class="chip" href="{{ url_for('index', min_wrong=1) }}">전체 오답</a>
+  {% for y in all_years %}
+  <a class="chip" href="{{ url_for('index', year=y, min_wrong=1) }}">{{ y }} 오답</a>
+  {% endfor %}
+  {% for c in all_cats %}
+  <a class="chip" href="{{ url_for('index', category=c, min_wrong=1) }}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+<form class="filter" method="get" action="{{ url_for('index') }}">
+  <fieldset>
+    <legend>연도</legend>
+    {% for y in all_years %}
+    <label class="chk"><input type="checkbox" name="year" value="{{ y }}"
+      {% if y in f.years %}checked{% endif %}> {{ y }}</label>
+    {% endfor %}
+  </fieldset>
+  <fieldset>
+    <legend>분야</legend>
+    {% for c in all_cats %}
+    <label class="chk"><input type="checkbox" name="category" value="{{ c }}"
+      {% if c in f.cats %}checked{% endif %}> {{ c }}</label>
+    {% endfor %}
+  </fieldset>
+  <fieldset>
+    <legend>細目 (부분일치)</legend>
+    <input type="text" name="subtopic" value="{{ f.subtopic }}" list="subtopics">
+    <datalist id="subtopics">
+      {% for s in all_subtopics %}<option value="{{ s }}">{% endfor %}
+    </datalist>
+  </fieldset>
+  <fieldset>
+    <legend>誤答 ≥ N회 (0=전체)</legend>
+    <input type="number" name="min_wrong" min="0" max="20" value="{{ f.min_wrong }}">
+  </fieldset>
+  <fieldset>
+    <legend>오답 이유 태그</legend>
+    <select name="error_tag">
+      <option value="">전체</option>
+      {% for t in error_tags %}
+      <option value="{{ t }}" {% if f.error_tag == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </fieldset>
+  <button class="btn" type="submit">필터 적용</button>
+</form>
+
+<div class="actions">
+  <strong>{{ questions|length }}문제</strong>
+  {% if no_subtopic %}<span class="warn">細目 미입력 {{ no_subtopic }}건 (노란 줄 — 표에서 바로 입력)</span>{% endif %}
+  <span class="spacer"></span>
+  <a class="btn" href="{{ url_for('review') }}?{{ qs_query }}&mode=instant">바로 풀기 (즉시 채점)</a>
+  <a class="btn red" href="{{ url_for('review') }}?{{ qs_query }}&mode=exam">시험 모드 (나중에 채점)</a>
+  <a class="btn gray" href="{{ url_for('pdf') }}?{{ qs_query }}">PDF 출력</a>
+  <button type="button" class="btn gray" id="toggle-ans">正解を隠す</button>
+</div>
+
+<div class="scrollx">
+<table class="list">
+  <tr><th>문제</th><th>분야</th><th>細目</th><th>문제문</th><th>틀린<br>횟수</th><th>이유</th></tr>
+  {% for q in questions %}
+  <tr {% if not q.subtopic %}class="nosub"{% endif %}>
+    <td class="num tog" data-t="d{{ loop.index }}" title="클릭하면 문제 전체 보기">{{ q.year }} 問{{ q.number }} <span class="arrow">▸</span></td>
+    <td>{{ q.category }}</td>
+    <td><input class="sub-edit" value="{{ q.subtopic }}" placeholder="細目 입력"
+        data-year="{{ q.year }}" data-number="{{ q.number }}" list="subtopics"></td>
+    <td class="stem1 tog" data-t="d{{ loop.index }}" title="클릭하면 문제 전체 보기">{{ q.stem[:52] }}{% if q.stem|length > 52 %}…{% endif %}</td>
+    <td class="cnt">{{ wrong_count(q) }}</td>
+    <td class="reason-mini">{{ q.error_reason }}</td>
+  </tr>
+  <tr class="detail" id="d{{ loop.index }}" hidden>
+    <td colspan="6">
+      <div class="stem">{{ q.stem }}</div>
+      {% for s in q.subs %}<div class="sub">{{ s }}</div>{% endfor %}
+      {% set anss = q.answer if q.answer is not number else [q.answer] %}
+      {% for c in q.choices %}
+      <div class="dch {% if loop.index in anss %}ok{% endif %}"><b>{{ loop.index }}</b>　{{ c }}</div>
+      {% endfor %}
+      <button type="button" class="reveal">正解を見る</button>
+      <div class="dans">정답 <b>{{ anss|join('・') }}</b>
+        {% if q.wrong_dates %}<span class="mut">｜틀린 날: {{ q.wrong_dates|join(', ') }}</span>{% endif %}
+        {% if q.error_reason %}<span class="mut">｜이유: {{ q.error_reason }}</span>{% endif %}</div>
+      {% if q.explanation %}<div class="expl">解説：{{ q.explanation }}</div>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+
+<div class="reset-row">
+  <button type="button" class="btn outline-red" id="reset-wrong">틀린 횟수 초기화</button>
+  <span class="mut">현재 목록에 보이는 문제들의 틀린 횟수를 전부 0으로 되돌립니다 (문제·이유 메모는 유지)</span>
+</div>
+
+<script>
+const KEYS = {{ keys_json|safe }};
+document.getElementById("reset-wrong").addEventListener("click", async () => {
+  if (!KEYS.length) { alert("대상 문제가 없습니다"); return; }
+  if (!confirm(`현재 목록의 ${KEYS.length}문제 틀린 횟수를 전부 0으로 초기화합니다.\n되돌릴 수 없습니다. 진행할까요?`)) return;
+  const r = await fetch("/api/reset_wrong", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({items: KEYS})
+  });
+  if (r.ok) location.reload();
+});
+
+const tbl = document.querySelector("table.list");
+const btnAns = document.getElementById("toggle-ans");
+function setHideAns(h) {
+  tbl.classList.toggle("hide-ans", h);
+  btnAns.textContent = h ? "正解を表示" : "正解を隠す";
+  if (h) tbl.querySelectorAll("tr.detail.revealed").forEach(r => r.classList.remove("revealed"));
+  try { localStorage.setItem("hideAns", h ? "1" : "0"); } catch (e) {}
+}
+btnAns.addEventListener("click", () => setHideAns(!tbl.classList.contains("hide-ans")));
+let hideInit = false;
+try { hideInit = localStorage.getItem("hideAns") === "1"; } catch (e) {}
+setHideAns(hideInit);
+document.querySelectorAll(".reveal").forEach(b =>
+  b.addEventListener("click", () => b.closest("tr").classList.add("revealed")));
+
+document.querySelectorAll(".tog").forEach(td => {
+  td.addEventListener("click", () => {
+    const d = document.getElementById(td.dataset.t);
+    d.hidden = !d.hidden;
+    td.closest("tr").querySelectorAll(".arrow").forEach(a => a.textContent = d.hidden ? "▸" : "▾");
+  });
+});
+document.querySelectorAll(".sub-edit").forEach(inp => {
+  inp.addEventListener("change", async () => {
+    const r = await fetch("/api/subtopic", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({year: inp.dataset.year, number: inp.dataset.number, subtopic: inp.value})
+    });
+    if (r.ok) {
+      inp.closest("tr").classList.toggle("nosub", !inp.value.trim());
+      inp.style.background = "#e8f5e9";
+      setTimeout(() => inp.style.background = "", 700);
+    }
+  });
+});
+</script>
+{% endblock %}

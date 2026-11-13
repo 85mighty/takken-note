@@ -1,0 +1,17 @@
+{
+ "font": "M PLUS Rounded Medium",
+ "size": 72,
+ "color": "#ffffff",
+ "stroke": 5,
+ "stroke_color": "#000000",
+ "box": true,
+ "box_color": "#000000",
+ "box_alpha": 0.65,
+ "box_radius": 12,
+ "shadow": false,
+ "max_chars": 20,
+ "max_lines": 1,
+ "bottom": 56,
+ "preset": "box",
+ "slide_font": "Zen角ゴシックNew"
+}
