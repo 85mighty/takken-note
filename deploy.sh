@@ -101,6 +101,11 @@ fi
 pm2 startOrRestart ecosystem.config.js
 pm2 save
 
+# 5.4) 텔레그램 알림 키가 없으면, 서버 안에 이미 있는 봇 토큰을 찾아 한 번 저장 (값은 출력 안 함). 다시 찾으려면 .telegram_find_done 삭제
+if [ ! -s .telegram_chat_id ] && [ ! -e .telegram_find_done ]; then
+  .venv/bin/python3 coaching/yt/notify.py --find 2>&1 | tee .telegram_find_done || true
+fi
+
 # 5.5) 채팅에서 쓴 대본 중 "auto" 표시가 있는 것은 자동으로 일러스트→음성→완성까지 (뒤에서 돌고, 스튜디오 작업란에 진행 표시)
 if grep -lq '"auto": \[' coaching/yt/specs/*.json 2>/dev/null || ls coaching/yt/jobs/*.json >/dev/null 2>&1; then
   mkdir -p coaching/yt/out/_jobs
