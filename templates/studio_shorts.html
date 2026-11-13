@@ -70,6 +70,11 @@
     <div class="spec">
       <b>쇼츠 전용 대본</b> · <a href="{{ url_for('studio.edit', name=y.name) }}">{{ y.label }}</a>
       <div class="hint" style="margin-top:4px">{{ y.name }}{% if y.total %} · {{ y.total|int }}초{% endif %}{% if y.url %} · <a href="{{ y.url }}" target="_blank" rel="noopener">▶ YouTube</a>{% endif %}</div>
+      {% for s in y.shorts %}
+      <video controls preload="none" style="width:100%;aspect-ratio:9/16;max-height:300px;background:#000;border-radius:8px;margin-top:8px" src="{{ url_for('studio.file', name=y.name, fn=s.file) }}?v={{ s.mtime }}" {% if s.thumb %}poster="{{ url_for('studio.file', name=y.name, fn=s.thumb) }}?v={{ s.mtime }}"{% elif s.poster %}poster="{{ url_for('studio.file', name=y.name, fn=s.poster) }}?v={{ s.mtime }}"{% endif %}></video>
+      <div class="hint" style="margin-top:4px"><b>{{ s.title }}</b><br>{{ s.desc }}</div>
+      <div style="margin-top:6px"><a class="btn sm short pri" href="{{ url_for('studio.file', name=y.name, fn=s.file) }}?dl=1">mp4 받기</a></div>
+      {% else %}<div class="hint" style="margin-top:6px">아직 영상이 없습니다 (자동 제작 대기 중이거나, 열어서 「쇼츠로 만들기」).</div>{% endfor %}
       <div style="margin-top:8px"><a class="btn sm short" href="{{ url_for('studio.edit', name=y.name) }}">열기</a>{% if y.video %} <a class="btn sm ghost" href="{{ url_for('studio.file', name=y.name, fn=y.video) }}?dl=1">mp4</a>{% endif %}</div>
     </div>
     {% endfor %}

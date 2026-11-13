@@ -187,7 +187,7 @@ def _list(d, reg=None):
                       "url": (sp.get("youtube") or {}).get("url") or v.get("url", ""), "thumb": _cover(sp, man, dman),
                       "is_short": bool(sp.get("short_target")), "short_target": sp.get("short_target"),
                       "video": (man or {}).get("video") if man and os.path.exists(os.path.join(_outdir(sp), man.get("video", ""))) else None,
-                      "shorts": _shorts_of(sp, reg) if not sp.get("short_target") else [], "related": sp.get("related") or [], "archived": d == ARCH})
+                      "shorts": _shorts_of(sp, reg), "related": sp.get("related") or [], "archived": d == ARCH})
     return items
 
 def _labels(reg=None):
