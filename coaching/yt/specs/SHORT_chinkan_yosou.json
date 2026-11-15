@@ -1,0 +1,38 @@
+{
+ "name": "SHORT_chinkan_yosou",
+ "outdir": "short_chinkan_yosou",
+ "label": "【ショート】賃管士 合格点予想 各社まとめ（最多は36点）",
+ "status": "script",
+ "topic": "ショート動画。賃管士試験（2026/11/15）当日22時時点の合格点予想を予備校別に一覧。アガルート36〜37点、伊藤塾35±1点、LEC講師33〜36点、マンション管理サポートセンター35か36点、KEN33〜34点。範囲33〜37点・最多36点・38点以上の予想なし。本編 CHINKAN_yosou へ誘導",
+ "created_at": "2026-11-15 22:40",
+ "short_target": "CHINKAN_yosou",
+ "short_tags": "#賃管士 #賃貸不動産経営管理士",
+ "short_badge": "賃管士",
+ "usage": {
+  "model": "chat"
+ },
+ "notes": "・数字の出典は CHINKAN_yosou の notes と同じ（chintaikanrishi.com 速報記事・moalicense.jp まとめ、11/15 22:26 時点）。\n・去年: 当日は37点有力 → 結果38点。",
+ "youtube": {
+  "title": "",
+  "description": "",
+  "tags": [],
+  "url": ""
+ },
+ "blog": {
+  "slug": "",
+  "title": "",
+  "excerpt": "",
+  "url": ""
+ },
+ "slides": [
+  {
+   "title": "賃管士｜合格点予想 各社まとめ",
+   "sub": "11月15日 22時 時点",
+   "short_hook": "賃管士 合格点予想は33〜37点\n一番多いのは何点？",
+   "short_desc": "賃管士試験（11/15）の合格点予想は33〜37点。アガルート36〜37点、伊藤塾35±1点、LEC講師33〜36点、KEN33〜34点で、最多は36点です。",
+   "body": "<table><tr><th class='c'>予想した所</th><th class='c'>予想点</th></tr><tr class='now'><td class='c'><b>アガルート</b></td><td class='c'><b>36〜37点</b></td></tr><tr><td class='c'><b>伊藤塾</b></td><td class='c'><b>35±1点</b></td></tr><tr><td class='c'><b>LEC</b>（講師3人）</td><td class='c'><b>33点／35〜36点</b></td></tr><tr><td class='c'>マンション管理サポートセンター</td><td class='c'><b>35か36点</b></td></tr><tr><td class='c'>KENビジネススクール</td><td class='c'><b>33〜34点</b></td></tr></table><div class='key'>11の予想は<b>33〜37点</b>。一番多いのは<b>36点</b>、次が35点。<br>去年は当日の予想より<b>1点上</b>の38点で決まった</div>",
+   "speech": "賃管士の合格点予想、各社のまとめです。試験当日、22時の時点です。アガルートは、36点から37点。伊藤塾は、35点プラスマイナス1点。LECは講師によって割れていて、33点と、35点から36点。マンション管理サポートセンターは、35点か36点。KENビジネススクールは、33点から34点。全部で11の予想が出ていて、範囲は33点から37点。一番多いのは、【36点】です。去年の合格点だった38点以上を挙げた所は、ありません。ただ、去年は、当日の予想より1点上で決まりました。TACは11月24日、LECは12月1日に、推定点を出します。講師ごとの詳しい数字は、本編でまとめています。",
+   "illust_off": true
+  }
+ ]
+}
