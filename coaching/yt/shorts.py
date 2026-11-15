@@ -2,7 +2,8 @@
 """長い動画のスライド1枚から、宣伝用のショート (縦 1080×1920) を作る。
   python3 shorts.py specs/R8_menjo.json 4 [--hook "5問免除は誰が使える？"]
   過去の動画 (specs/_archive) にも使える。音声つきのスライドがなければ、その1枚だけ音声を作る。
-画面: 上=フック（大きな文字）／中=スライド／字幕（大きめ）／下=「続きは本編で」
+画面: 上=フック（大きな文字）／中=スライド／字幕（大きめ）。
+YouTube ショートの画面UIに隠れる所には何も置かない: 上 240px（時計・ノッチ・検索ボタン）／下 480px（チャンネル名・タイトル・ボタン）／左右 56px（縦長の端末では左右が切れる）
 出力: out/<outdir>/shorts/<name>_s04.mp4 と .txt（タイトル・概要欄。本編のURLは videos.json から）
 """
 import argparse, json, os, re, subprocess, sys
@@ -10,7 +11,9 @@ import argparse, json, os, re, subprocess, sys
 def subs_plain(t): return (t or "").replace("【", "").replace("】", "")
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 SW, SH = 1080, 1920
-TOP, SLIDE_Y = 400, 400            # フック帯の高さ・スライドの位置
+SAFE_T, BOT, MX = 240, 480, 56      # ショートのUIに隠れる範囲: 上・下・左右（ここには文字を置かない）
+TOP, SLIDE_Y = 500, 500            # フック帯の下端（フックの文字は SAFE_T〜TOP の間）・スライドの位置
+CW = SW - 2 * MX                   # 中身の幅
 NAVY = (26, 61, 124)
 
 def spec_path(name):
@@ -43,9 +46,9 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
     body = body.replace("class='two'", "class='two-narrow'")              # 縦では2列を上下に積む
     body = G.ILL_RE.sub("", body)                                           # 縦ではイラストを外して字幕の場所を空ける
     head = f"<h1>{G.E(title)}</h1>" if title else ""                      # 縦では小見出しは出さない
-    avail = SH - TOP - 300 - 280                     # フック帯と下の帯の間から、字幕のぶん（約280px）を引く
+    avail = SH - TOP - BOT - 190                     # フック帯と下の安全域の間から、字幕のぶん（約190px）を引く
     import vkit as V, subs
-    oldW, oldst = G.W, V.SUB_STYLE; G.W = SW
+    oldW, oldst = G.W, V.SUB_STYLE; G.W = CW
     st = subs.load_style(V.SUB_STYLE)
     if st.get("slide_theme") == "kokuban": V.SUB_STYLE = dict(st, slide_theme="paper")   # 縦では黒板の枠が合わないので紙だけ
     try:
@@ -58,7 +61,7 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
         im, ch, png, sc = best
     finally:
         G.W = oldW; V.SUB_STYLE = oldst
-    im.crop((0, 0, SW, min(im.size[1], ch + 40))).save(png)
+    im.crop((0, 0, CW, min(im.size[1], ch + 40))).save(png)
     return png
 
 CHAR_H = 608                       # 話すキャラクター（16:9 → 1080×608）を下部に置くときの高さ
@@ -68,12 +71,12 @@ def background(slide_png, hook, out, long_label="", crop169=True, char_h=0):
     from PIL import Image, ImageDraw
     im = Image.new("RGB", (SW, SH), "white"); d = ImageDraw.Draw(im)
     d.rectangle([0, 0, SW, TOP], fill=NAVY)
-    size = 92
-    while True:
-        f = _font(size); lines = _wrap(d, hook, f, SW - 120)
-        if len(lines) <= 3 or size <= 56: break
-        size -= 6
-    lh = int(size * 1.3); y = (TOP - lh * len(lines)) // 2 + 10
+    size = 88
+    while True:                                  # フックは SAFE_T〜TOP の間（上はノッチ・検索ボタンに隠れる）に収める
+        f = _font(size); lines = _wrap(d, hook, f, CW - 40); lh = int(size * 1.3)
+        if (len(lines) <= 3 and lh * len(lines) <= TOP - SAFE_T - 20) or size <= 48: break
+        size -= 4
+    y = SAFE_T + (TOP - SAFE_T - lh * len(lines)) // 2
     for l in lines:
         d.text(((SW - d.textlength(l, font=f)) / 2, y), l, font=f, fill="white", stroke_width=3, stroke_fill=(10, 25, 60)); y += lh
     sl = Image.open(slide_png).convert("RGB")
@@ -82,23 +85,17 @@ def background(slide_png, hook, out, long_label="", crop169=True, char_h=0):
     bb = ImageOps.invert(sl.convert("L")).point(lambda v: 255 if v > 40 else 0).getbbox()
     if bb:                                       # 余白を切って文字を大きく
         sl = sl.crop((max(0, bb[0] - 30), max(0, bb[1] - 30), min(sl.size[0], bb[2] + 30), min(sl.size[1], bb[3] + 30)))
-    sl = sl.resize((SW, int(sl.size[1] * SW / sl.size[0])))
+    sl = sl.resize((CW, int(sl.size[1] * CW / sl.size[0])))
+    maxh = SH - BOT - char_h - SLIDE_Y - (20 if char_h else 190)                   # 下の安全域と字幕のぶんを残す
+    if sl.size[1] > maxh: sl = sl.resize((int(sl.size[0] * maxh / sl.size[1]), maxh))
+    im.paste(sl, ((SW - sl.size[0]) // 2, SLIDE_Y))
     if char_h:
-        maxh = SH - 300 - char_h - SLIDE_Y - 20
-        if sl.size[1] > maxh: sl = sl.resize((int(sl.size[0] * maxh / sl.size[1]), maxh))
-        im.paste(sl, ((SW - sl.size[0]) // 2, SLIDE_Y))
-        d.rectangle([0, SH - 300 - char_h, SW, SH - 300], fill=(236, 240, 247))     # キャラ動画の下地（動画が来るまでの色）
+        d.rectangle([0, SH - BOT - char_h, SW, SH - BOT], fill=(236, 240, 247))     # キャラ動画の下地（動画が来るまでの色）
     else:
-        im.paste(sl, (0, SLIDE_Y)); d.line([0, SLIDE_Y + sl.size[1], SW, SLIDE_Y + sl.size[1]], fill=(220, 220, 220), width=3)
-    f2, f3 = _font(54), _font(38, False)
-    d.rectangle([0, SH - 300, SW, SH], fill=(255, 243, 196))
-    t = "続きは本編で ▶ 概要欄のリンクから"
-    d.text(((SW - d.textlength(t, font=f2)) / 2, SH - 250), t, font=f2, fill=(26, 26, 26))
-    if long_label:
-        lab = long_label if len(long_label) <= 24 else long_label[:23] + "…"
-        d.text(((SW - d.textlength(lab, font=f3)) / 2, SH - 160), lab, font=f3, fill=(90, 90, 90))
+        d.line([MX, SLIDE_Y + sl.size[1], SW - MX, SLIDE_Y + sl.size[1]], fill=(220, 220, 220), width=3)
+    d.rectangle([0, SH - BOT + 60, SW, SH], fill=NAVY)                              # 下はチャンネル名・タイトル・ボタンが重なるので、文字は置かず色だけ（白い字が読めるよう濃い色）
     im.save(out)
-    return (SH - 300 - char_h) if char_h else SLIDE_Y + sl.size[1]
+    return (SH - BOT - char_h) if char_h else SLIDE_Y + sl.size[1]
 
 _TRANSITION = re.compile(r"^(こんにちは|まず|次に|つぎに|そして|さて|では|最後に|続いて|つづいて|ここで|それでは|今日は|きょうは|[0-9０-９一二三四五六七八九十]+\s*つ[めも目]|[①-⑳]|(第)?[0-9０-９一二三四五六七八九十]+に)")
 
@@ -188,15 +185,15 @@ def make(path, i, hook=None, log=print, character=None):
         try:
             cmp4 = base + "_char.mp4"
             CH.talk(CH.mascot_path(), m4a, cmp4, aspect="16:9", resolution=spec.get("short_character_res") or "540p", log=log)
-            layers = [{"type": "video", "file": cmp4, "x": 0, "y": SH - 300 - CHAR_H, "w": SW, "h": CHAR_H, "t": 0}]
+            layers = [{"type": "video", "file": cmp4, "x": 0, "y": SH - BOT - CHAR_H, "w": SW, "h": CHAR_H, "t": 0}]
         except Exception as e:
             log(f"  ✗ 캐릭터 생성 실패 → 캐릭터 없이 만듭니다: {str(e)[:200]}")
             use_char = False; bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow)
     import subs
     st = dict(subs.load_style(spec.get("sub_style")))
-    st.update(size=max(62, min(int(st["size"] * 0.85), 88)), max_chars=12, max_lines=1)   # 縦は1行・やや小さめ（スライドと下の帯の間に収める）
-    if use_char: st["bottom"] = 300 + 28                                                 # キャラ動画の下端に字幕を重ねる
-    else: st["bottom"] = SH - ((bottom + SH - 300) // 2) - subs.band_height(st) // 2      # スライドと下の帯の間の真ん中に字幕
+    st.update(size=max(58, min(int(st["size"] * 0.8), 72)), max_chars=11, max_lines=1)    # 縦は1行・やや小さめ。右のボタン（いいね等）と左右の切れに掛からない幅
+    if use_char: st["bottom"] = BOT + 28                                                 # キャラ動画の下端に字幕を重ねる
+    else: st["bottom"] = max(BOT + 10, SH - ((bottom + SH - BOT) // 2) - subs.band_height(st) // 2)   # スライドと下の安全域の間の真ん中に字幕（安全域より下には出さない）
     old = V.SUB_STYLE; V.SUB_STYLE = st
     try:
         V.encode_subtitled(base + "_bg.png", m4a, "0", total, sents, tp, base + ".mp4", odir, os.path.basename(base), width=SW, height=SH, layers=layers)
