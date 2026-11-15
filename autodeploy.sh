@@ -20,3 +20,10 @@ if [ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$BRANCH")" ] || [ -d .g
   } >> autodeploy.log 2>&1
   tail -c 200000 autodeploy.log > autodeploy.log.tmp && mv autodeploy.log.tmp autodeploy.log
 fi
+
+# 예약 제작 (coaching/yt/jobs/*.json 의 "at" 시각이 지난 것): 새 커밋이 없어도 5분마다 확인해서 시작
+if ls coaching/yt/jobs/*.json >/dev/null 2>&1 && [ -x .venv/bin/python3 ] && .venv/bin/python3 coaching/yt/autobuild.py --due 2>/dev/null; then
+  mkdir -p coaching/yt/out/_jobs
+  echo "=== $(date '+%F %T') 예약 제작 시작 ===" >> autodeploy.log
+  setsid nohup .venv/bin/python3 coaching/yt/autobuild.py >> coaching/yt/out/_jobs/autobuild.log 2>&1 9>&- < /dev/null &
+fi

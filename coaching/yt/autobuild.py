@@ -47,6 +47,14 @@ def run(name, steps):
 
 QUEUE = os.path.join(HERE, "jobs")                                           # 予約ファイル: jobs/<いつ>_<名前>.json = {"name":..., "steps":[...]}
 
+def due(at):
+    """ "2026-11-18 07:00" (일본 시간) 이 지났으면 True. 읽을 수 없으면 True (바로 실행)"""
+    import datetime as dt
+    jst = dt.timezone(dt.timedelta(hours=9))
+    try: t = dt.datetime.strptime(str(at).strip()[:16].replace("T", " "), "%Y-%m-%d %H:%M").replace(tzinfo=jst)
+    except Exception: return True
+    return dt.datetime.now(jst) >= t
+
 def pending():
     """(name, steps, 印の消し方) を順に。予約ファイル → spec の auto"""
     out = []
@@ -55,6 +63,7 @@ def pending():
         q = os.path.join(QUEUE, f)
         try: j = json.load(open(q, encoding="utf-8"))
         except Exception as e: print(f"{f}: 읽기 실패 → 건너뜀 ({e})", flush=True); continue
+        if j.get("at") and not due(j["at"]): continue                              # 예약 시각(JST)이 아직 안 됨 → 그대로 둔다
         if j.get("name") and j.get("steps") and os.path.exists(os.path.join(SPECS, j["name"] + ".json")):
             out.append((j["name"], list(j["steps"]), lambda q=q: os.remove(q)))
         else: os.remove(q)
@@ -72,14 +81,14 @@ def pending():
 
 def main():
     os.makedirs(JOBDIR, exist_ok=True)
+    import fcntl                                                                  # 自動制作どうしは同時に走らせない。先にロックを取ってから予約を読む（同じ予約を2本が拾わないように）
+    lockf = open(os.path.join(JOBDIR, "autobuild.lock"), "w")
+    for _ in range(720):
+        try: fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB); break
+        except OSError: time.sleep(10)
     for name, steps, clear in pending():
         clear()                                                                   # 二度始めないよう先に印を消す
         sp = {"name": name}
-        import fcntl                                                              # 自動制作どうしは同時に走らせない（デプロイのたびに1本ずつ起動されるため）
-        lockf = open(os.path.join(JOBDIR, "autobuild.lock"), "w")
-        for _ in range(720):
-            try: fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB); break
-            except OSError: time.sleep(10)
         for _ in range(360):                                                      # 最大1時間、ほかの作業が終わるのを待つ
             if not busy(): break
             time.sleep(10)
@@ -103,9 +112,17 @@ def main():
             else:
                 tail = "".join(open(log, encoding="utf-8", errors="replace").readlines()[-8:]) if os.path.exists(log) else ""
                 notify.send(f"❌ 실패 (코드 {rc}): {label}\n{tail[-1200:]}\n스튜디오: {notify.studio_link(name)}")
-        finally:
-            try: fcntl.flock(lockf, fcntl.LOCK_UN); lockf.close()
-            except Exception: pass
+        except Exception as e:
+            print(f"자동 제작 오류: {name}: {e}", flush=True)
+    try: fcntl.flock(lockf, fcntl.LOCK_UN); lockf.close()
+    except Exception: pass
 
 if __name__ == "__main__":
+    if "--due" in sys.argv:                                                      # cron: 지금 시작할 예약이 있고, 돌고 있는 자동 제작이 없으면 0
+        import fcntl
+        try:
+            os.makedirs(JOBDIR, exist_ok=True); lf = open(os.path.join(JOBDIR, "autobuild.lock"), "a")
+            fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB); fcntl.flock(lf, fcntl.LOCK_UN)
+        except OSError: sys.exit(1)                                                # 이미 도는 중 → 끝나면 그쪽이 이어서 처리하거나 다음 5분에
+        sys.exit(0 if pending() else 1)
     main()

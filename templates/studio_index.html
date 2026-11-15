@@ -29,6 +29,9 @@
 </div>
 {% if not keys.tts or not keys.claude %}<div class="warnbox">{% if not keys.tts %}음성(Google TTS) 키가 없어 「음성 넣어 완성」을 쓸 수 없습니다. {% endif %}{% if not keys.claude %}Claude 키가 없어 AI 대본·쇼츠 장면 선택을 쓸 수 없습니다.{% endif %}</div>{% endif %}
 
+{% if queue %}<div class="card" style="margin-bottom:14px;border-left:4px solid var(--pri)"><b>⏰ 예약된 자동 제작</b> <span class="hint">(일본 시간 · 그 시각이 되면 자동으로 만들고 텔레그램으로 알립니다)</span>
+  <div style="margin-top:6px;font-size:13px;line-height:1.8">{% for q in queue %}<div><b>{{ q.at }}</b> ・ <a href="{{ url_for('studio.edit', name=q.name) }}">{{ q.label }}</a> <span class="hint">{{ q.steps }}{% if q.note %} · {{ q.note }}{% endif %}</span></div>{% endfor %}</div></div>{% endif %}
+
 <div class="ftabs" id="ft">
   <button class="on" data-f="all">전체 <span class="hint" id="c_all"></span></button>
   <button data-f="work">제작 중</button>

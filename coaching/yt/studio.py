@@ -211,7 +211,18 @@ def index():
     items = sorted(_list(SPECS, reg) + _list(ARCH, reg), key=lambda x: x["created"], reverse=True)
     longs = [x for x in items if not x["is_short"]]
     urls = {x["name"]: x["url"] for x in items}
-    return render_template("studio_index.html", items=longs, steps=STEPS, labels=_labels(reg), urls=urls, keys=_keys_status())
+    return render_template("studio_index.html", items=longs, steps=STEPS, labels=_labels(reg), urls=urls, keys=_keys_status(), queue=_queue({x["name"]: x["label"] for x in items}))
+
+def _queue(labels):
+    """예약된 자동 제작 (jobs/*.json). at = 일본 시간"""
+    qd = os.path.join(HERE, "jobs"); out = []
+    for f in sorted(os.listdir(qd)) if os.path.isdir(qd) else []:
+        if not f.endswith(".json"): continue
+        try: j = json.load(open(os.path.join(qd, f), encoding="utf-8"))
+        except Exception: continue
+        out.append({"name": j.get("name", ""), "label": labels.get(j.get("name", ""), j.get("name", "")), "at": j.get("at") or "곧 (다음 배포 때)",
+                    "steps": " → ".join(x for x in j.get("steps", []) if x != "thumb"), "note": j.get("note", "")})
+    return sorted(out, key=lambda x: x["at"])
 
 @bp.route("/shorts")
 def shorts_page():
