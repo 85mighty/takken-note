@@ -1,0 +1,45 @@
+{% extends "studio_base.html" %}
+{% block title %}URL 대장｜스튜디오{% endblock %}
+{% block body %}
+<style>
+.w{max-width:1100px;margin:0 auto}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
+th,td{border-bottom:1px solid #eee;padding:6px;text-align:left;vertical-align:middle}
+th{background:#0f1b33;color:#fff}
+input{width:100%;border:1px solid #ddd;border-radius:5px;padding:4px 6px;font-size:13px}
+button{padding:7px 12px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;cursor:pointer}
+button.pri{background:#1a3d7c;color:#fff}
+.hint{font-size:12px;color:#777}
+.job{background:#0f1b33;color:#dfe6f3;border-radius:8px;padding:10px;font:12px/1.45 monospace;white-space:pre-wrap;max-height:200px;overflow:auto;display:none;margin:8px 0}
+.auto td{color:#888}
+</style>
+<div class="w">
+<h2>URL 대장 (영상 URL·관련 영상 링크)</h2>
+<p class="hint">여기에 URL 이 있는 영상은 YouTube 설명란의 「関連動画」와 블로그에 자동으로 링크됩니다. 「채널에서 가져오기」는 채널 {{ reg.channel }} 의 영상 목록에서 제목으로 맞춰 URL 을 채웁니다 (마지막 수집: {{ reg.fetched_at or "아직 없음" }}).</p>
+<p><button class="pri" onclick="fetchCh()">채널에서 가져오기</button> <button onclick="saveAll()">저장</button> <span id="msg" class="hint"></span></p>
+<div class="job" id="job"></div>
+<table><tr><th style="width:18%">key</th><th style="width:32%">이름</th><th>URL</th><th style="width:18%">맞춤 단어 (공백 구분)</th></tr>
+{% for v in reg.videos %}
+<tr class="{{ 'auto' if v.auto }}" data-key="{{ v.key }}"><td>{{ v.key }}{% if v.short %} <span class="hint">쇼츠</span>{% endif %}</td>
+<td><input data-f="label" value="{{ v.label or v.yt_title or '' }}"></td>
+<td><input data-f="url" value="{{ v.url or '' }}" placeholder="https://youtu.be/..."></td>
+<td><input data-f="match" value="{{ (v.match or [])|join(' ') }}"></td></tr>
+{% endfor %}
+</table>
+</div>
+<script>
+async function saveAll(){
+  const videos = [...document.querySelectorAll("tr[data-key]")].map(tr => ({key: tr.dataset.key,
+    label: tr.querySelector('[data-f="label"]').value, url: tr.querySelector('[data-f="url"]').value, match: tr.querySelector('[data-f="match"]').value}));
+  const r = await fetch("/studio/api/registry", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({videos})});
+  document.getElementById("msg").textContent = (await r.json()).ok ? "저장했습니다" : "실패했습니다";
+}
+async function fetchCh(){
+  const r = await fetch("/studio/api/registry", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({op:"fetch"})});
+  const d = await r.json(); if (!d.ok){ alert(d.error); return; }
+  const el = document.getElementById("job"); el.style.display = "block";
+  const t = setInterval(async () => { const j = await (await fetch("/studio/api/job")).json();
+    el.textContent = j.log; if (!j.running){ clearInterval(t); if (j.rc === 0) location.reload(); } }, 2000);
+}
+</script>
+{% endblock %}

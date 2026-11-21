@@ -1,0 +1,101 @@
+{% extends "studio_base.html" %}
+{% block title %}자막 스타일｜스튜디오{% endblock %}
+{% block body %}
+<style>
+.w{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:360px 1fr;gap:16px}
+@media(max-width:900px){.w{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:14px}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+label span{color:#555}
+select,input[type=number],input[type=text]{width:170px;border:1px solid #ccc;border-radius:6px;padding:4px 6px}
+input[type=range]{width:170px}
+.pre{display:flex;flex-wrap:wrap;gap:6px}
+button{padding:7px 12px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;cursor:pointer}
+button.pri{background:#1a3d7c;color:#fff}
+img{width:100%;border-radius:8px;border:1px solid #ccc}
+.hint{font-size:12px;color:#777}
+h3{margin:4px 0 8px;color:#1a3d7c;font-size:15px}
+.themes{display:flex;flex-direction:column;gap:10px}.th{display:block;border:1px solid #ddd;border-radius:8px;padding:8px;cursor:pointer}.th:has(input:checked){border-color:#1a3d7c;background:#eef3fb}.th img{width:100%;border-radius:4px;margin:6px 0;border:1px solid #eee}
+</style>
+<div class="w">
+<div class="card">
+  <h3>프리셋</h3>
+  <div class="pre">{% for k, p in presets.items() %}<button onclick="preset('{{ k }}')">{{ p.label }}</button>{% endfor %}</div>
+  <h3 style="margin-top:14px">글자</h3>
+  <label><span>글꼴 (굵기 포함)</span><select id="font">{% for f in fonts %}<option>{{ f }}</option>{% endfor %}</select></label>
+  <label><span>크기 <b id="v_size"></b></span><input type="range" id="size" min="34" max="72"></label>
+  <label><span>글자 색</span><input type="color" id="color"></label>
+  <label><span>강조색 (읽기 문장에서 【…】로 감싼 부분)</span><input type="color" id="accent"></label>
+  <label><span>테두리 두께 <b id="v_stroke"></b></span><input type="range" id="stroke" min="0" max="10"></label>
+  <label><span>테두리 색</span><input type="color" id="stroke_color"></label>
+  <label><span>그림자</span><input type="checkbox" id="shadow"></label>
+  <h3 style="margin-top:14px">배경 박스</h3>
+  <label><span>박스 깔기</span><input type="checkbox" id="box"></label>
+  <label><span>박스 색</span><input type="color" id="box_color"></label>
+  <label><span>진하기 <b id="v_box_alpha"></b></span><input type="range" id="box_alpha" min="0" max="1" step="0.05"></label>
+  <label><span>모서리 둥글기 <b id="v_box_radius"></b></span><input type="range" id="box_radius" min="0" max="30"></label>
+  <h3 style="margin-top:14px">끊기·위치</h3>
+  <label><span>한 화면 최대 글자 수 <b id="v_max_chars"></b></span><input type="range" id="max_chars" min="10" max="30"></label>
+  <label><span>최대 줄 수</span><select id="max_lines"><option value="1">1줄</option><option value="2">2줄</option></select></label>
+  <label><span>아래에서의 위치 <b id="v_bottom"></b></span><input type="range" id="bottom" min="20" max="200"></label>
+  <h3 style="margin-top:14px">슬라이드 테마 (전체 분위기)</h3>
+  <div class="themes">{% for t in themes %}<label class="th" title="{{ t.desc }}"><input type="radio" name="slide_theme" value="{{ t.key }}" onchange="theme('{{ t.key }}','{{ t.font }}')"> <b>{{ t.label }}</b><br><img src="/studio/style/theme/{{ t.key }}.png" loading="lazy" alt=""><span class="hint">{{ t.desc }}</span></label>{% endfor %}</div>
+  <h3 style="margin-top:14px">슬라이드 본문 글꼴</h3>
+  <label><span>글꼴</span><select id="slide_font">{% for f in slide_fonts %}<option>{{ f }}</option>{% endfor %}</select></label>
+  <p class="hint">자막은 문장이 끊기는 곳(、나 조사 뒤)에서 나누고, 최대 글자 수를 넘지 않게 한 장씩 보여줍니다. 바꾸면 다음 출력부터 모든 슬라이드에 반영됩니다.</p>
+  <button class="pri" onclick="send(true)">저장</button> <button onclick="send(false)">견본만 갱신</button> <span id="msg" class="hint"></span>
+</div>
+<div class="card"><h3>견본 (실제 슬라이드에 겹친 모습)</h3><img id="sample" alt="견본"></div>
+</div>
+<div class="card" id="mascot" style="grid-column:1/-1">
+  <h3>AI 캐릭터 (마스코트) · 쇼츠에서 음성에 맞춰 말하는 안내역</h3>
+  <div style="display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:start">
+    <div><img id="ms_img" style="width:260px;aspect-ratio:16/9;object-fit:cover;background:#eee;border:1px solid #ccc;border-radius:8px" alt=""><div class="hint" id="ms_info">아직 없음</div></div>
+    <div>
+      <label style="display:block;margin:0 0 4px"><span>캐릭터 설명 (일본어) — 성별·나이·복장·머리·표정</span></label>
+      <textarea id="ms_desc" style="width:100%;min-height:70px;font-size:13px">20代後半の日本人女性、紺のジャケットに白いブラウス、黒髪のミディアムヘア、宅建士証の名札、明るく親しみやすい表情</textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
+        <button class="pri" onclick="msMake()">마스코트 생성 (일러스트 생성원 사용)</button>
+        <label style="margin:0"><input type="file" id="ms_file" accept="image/*" style="display:none" onchange="msUpload(this)"><button onclick="document.getElementById('ms_file').click()">내 이미지 올리기</button></label>
+        <span class="hint" id="ms_hedra"></span>
+      </div>
+      <p class="hint">정면 바스트업, 입을 다문 자연스러운 미소, 단색 배경이 가장 잘 움직입니다. 생성 후 Hedra(Character-3)가 이 그림의 입·표정을 음성에 맞춰 움직입니다. 키는 서버의 <code>.hedra_api_key</code> (형식 key_id:secret).</p>
+      <div class="job" id="ms_job" style="display:none"></div>
+    </div>
+  </div>
+</div>
+<script>
+async function msLoad(){ const d = await (await fetch("/studio/api/mascot")).json();
+  const im = document.getElementById("ms_img"); if (d.file){ im.src = d.file; document.getElementById("ms_info").textContent = (d.meta.desc || "") + (d.meta.at ? " · " + d.meta.at : ""); } else { im.removeAttribute("src"); document.getElementById("ms_info").textContent = "아직 없음"; }
+  if (d.meta && d.meta.desc && d.meta.desc !== "(업로드)") document.getElementById("ms_desc").value = d.meta.desc;
+  document.getElementById("ms_hedra").textContent = d.hedra ? "Hedra 키: 있음" : "Hedra 키: 없음 (.hedra_api_key)"; }
+async function msMake(){ const r = await fetch("/studio/api/mascot", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({desc: document.getElementById("ms_desc").value})}); const d = await r.json(); if (!d.ok){ alert(d.error); return; }
+  const el = document.getElementById("ms_job"); el.style.display = "block";
+  const t = setInterval(async () => { const j = await (await fetch("/studio/api/job")).json(); el.textContent = (j.running ? "생성 중… " : "") + j.log; if (!j.running){ clearInterval(t); msLoad(); } }, 2000); }
+async function msUpload(inp){ if (!inp.files[0]) return; const fd = new FormData(); fd.append("file", inp.files[0]); const d = await (await fetch("/studio/api/mascot", {method:"POST", body: fd})).json(); if (!d.ok){ alert(d.error || "실패"); return; } msLoad(); }
+msLoad();
+</script>
+<script>
+const PRESETS = {{ presets|tojson }};
+let ST = {{ style|tojson }};
+const F = ["font","size","color","stroke","stroke_color","shadow","box","box_color","box_alpha","box_radius","max_chars","max_lines","bottom","slide_font","accent"];
+function fill(){ document.querySelectorAll('input[name=slide_theme]').forEach(r => r.checked = (r.value === (ST.slide_theme || "navy")));
+  F.forEach(k => { const el = document.getElementById(k); if (!el) return;
+  if (el.type === "checkbox") el.checked = !!ST[k]; else el.value = ST[k];
+  const v = document.getElementById("v_" + k); if (v) v.textContent = ST[k]; }); }
+function read(){ F.forEach(k => { const el = document.getElementById(k);
+  ST[k] = el.type === "checkbox" ? el.checked : (el.type === "range" || k === "max_lines" ? +el.value : el.value);
+  const v = document.getElementById("v_" + k); if (v) v.textContent = ST[k]; }); }
+function theme(k, font){ ST.slide_theme = k; ST.slide_font = font; fill(); send(false); }
+function preset(k){ const sf = ST.slide_font; ST = {...PRESETS[k], preset:k, slide_font:sf}; delete ST.label; fill(); send(false); }
+let t = null;
+F.forEach(k => document.getElementById(k).addEventListener("input", () => { read(); clearTimeout(t); t = setTimeout(() => send(false), 400); }));
+async function send(saveIt){
+  read(); document.getElementById("msg").textContent = "갱신 중…";
+  const r = await fetch("/studio/api/style" + (saveIt ? "?save=1" : ""), {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(ST)});
+  const d = await r.json(); document.getElementById("sample").src = "/studio/style/sample/" + d.sample;
+  document.getElementById("msg").textContent = saveIt ? "저장했습니다" : "";
+}
+fill(); send(false);
+</script>
+{% endblock %}
