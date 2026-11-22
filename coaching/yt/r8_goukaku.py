@@ -533,7 +533,7 @@ def build(only=None, name="R8_goukaku"):
             png, h = render(body, title, sub, f"s{i:02d}")
             mp3 = os.path.join(OUT, f"s{i:02d}.mp3")
             sents = V.split_sentences(speech)
-            tp = cached_tts(V.ssml_sentences(sents), mp3)
+            tp = cached_tts(V.ssml_sentences(sents, maxc=V.sub_maxc()), mp3)   # 字幕の区切りごとに印を入れて時刻を実測
             total = dur(mp3) + 1.5
             pts = [(2.0, 0), (total - 2.0, h - H)] if h > H else []
             tmp = seg + ".part.mp4"

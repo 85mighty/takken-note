@@ -14,6 +14,7 @@ SW, SH = 1080, 1920
 SAFE_T, BOT, MX = 240, 480, 56      # ショートのUIに隠れる範囲: 上・下・左右（ここには文字を置かない）
 TOP, SLIDE_Y = 500, 500            # フック帯の下端（フックの文字は SAFE_T〜TOP の間）・スライドの位置
 CW = SW - 2 * MX                   # 中身の幅
+SUB_MAXC = 11                      # 字幕1枚の最大文字数（TTS に入れる印の位置と、字幕の区切りを同じにする）
 NAVY = (26, 61, 124)
 
 def spec_path(name):
@@ -170,9 +171,9 @@ def make(path, i, hook=None, log=print, character=None):
     sents = V.split_sentences(s.get("speech", "")) or [""]
     m4a = base + ".mp3"
     try:
-        tp = G.cached_tts(V.ssml_sentences(sents), m4a)
+        tp = G.cached_tts(V.ssml_sentences(sents, maxc=SUB_MAXC), m4a)                # 字幕（1枚 SUB_MAXC 字）の区切りごとに印を入れて時刻を実測
         total = V.dur(m4a) + 1.5                                                      # 本編と同じく末尾に 1.5 秒の余白
-        log(f"  자막 시각: TTS 실측 ({len(sents)}문장)")
+        log(f"  자막 시각: TTS 실측 ({len(sents)}문장 · 자막 조각 표시 {sum(1 for k in tp if '_' in k)}개)")
     except Exception as e:                                                            # TTS が使えないときだけ従来の按分
         log(f"  TTS 시각을 못 얻어 글자 수로 배분합니다 ({str(e)[:80]})")
         m4a = base + ".m4a"
@@ -191,7 +192,7 @@ def make(path, i, hook=None, log=print, character=None):
             use_char = False; bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow)
     import subs
     st = dict(subs.load_style(spec.get("sub_style")))
-    st.update(size=max(58, min(int(st["size"] * 0.8), 72)), max_chars=11, max_lines=1)    # 縦は1行・やや小さめ。右のボタン（いいね等）と左右の切れに掛からない幅
+    st.update(size=max(58, min(int(st["size"] * 0.8), 72)), max_chars=SUB_MAXC, max_lines=1)    # 縦は1行・やや小さめ。右のボタン（いいね等）と左右の切れに掛からない幅
     if use_char: st["bottom"] = BOT + 28                                                 # キャラ動画の下端に字幕を重ねる
     else: st["bottom"] = max(BOT + 10, SH - ((bottom + SH - BOT) // 2) - subs.band_height(st) // 2)   # スライドと下の安全域の間の真ん中に字幕（安全域より下には出さない）
     old = V.SUB_STYLE; V.SUB_STYLE = st

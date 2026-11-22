@@ -111,9 +111,38 @@ def split_sentences(text):
         else: out.append(carry)
     return out
 
-def ssml_sentences(sents, pause_ms=350):
-    body = "".join(f'<mark name="s{i}"/>{html.escape(s.replace("【", "").replace("】", ""))}<break time="{pause_ms}ms"/>' for i, s in enumerate(sents))
-    return "<speak>" + body + "</speak>"
+def ssml_sentences(sents, pause_ms=350, maxc=None):
+    """文の頭に印 s{i}。maxc を渡すと、字幕の区切り（subs.chunk_parts と同じ位置）にも印 s{i}_{k} を入れる
+    → 字幕1枚ごとの開始時刻を TTS の実測値で合わせられる（文の中で字幕が早い・遅いというずれが出ない）。
+    印を足して SSML が長くなりすぎる時（上限 5000 バイト）は、文の頭の印だけに戻す"""
+    def plain_body():
+        return "".join(f'<mark name="s{i}"/>{html.escape(s.replace("【", "").replace("】", ""))}<break time="{pause_ms}ms"/>' for i, s in enumerate(sents))
+    if not maxc: return "<speak>" + plain_body() + "</speak>"
+    import subs
+    body = ""
+    for i, s in enumerate(sents):
+        raw = "".join(seg for seg, _em in subs.runs(s))
+        cuts = [a for _t, a, _b in subs.chunk_parts(s, maxc)][1:]               # 2つ目以降の区切りの開始位置
+        piece, pos = "", 0
+        esc = lambda t: html.escape(t.replace("【", "").replace("】", ""))
+        for k, a in enumerate(cuts, 1):
+            prev = raw[:a].rstrip(".,，．")
+            if 0 < a < len(raw) and raw[a].isdigit() and prev[-1:].isdigit(): continue   # 数字の途中には印を入れない（読みが変わるため。その文は目安の配分に戻る）
+            piece += esc(raw[pos:a]) + f'<mark name="s{i}_{k}"/>'; pos = a
+        piece += esc(raw[pos:])
+        body += f'<mark name="s{i}"/>{piece}<break time="{pause_ms}ms"/>'
+    out = "<speak>" + body + "</speak>"
+    return out if len(fix_read(out).encode("utf-8")) <= 4800 else "<speak>" + plain_body() + "</speak>"
+
+def sub_maxc(default=20):
+    """いまの字幕スタイルの「1枚の最大文字数」（TTS に入れる印と、字幕の区切りを同じにするため）"""
+    try:
+        import subs
+        st = subs.load_style(SUB_STYLE)
+        if st.get("chunk_marks", True) is False: return None                     # 字幕スタイルで chunk_marks=false にすると従来どおり（文の頭の印だけ）
+        return int(st.get("max_chars", default))
+    except Exception:
+        return default
 
 def spans(tp, n, total):
     """mark s0..s{n-1} の時刻 → [(t0,t1),...]"""
@@ -161,7 +190,7 @@ def encode_subtitled(png, mp3, expr, total, sents, tp, out, outdir, name, width=
     if not HIGHLIGHT or not sents:
         return encode(png, None, mp3, expr, total, out)
     st = subs.load_style(SUB_STYLE)
-    items = subs.timed_chunks(sents, spans(tp, len(sents), total), int(st.get("max_chars", 20)))
+    items = subs.timed_chunks(sents, spans(tp, len(sents), total), int(st.get("max_chars", 20)), tp)
     bh = subs.band_height(st); y = height - int(st.get("bottom", 56)) - bh
     blank = os.path.join(outdir, f"_blank_{width}x{bh}.png")
     if not os.path.exists(blank): Image.new("RGBA", (width, bh), (0, 0, 0, 0)).save(blank)

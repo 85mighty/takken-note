@@ -155,14 +155,19 @@ def _split(s, maxc):
         while bi > 2 and _in_number(s, bi): bi -= 1
     return _split(s[:bi], maxc) + _split(s[bi:], maxc)
 
-def chunk(sentence, maxc=20):
-    """1文 → 画面に出す単位のリスト。句点・読点は表示しない（読点は区切りに使う）。
-    強調の【】は区切りの判定から外し、区切ったあとで付け直す（【】のせいで変な所で切れない）"""
+def chunk_parts(sentence, maxc=20):
+    """1文 → [(画面に出す文字列, 開始位置, 終了位置)]。位置は「【】を除いた文（前後の空白込み）」の中の文字位置で、
+    その区切りの最初の文字（読点・空白を飛ばした所）を指す → 読み上げの SSML に同じ位置で印（mark）を入れて、区切りごとの時刻を実測する。
+    句点・読点は表示しない（読点は区切りに使う）。強調の【】は区切りの判定から外し、区切ったあとで付け直す"""
+    raw = "".join(seg for seg, _em in runs(sentence))                # 【】を除いた文（SSML に入れる文字列と同じ）
+    lead = len(raw) - len(raw.lstrip())
     chars = []                                                   # [(文字, 強調か)]
     for seg, em in runs(sentence.strip().rstrip("。．.")):
         chars += [(c, em) for c in seg]
     while chars and chars[-1][0] in "。．.": chars.pop()
-    chars = [("、" if c in "。．." else c, em) for c, em in chars]      # 途中の句点は読点と同じ扱い（区切り候補・表示は空白）
+    def _dec(j):                                                 # 30.4 のような小数点は句点ではない（数字の途中で区切らない・「30　4点」と表示しない）
+        return 0 < j < len(chars) - 1 and chars[j - 1][0].isdigit() and chars[j + 1][0].isdigit()
+    chars = [("、" if c in "。．." and not _dec(j) else c, em) for j, (c, em) in enumerate(chars)]   # 途中の句点は読点と同じ扱い（区切り候補・表示は空白）
     s = "".join(c for c, _e in chars)
     parts = _split(s, maxc)
     merged = []                                                  # 「中途」のような短すぎる断片は隣とくっつける
@@ -171,27 +176,49 @@ def chunk(sentence, maxc=20):
         else: merged.append(part)
     out, pos = [], 0
     for part in merged:
-        piece = chars[pos: pos + len(part)]; pos += len(part)
-        while piece and piece[0][0] in "、 　": piece = piece[1:]
-        while piece and piece[-1][0] in "、 　": piece = piece[:-1]
-        if not piece: continue
+        a, b = pos, pos + len(part); pos = b
+        while a < b and chars[a][0] in "、 　": a += 1
+        while b > a and chars[b - 1][0] in "、 　": b -= 1
+        if a >= b: continue
         text, cur = "", None
-        for c, em in piece:
+        for c, em in chars[a:b]:
             if em != cur:
                 text += ("【" if em else "】") if cur is not None or em else ""; cur = em
             text += "　" if c == "、" else c
         if cur: text += "】"
-        out.append(text)
+        out.append((text, lead + a, lead + b))
     return out
 
-def timed_chunks(sents, spans, maxc=20):
-    """[(text, t0, t1)]。文の時間を、区切った各部分の文字数で配分"""
+def chunk(sentence, maxc=20):
+    """1文 → 画面に出す単位のリスト（chunk_parts の文字列だけ）"""
+    return [t for t, _a, _b in chunk_parts(sentence, maxc)]
+
+def _weight(c):
+    """読み上げにかかる長さの目安（拍）。漢字・数字はかなより長く読まれる。実測の印が無いときの配分に使う"""
+    if c in "【】「」『』（）()・ 　": return 0.0
+    if c in "、，,。．": return 1.5                                  # 読点の間
+    if c in "ゃゅょぁぃぅぇぉャュョァィゥェォ": return 0.3
+    if c in "%％": return 5.0                                      # パーセント
+    k = _kind(c)
+    if k == "K": return 2.0
+    if k == "N": return 2.6
+    if k in "HT": return 1.0
+    return 2.0 if c.isascii() and c.isalnum() else 1.0
+
+def timed_chunks(sents, spans, maxc=20, tp=None):
+    """[(text, t0, t1)]。区切りごとの開始時刻は、読み上げに入れた印（tp の s{i}_{k}）の実測値を使う。
+    印が無い・並びがおかしい文だけ、読みの長さの目安（_weight）で文の時間を配分する"""
     out = []
-    for s, (t0, t1) in zip(sents, spans):
+    for i, (s, (t0, t1)) in enumerate(zip(sents, spans)):
         cs = chunk(s, maxc) or [s]
-        n = sum(max(2, len(c)) for c in cs); t = t0
-        for c in cs:
-            d = (t1 - t0) * max(2, len(c)) / n
+        marks = [t0] + [(tp or {}).get(f"s{i}_{k}") for k in range(1, len(cs))]
+        ok = all(m is not None for m in marks) and all(marks[k] < marks[k + 1] for k in range(len(marks) - 1)) and marks[-1] < t1
+        if ok and len(cs) > 1:
+            for k, c in enumerate(cs): out.append((c, marks[k], marks[k + 1] if k + 1 < len(cs) else t1))
+            continue
+        ws = [max(2.0, sum(_weight(ch) for ch in c)) for c in cs]; n = sum(ws); t = t0
+        for c, w in zip(cs, ws):
+            d = (t1 - t0) * w / n
             out.append((c, t, t + d)); t += d
     return out
 
