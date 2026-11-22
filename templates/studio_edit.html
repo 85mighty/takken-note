@@ -209,7 +209,7 @@ textarea.desc{min-height:260px;font-size:13px;line-height:1.5}
   <div class="pane" id="pane-sh">
   <div class="card"><h3>이 영상에서 만든 쇼츠 <span class="hint" style="font-weight:normal">(각 쇼츠에 9:16 썸네일 · 영상 첫 1초에 삽입)</span></h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <button onclick="run('short_auto',{n:1})" style="background:var(--short);color:#fff;border-color:var(--short)" {% if not keys.claude %}disabled{% endif %}>＋ 쇼츠 만들기 (AI가 핵심 장면 선택)</button>
+      <button onclick="run('short_auto',{n:1})" style="background:var(--short);color:#fff;border-color:var(--short)" {% if not keys.claude %}disabled{% endif %}>＋ 쇼츠 만들기 (AI가 키워드로 새로 작성)</button>
       <button onclick="run('short_auto',{n:3})" style="border-color:var(--short);color:var(--short)" {% if not keys.claude %}disabled{% endif %}>3개</button>
       <a class="btn" href="{{ url_for('studio.shorts_page') }}#{{ name }}">쇼츠 탭에서 보기</a>
     </div>
@@ -534,7 +534,7 @@ try { const k = localStorage.getItem("studio_pane_" + NAME); if (k && document.g
 async function loadShorts(){
   const d = await (await fetch(`/studio/api/shorts/${NAME}`)).json();
   const n = d.shorts.length; $("#shn") && ($("#shn").textContent = n ? `${n}개` : ""); $("#shn2").textContent = n ? `(${n})` : "";
-  if (!n){ $("#shorts").innerHTML = `<div class="hint">아직 이 영상의 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 핵심 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>`; return; }
+  if (!n){ $("#shorts").innerHTML = `<div class="hint">아직 이 영상의 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 키워드로 새로 작성)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>`; return; }
   $("#shorts").innerHTML = d.shorts.map(s => `<div class="it" data-base="${esc(s.base)}">
     <div class="two"><video controls preload="none" src="${fileUrl(s.file, s.mtime)}" ${s.poster ? `poster="${fileUrl(s.poster, s.mtime)}"` : ""}></video>
       ${s.thumb ? `<img class="sth" src="${fileUrl(s.thumb, s.mtime)}" title="쇼츠 썸네일">` : `<div class="ph sth">쇼츠 썸네일<br>아직 없음</div>`}</div>

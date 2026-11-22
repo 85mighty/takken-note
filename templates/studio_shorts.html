@@ -40,7 +40,7 @@
       <div class="m"><span>본편 · {{ g.long.name }}</span>{% if g.long.url %}<a class="chip ok" href="{{ g.long.url }}" target="_blank" rel="noopener">▶ YouTube</a>{% else %}<span class="chip warn" title="본편을 올리고 URL을 넣으면 쇼츠 설명란·고정 댓글에 본편 링크가 들어갑니다">본편 URL 미등록</span>{% endif %}{% if g.long.archived %}<span class="chip">지난 영상</span>{% endif %}</div>
     </div>
     <div class="ops">
-      <button class="btn sm short pri" onclick="run('{{ g.long.name }}','short_auto',{n:1})" {% if not keys.claude %}disabled title="Claude 키가 필요합니다"{% endif %}>＋ 쇼츠 만들기 (AI가 장면 선택)</button>
+      <button class="btn sm short pri" onclick="run('{{ g.long.name }}','short_auto',{n:1})" {% if not keys.claude %}disabled title="Claude 키가 필요합니다"{% endif %}>＋ 쇼츠 만들기 (AI가 키워드로 새로 작성)</button>
       <button class="btn sm short" onclick="run('{{ g.long.name }}','short_auto',{n:3})" {% if not keys.claude %}disabled{% endif %}>3개</button>
       <a class="btn sm ghost" href="{{ url_for('studio.edit', name=g.long.name) }}#slides">장면 골라서 만들기</a>
     </div>
@@ -80,7 +80,7 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty">아직 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 장면 선택)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>
+  <div class="empty">아직 쇼츠가 없습니다. 「쇼츠 만들기 (AI가 키워드로 새로 작성)」를 누르면 1~2분 뒤 여기에 나옵니다.</div>
   {% endif %}
 </div>
 {% endfor %}
