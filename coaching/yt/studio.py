@@ -586,6 +586,13 @@ def api_ytext(name):
     import ytext
     return jsonify(ok=True, **ytext.compose(_load(name)))
 
+@bp.route("/api/gptpack/<name>")
+def api_gptpack(name):
+    """ChatGPT に1回貼るだけの文章（本編サムネ16:9・ショートサムネ9:16・タイトル・概要欄）"""
+    import gptpack
+    try: return jsonify(ok=True, **gptpack.pack(_load(name)))
+    except Exception as e: return jsonify(ok=False, error=str(e)[:300])
+
 @bp.route("/api/shorts/<name>")
 def api_shorts(name):
     sp = _load(name)

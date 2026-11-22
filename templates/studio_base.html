@@ -104,5 +104,31 @@ input:focus,textarea:focus,select:focus{outline:2px solid #bcd0f2;border-color:v
   document.addEventListener("click", e => { document.querySelectorAll("nav details[open]").forEach(d => { if (!d.contains(e.target)) d.removeAttribute("open"); }); });
 })();
 </script>
+<script>
+// 📋 ChatGPT 용 한 번에 복사: 본편 썸네일(16:9)·쇼츠 썸네일(9:16)·제목·설명란을 한 덩어리로
+async function gptCopy(name, btn){
+  const label = btn.dataset.label || btn.textContent; btn.dataset.label = label;
+  const get = () => fetch("/studio/api/gptpack/" + encodeURIComponent(name)).then(r => r.json()).then(d => { if (!d.ok) throw new Error(d.error || "실패"); gptCopy.last = d; return d.text; });
+  const done = () => { const d = gptCopy.last || {}; btn.textContent = `✓ 복사됨 (이미지 ${d.images}장 · ${d.chars}자)`; setTimeout(() => btn.textContent = label, 2500); };
+  btn.textContent = "복사 중…";
+  try {
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+      await navigator.clipboard.write([new ClipboardItem({"text/plain": get().then(t => new Blob([t], {type: "text/plain"}))})]);
+    } else { await navigator.clipboard.writeText(await get()); }
+    done();
+  } catch(e){
+    try {                                                    // 클립보드가 막힌 브라우저: 글 상자를 띄워 직접 복사
+      const t = (gptCopy.last && gptCopy.last.text) || await get();
+      let box = document.getElementById("gptbox");
+      if (!box){ box = document.createElement("div"); box.id = "gptbox"; box.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
+        box.innerHTML = '<div style="background:#fff;border-radius:12px;padding:14px;width:min(720px,100%);max-height:90vh;display:flex;flex-direction:column;gap:8px"><b>ChatGPT 에 붙여넣을 내용</b><textarea style="flex:1;min-height:50vh;font-size:12px"></textarea><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm pri" id="gptsel">전체 선택</button><button class="btn sm" id="gptclose">닫기</button></div></div>';
+        document.body.appendChild(box);
+        box.querySelector("#gptclose").onclick = () => box.style.display = "none";
+        box.querySelector("#gptsel").onclick = () => { const ta = box.querySelector("textarea"); ta.focus(); ta.select(); try { document.execCommand("copy"); } catch(_){} }; }
+      box.querySelector("textarea").value = t; box.style.display = "flex"; btn.textContent = label;
+    } catch(e2){ btn.textContent = label; alert("복사하지 못했습니다: " + (e2.message || e2)); }
+  }
+}
+</script>
 </body>
 </html>

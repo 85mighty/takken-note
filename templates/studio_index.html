@@ -65,6 +65,7 @@
     <a class="btn sm pri" href="{{ url_for('studio.edit', name=it.name) }}">열기</a>
     <a class="btn sm short" href="{{ url_for('studio.shorts_page') }}#{{ it.name }}">쇼츠</a>
     <span class="sp"></span>
+    <button class="btn sm ghost" title="ChatGPT 에 붙여넣으면 썸네일(롱폼·쇼츠)과 제목·설명란이 나옵니다" onclick="gptCopy({{ it.name|tojson }}, this)">📋 GPT</button>
     {% if it.video %}<a class="btn sm ghost" href="{{ url_for('studio.file', name=it.name, fn=it.video) }}?dl=1">mp4</a>{% endif %}
   </div>
 </div>

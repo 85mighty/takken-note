@@ -200,7 +200,7 @@ def make(path, i, hook=None, log=print, character=None):
     finally:
         V.SUB_STYLE = old
     url = v.get("url") or ("" if spec.get("short_target") else (spec.get("youtube") or {}).get("url")) or ""
-    title = f"{hook.replace(chr(10), ' ')} {spec.get('short_tags') or '#宅建 #宅建士'}"   # ショートの題名: フック + タグ2つだけ（宅建以外は spec.short_tags）
+    title = f"{hook.replace(chr(10), '｜')} {spec.get('short_tags') or '#宅建 #宅建士'}"   # ショートの題名: フック + タグ2つだけ（宅建以外は spec.short_tags）
     desc = (s.get("short_desc") or desc_line(s.get("speech") or "") or hook.replace(chr(10), " "))[:70]   # 概要欄は1行だけ（リンクなし）
     pin = f"詳しくは本編で▶ {url}" if url else "（本編の URL を登録すると、ここに固定コメント用の一文が入ります）"
     tp = thumb_prompt(spec, s, hook, desc)
