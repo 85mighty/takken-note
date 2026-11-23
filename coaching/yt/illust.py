@@ -64,12 +64,13 @@ def _key(name, env):
 def providers():
     return {"gemini": bool(_key(".gemini_api_key", "GEMINI_API_KEY")),
             "openai": bool(_key(".openai_api_key", "OPENAI_API_KEY")),
-            "claude": bool(_key(".anthropic_api_key", "ANTHROPIC_API_KEY"))}
+            "claude": bool(_key(".anthropic_api_key", "ANTHROPIC_API_KEY")),
+            "replicate": bool(_key(".replicate_api_token", "REPLICATE_API_TOKEN"))}   # 実写風の写真（photo: "ai:…"）と表紙の絵に。spec の illust_provider か ILLUST_PROVIDER で選ぶ
 
 SETTING = os.path.join(HERE, "illust_provider.txt")      # スタジオで選んだ生成元 (gemini / openai / claude / auto)
 
 def set_provider(name):
-    with open(SETTING, "w") as f: f.write(name if name in ("gemini", "openai", "claude", "auto") else "auto")
+    with open(SETTING, "w") as f: f.write(name if name in ("gemini", "openai", "claude", "replicate", "auto") else "auto")
 
 def chosen():
     p = os.environ.get("ILLUST_PROVIDER")
@@ -194,7 +195,14 @@ def _save_raster(raw, out):
     if im.size[0] > 1024: im = im.resize((1024, round(im.size[1] * 1024 / im.size[0])), Image.LANCZOS)
     im.save(out + ".png", optimize=True)
 
-GEN = {"gemini": gen_gemini, "openai": gen_openai, "claude": gen_claude}
+def gen_replicate(prompt, out):
+    """Replicate の画像モデル（thumb.R_MODELS の順: seedream-4.5 → nano-banana-pro → …。REPLICATE_IMAGE_MODELS で変更可）"""
+    import thumb
+    raw, model = thumb._replicate(prompt, [], quality="high", log=lambda m: print("  " + str(m), flush=True))
+    print(f"    Replicate: {model}", flush=True)
+    _save_raster(raw, out); return out + ".png"
+
+GEN = {"gemini": gen_gemini, "openai": gen_openai, "claude": gen_claude, "replicate": gen_replicate}
 
 def ensure(s, force=False):
     """絵がなければ作る。作ったパス（作れなければ None）を返す"""
@@ -221,6 +229,9 @@ def ensure(s, force=False):
 PHOTO_TEMPLATE = ("実写の写真のように見えるリアルな画像。{theme}。横長16:9。文字・ロゴ・透かしは一切入れない。"
                   "日本の風景・日本人の人物、自然光、報道写真や広告写真のような自然な構図。顔のアップは避ける。")
 
+PHOTO_TEMPLATE_ANY = ("実写の写真のように見えるリアルな画像。{theme}。横長16:9。文字・ロゴ・透かしは一切入れない。"
+                      "自然光、報道写真のような自然な構図。実在の人物に似せない。顔のアップは避ける。")   # 日本以外の場面（韓国など）用
+
 def ensure_photo(desc, force=False):
     """実写風の写真を生成（photo: "ai:説明"）。パスを返す。作れなければ None"""
     desc = desc.strip(); key = hashlib.md5(("photo", desc).__repr__().encode()).hexdigest()[:16]
@@ -229,11 +240,11 @@ def ensure_photo(desc, force=False):
         if os.path.exists(out + ext) and not force: return out + ext
     prov = provider()
     if prov not in GEN: return None
-    order = [q for q in [prov] + [q for q in ("gemini", "openai") if q != prov and providers()[q]] if q not in DOWN and q != "claude"]
+    order = [q for q in [prov] + [q for q in ("gemini", "openai", "replicate") if q != prov and providers()[q]] if q not in DOWN and q != "claude"]
     last = None
     for q in order:
         try:
-            p = GEN[q](PHOTO_TEMPLATE.format(theme=desc), out)
+            p = GEN[q]((PHOTO_TEMPLATE_ANY if re.search("韓国|ソウル|海外|アメリカ|中国", desc) else PHOTO_TEMPLATE).format(theme=desc), out)
             json.dump({"provider": q, "prompt": desc, "kind": "photo"}, open(out + ".json", "w", encoding="utf-8"), ensure_ascii=False)
             return p
         except Exhausted as e:

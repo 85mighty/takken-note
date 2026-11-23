@@ -42,6 +42,7 @@ def photo_path(s, log=print):
 
 def setup(spec):
     import r8_goukaku as G, vkit as V
+    if spec.get("illust_provider"): os.environ["ILLUST_PROVIDER"] = spec["illust_provider"]   # この動画だけ絵・写真の生成元を指定（gemini / openai / replicate）
     V.SUB_STYLE = spec.get("sub_style")
     G.MOTION = not spec.get("motion_off")
     G.SLIDES.clear()
