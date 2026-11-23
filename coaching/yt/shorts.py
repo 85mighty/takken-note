@@ -15,6 +15,7 @@ SAFE_T, BOT, MX = 240, 480, 56      # ショートのUIに隠れる範囲: 上�
 TOP, SLIDE_Y = 500, 500            # フック帯の下端（フックの文字は SAFE_T〜TOP の間）・スライドの位置
 CW = SW - 2 * MX                   # 中身の幅
 SUB_MAXC = 11                      # 字幕1枚の最大文字数（TTS に入れる印の位置と、字幕の区切りを同じにする）
+PHOTO_H = 330                      # short_photo（写真）を入れるときの高さ。フックの下・スライドの上に、幅いっぱいで置く
 NAVY = (26, 61, 124)
 
 def spec_path(name):
@@ -40,14 +41,14 @@ def _wrap(d, text, fnt, maxw):
         if cur: lines.append(cur)
     return lines
 
-def render_narrow(G, title, sub, body, name="sh_narrow"):
+def render_narrow(G, title, sub, body, name="sh_narrow", photo_h=0):
     """縦動画用: スライドを幅 1080px のページで描き直す（表が折り返されて文字が大きくなる）。
     自由配置の要素(ov)があるときは座標が合わないので None（従来の 16:9 を使う）"""
     if "class='ov" in body: return None
     body = body.replace("class='two'", "class='two-narrow'")              # 縦では2列を上下に積む
     body = G.ILL_RE.sub("", body)                                           # 縦ではイラストを外して字幕の場所を空ける
     head = f"<h1>{G.E(title)}</h1>" if title else ""                      # 縦では小見出しは出さない
-    avail = SH - TOP - BOT - 190                     # フック帯と下の安全域の間から、字幕のぶん（約190px）を引く
+    avail = SH - TOP - BOT - 190 - (photo_h + 12 if photo_h else 0)   # フック帯と下の安全域の間から、字幕のぶん（約190px）と写真のぶんを引く
     import vkit as V, subs
     oldW, oldst = G.W, V.SUB_STYLE; G.W = CW
     st = subs.load_style(V.SUB_STYLE)
@@ -67,8 +68,9 @@ def render_narrow(G, title, sub, body, name="sh_narrow"):
 
 CHAR_H = 608                       # 話すキャラクター（16:9 → 1080×608）を下部に置くときの高さ
 
-def background(slide_png, hook, out, long_label="", crop169=True, char_h=0):
-    """char_h>0 なら、スライドは上部に収め（高さ上限）、下に char_h ぶんの空きを残す（あとで動画を重ねる）"""
+def background(slide_png, hook, out, long_label="", crop169=True, char_h=0, photo=None):
+    """char_h>0 なら、スライドは上部に収め（高さ上限）、下に char_h ぶんの空きを残す（あとで動画を重ねる）。
+    photo（画像のパス）があれば、フックのすぐ下に幅いっぱい・高さ PHOTO_H で置き、スライドはその下に入れる"""
     from PIL import Image, ImageDraw
     im = Image.new("RGB", (SW, SH), "white"); d = ImageDraw.Draw(im)
     d.rectangle([0, 0, SW, TOP], fill=NAVY)
@@ -87,16 +89,23 @@ def background(slide_png, hook, out, long_label="", crop169=True, char_h=0):
     if bb:                                       # 余白を切って文字を大きく
         sl = sl.crop((max(0, bb[0] - 30), max(0, bb[1] - 30), min(sl.size[0], bb[2] + 30), min(sl.size[1], bb[3] + 30)))
     sl = sl.resize((CW, int(sl.size[1] * CW / sl.size[0])))
-    maxh = SH - BOT - char_h - SLIDE_Y - (20 if char_h else 190)                   # 下の安全域と字幕のぶんを残す
+    top = SLIDE_Y
+    if photo and not char_h:
+        try:
+            phi = ImageOps.fit(Image.open(photo).convert("RGB"), (CW, PHOTO_H), centering=(0.5, 0.4))   # 横長に切り出す（少し上寄り）
+            im.paste(phi, (MX, SLIDE_Y)); top = SLIDE_Y + PHOTO_H + 12
+        except Exception as e:
+            print(f"  ※ 쇼츠 사진을 넣지 못했습니다: {str(e)[:100]}", flush=True)
+    maxh = SH - BOT - char_h - top - (20 if char_h else 190)                       # 下の安全域と字幕のぶんを残す
     if sl.size[1] > maxh: sl = sl.resize((int(sl.size[0] * maxh / sl.size[1]), maxh))
-    im.paste(sl, ((SW - sl.size[0]) // 2, SLIDE_Y))
+    im.paste(sl, ((SW - sl.size[0]) // 2, top))
     if char_h:
         d.rectangle([0, SH - BOT - char_h, SW, SH - BOT], fill=(236, 240, 247))     # キャラ動画の下地（動画が来るまでの色）
     else:
-        d.line([MX, SLIDE_Y + sl.size[1], SW - MX, SLIDE_Y + sl.size[1]], fill=(220, 220, 220), width=3)
+        d.line([MX, top + sl.size[1], SW - MX, top + sl.size[1]], fill=(220, 220, 220), width=3)
     d.rectangle([0, SH - BOT + 60, SW, SH], fill=NAVY)                              # 下はチャンネル名・タイトル・ボタンが重なるので、文字は置かず色だけ（白い字が読めるよう濃い色）
     im.save(out)
-    return (SH - BOT - char_h) if char_h else SLIDE_Y + sl.size[1]
+    return (SH - BOT - char_h) if char_h else top + sl.size[1]
 
 _TRANSITION = re.compile(r"^(こんにちは|まず|次に|つぎに|そして|さて|では|最後に|続いて|つづいて|ここで|それでは|今日は|きょうは|[0-9０-９一二三四五六七八九十]+\s*つ[めも目]|[①-⑳]|(第)?[0-9０-９一二三四五六七八九十]+に)")
 
@@ -161,11 +170,15 @@ def make(path, i, hook=None, log=print, character=None):
     reg = registry.load(); v = registry.get(reg, spec.get("short_target") or spec["name"]) or {}   # 本編 = short_target の動画（なければ自分）
     if spec.get("short_target") and not v: log(f"※ 本編 {spec['short_target']} が URL 대장에 없습니다 → 링크 없이 만듭니다")
     long_title = v.get("yt_title") or (spec.get("youtube") or {}).get("title") or v.get("label") or spec.get("label", "")
-    narrow = render_narrow(G, s.get("title", ""), s.get("sub", ""), s["_body"])       # 縦向きに描き直せれば文字が大きい方を使う
+    photo = None                                                                     # short_photo: "ai:説明"（または画像のパス・検索語）→ フックの下に写真を1枚
+    if s.get("short_photo") or spec.get("short_photo"):
+        photo = build_spec.photo_path({"photo": s.get("short_photo") or spec.get("short_photo")}, log)
+        log(f"  쇼츠 사진: {'있음' if photo else '준비 실패 → 사진 없이'}")
+    narrow = render_narrow(G, s.get("title", ""), s.get("sub", ""), s["_body"], photo_h=PHOTO_H if photo else 0)   # 縦向きに描き直せれば文字が大きい方を使う
     import character as CH
     use_char = bool(character and CH.available() and CH.mascot_path())
     if character and not use_char: log("  ※ 캐릭터 생략: Hedra 키(.hedra_api_key) 또는 마스코트(mascot/default.png)가 없습니다")
-    bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow, char_h=CHAR_H if use_char else 0)
+    bottom = background(narrow or png, hook, base + "_bg.png", long_title, crop169=not narrow, char_h=CHAR_H if use_char else 0, photo=photo)
     # 音声と字幕の時刻は本編と同じ TTS から。cached_tts は同じ読み上げ文なら本編で作った音声と「文ごとの実測時刻」をそのまま返す
     # （以前は文字数で按分していたため、話す速さが文ごとに違うと字幕が遅れた）
     sents = V.split_sentences(s.get("speech", "")) or [""]
