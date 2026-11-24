@@ -15,7 +15,9 @@ SAFE_T, BOT, MX = 240, 480, 56      # ショートのUIに隠れる範囲: 上�
 TOP, SLIDE_Y = 500, 500            # フック帯の下端（フックの文字は SAFE_T〜TOP の間）・スライドの位置
 CW = SW - 2 * MX                   # 中身の幅
 SUB_MAXC = 11                      # 字幕1枚の最大文字数（TTS に入れる印の位置と、字幕の区切りを同じにする）
-PHOTO_H = 330                      # short_photo（写真）を入れるときの高さ。フックの下・スライドの上に、幅いっぱいで置く
+PHOTO_H, PHOTO_MIN, PHOTO_GAP = 330, 240, 12   # short_photo（写真）の高さ: スライドを幅いっぱいに入れた残りを写真に使う（PHOTO_MIN〜PHOTO_H）。フックの下・スライドの上
+SUB_ROOM = 190                     # スライドの下に残す字幕のぶん
+ZONE = SH - TOP - BOT - SUB_ROOM   # フック帯の下〜字幕の上: 写真とスライドを置ける高さ
 NAVY = (26, 61, 124)
 
 def spec_path(name):
@@ -41,36 +43,49 @@ def _wrap(d, text, fnt, maxw):
         if cur: lines.append(cur)
     return lines
 
+def _trim(sl):
+    """余白を切る（中身の周り 30px だけ残す）→ 幅いっぱいに広げたとき文字が大きくなる"""
+    from PIL import ImageOps
+    bb = ImageOps.invert(sl.convert("L")).point(lambda v: 255 if v > 40 else 0).getbbox()
+    if not bb: return sl
+    return sl.crop((max(0, bb[0] - 30), max(0, bb[1] - 30), min(sl.size[0], bb[2] + 30), min(sl.size[1], bb[3] + 30)))
+
 def render_narrow(G, title, sub, body, name="sh_narrow", photo_h=0):
     """縦動画用: スライドを幅 1080px のページで描き直す（表が折り返されて文字が大きくなる）。
+    余白を切って「幅いっぱい（CW）」に広げたときの高さが、置ける高さに収まる中で、文字がいちばん大きい倍率を選ぶ。
+    photo_h>0（写真入り）: 写真のぶんを引いた高さに収める。題名はフックと重なるので出さない。
     自由配置の要素(ov)があるときは座標が合わないので None（従来の 16:9 を使う）"""
     if "class='ov" in body: return None
     body = body.replace("class='two'", "class='two-narrow'")              # 縦では2列を上下に積む
     body = G.ILL_RE.sub("", body)                                           # 縦ではイラストを外して字幕の場所を空ける
-    head = f"<h1>{G.E(title)}</h1>" if title else ""                      # 縦では小見出しは出さない
-    avail = SH - TOP - BOT - 190 - (photo_h + 12 if photo_h else 0)   # フック帯と下の安全域の間から、字幕のぶん（約190px）と写真のぶんを引く
+    head = f"<h1>{G.E(title)}</h1>" if title and not photo_h else ""      # 縦では小見出しは出さない。写真入りは題名も出さない（すぐ上のフックと同じ内容）
+    avail = ZONE - (photo_h + PHOTO_GAP if photo_h else 0)             # フック帯と字幕の間から、写真のぶんを引く
     import vkit as V, subs
     oldW, oldst = G.W, V.SUB_STYLE; G.W = CW
     st = subs.load_style(V.SUB_STYLE)
     if st.get("slide_theme") == "kokuban": V.SUB_STYLE = dict(st, slide_theme="paper")   # 縦では黒板の枠が合わないので紙だけ
     try:
-        best = None
-        for sc in ((1.0, 0.9, 0.8, 0.7) if "class='huge" in body else (1.0, 1.2, 1.4, 0.9, 0.8, 0.7)):   # 大文字の場面はこれ以上大きくすると折り返す
+        best = small = None
+        for sc in ((1.0, 0.9, 0.8, 0.7, 0.6) if "class='huge" in body else (1.4, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6)):   # 大きい倍率から。大文字の場面はこれ以上大きくすると折り返す
             im, ch, png = G._render_once(head, body, name, sc)
-            if ch <= avail and (best is None or ch > best[1]): best = (im, ch, png, sc)
-            if best and best[1] >= avail * 0.75: break
+            cut = _trim(im.crop((0, 0, CW, min(im.size[1], ch + 40))))
+            fh = int(cut.size[1] * CW / cut.size[0])                        # 幅いっぱいに広げたときの高さ
+            if fh <= avail: best = (cut, fh, png, sc); break
+            if small is None or fh < small[1]: small = (cut, fh, png, sc)
+        if best is None and small and small[1] <= avail * 1.3: best = small    # 少しはみ出すだけなら、縦用を少し縮めて使う（16:9 に戻すより文字が大きい）
         if best is None: return None
-        im, ch, png, sc = best
+        cut, fh, png, sc = best
     finally:
         G.W = oldW; V.SUB_STYLE = oldst
-    im.crop((0, 0, CW, min(im.size[1], ch + 40))).save(png)
+    cut.save(png)
     return png
 
 CHAR_H = 608                       # 話すキャラクター（16:9 → 1080×608）を下部に置くときの高さ
 
 def background(slide_png, hook, out, long_label="", crop169=True, char_h=0, photo=None):
     """char_h>0 なら、スライドは上部に収め（高さ上限）、下に char_h ぶんの空きを残す（あとで動画を重ねる）。
-    photo（画像のパス）があれば、フックのすぐ下に幅いっぱい・高さ PHOTO_H で置き、スライドはその下に入れる"""
+    photo（画像のパス）があれば、フックのすぐ下に幅いっぱいで置き、スライドはその下に幅いっぱいで入れる。
+    写真の高さ = スライドを入れた残り（PHOTO_MIN〜PHOTO_H）→ スライドが主役で、写真は残りの場所"""
     from PIL import Image, ImageDraw
     im = Image.new("RGB", (SW, SH), "white"); d = ImageDraw.Draw(im)
     d.rectangle([0, 0, SW, TOP], fill=NAVY)
@@ -85,18 +100,17 @@ def background(slide_png, hook, out, long_label="", crop169=True, char_h=0, phot
     sl = Image.open(slide_png).convert("RGB")
     from PIL import ImageOps
     if crop169: sl = sl.crop((0, 0, sl.size[0], min(sl.size[1], int(sl.size[0] * 9 / 16))))
-    bb = ImageOps.invert(sl.convert("L")).point(lambda v: 255 if v > 40 else 0).getbbox()
-    if bb:                                       # 余白を切って文字を大きく
-        sl = sl.crop((max(0, bb[0] - 30), max(0, bb[1] - 30), min(sl.size[0], bb[2] + 30), min(sl.size[1], bb[3] + 30)))
+    sl = _trim(sl)                               # 余白を切って文字を大きく
     sl = sl.resize((CW, int(sl.size[1] * CW / sl.size[0])))
     top = SLIDE_Y
     if photo and not char_h:
         try:
-            phi = ImageOps.fit(Image.open(photo).convert("RGB"), (CW, PHOTO_H), centering=(0.5, 0.4))   # 横長に切り出す（少し上寄り）
-            im.paste(phi, (MX, SLIDE_Y)); top = SLIDE_Y + PHOTO_H + 12
+            ph = max(PHOTO_MIN, min(PHOTO_H, ZONE - PHOTO_GAP - sl.size[1]))          # スライドを幅いっぱいに入れた残りが写真の高さ
+            phi = ImageOps.fit(Image.open(photo).convert("RGB"), (CW, ph), centering=(0.5, 0.4))   # 横長に切り出す（少し上寄り）
+            im.paste(phi, (MX, SLIDE_Y)); top = SLIDE_Y + ph + PHOTO_GAP
         except Exception as e:
             print(f"  ※ 쇼츠 사진을 넣지 못했습니다: {str(e)[:100]}", flush=True)
-    maxh = SH - BOT - char_h - top - (20 if char_h else 190)                       # 下の安全域と字幕のぶんを残す
+    maxh = SH - BOT - char_h - top - (20 if char_h else SUB_ROOM)                  # 下の安全域と字幕のぶんを残す
     if sl.size[1] > maxh: sl = sl.resize((int(sl.size[0] * maxh / sl.size[1]), maxh))
     im.paste(sl, ((SW - sl.size[0]) // 2, top))
     if char_h:
@@ -174,7 +188,7 @@ def make(path, i, hook=None, log=print, character=None):
     if s.get("short_photo") or spec.get("short_photo"):
         photo = build_spec.photo_path({"photo": s.get("short_photo") or spec.get("short_photo")}, log)
         log(f"  쇼츠 사진: {'있음' if photo else '준비 실패 → 사진 없이'}")
-    narrow = render_narrow(G, s.get("title", ""), s.get("sub", ""), s["_body"], photo_h=PHOTO_H if photo else 0)   # 縦向きに描き直せれば文字が大きい方を使う
+    narrow = render_narrow(G, s.get("title", ""), s.get("sub", ""), s["_body"], photo_h=PHOTO_MIN if photo else 0)   # 縦向きに描き直せれば文字が大きい方を使う
     import character as CH
     use_char = bool(character and CH.available() and CH.mascot_path())
     if character and not use_char: log("  ※ 캐릭터 생략: Hedra 키(.hedra_api_key) 또는 마스코트(mascot/default.png)가 없습니다")
