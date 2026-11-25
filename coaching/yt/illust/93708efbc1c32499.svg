@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+<g stroke="#5a4636" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+<!-- ground shadow -->
+<ellipse cx="800" cy="850" rx="430" ry="22" fill="#efe9df" stroke="none"/>
+<!-- results board -->
+<rect x="540" y="230" width="22" height="300" fill="#d9b48f"/>
+<rect x="1038" y="230" width="22" height="300" fill="#d9b48f"/>
+<rect x="500" y="70" width="600" height="250" rx="12" fill="#c9a37c"/>
+<rect x="522" y="90" width="556" height="210" rx="6" fill="#fffdf6"/>
+<rect x="560" y="80" width="480" height="20" rx="4" fill="#f6c1c8"/>
+<g fill="#e9eef7" stroke-width="3">
+<rect x="550" y="120" width="70" height="34" rx="5"/><rect x="635" y="120" width="70" height="34" rx="5"/><rect x="720" y="120" width="70" height="34" rx="5"/><rect x="805" y="120" width="70" height="34" rx="5"/><rect x="890" y="120" width="70" height="34" rx="5"/><rect x="975" y="120" width="70" height="34" rx="5"/>
+<rect x="550" y="172" width="70" height="34" rx="5"/><rect x="635" y="172" width="70" height="34" rx="5" fill="#fff1b8"/><rect x="720" y="172" width="70" height="34" rx="5"/><rect x="805" y="172" width="70" height="34" rx="5"/><rect x="890" y="172" width="70" height="34" rx="5"/><rect x="975" y="172" width="70" height="34" rx="5"/>
+<rect x="550" y="224" width="70" height="34" rx="5"/><rect x="635" y="224" width="70" height="34" rx="5"/><rect x="720" y="224" width="70" height="34" rx="5"/><rect x="805" y="224" width="70" height="34" rx="5"/><rect x="890" y="224" width="70" height="34" rx="5"/>
+</g>
+<!-- Student A (relieved boy) -->
+<rect x="555" y="740" width="34" height="95" rx="10" fill="#7a86a8"/>
+<rect x="612" y="740" width="34" height="95" rx="10" fill="#7a86a8"/>
+<path d="M545 835 h50 q8 0 8 10 h-62 q-4-10 4-10z" fill="#6b5244"/>
+<path d="M608 835 h50 q8 0 8 10 h-62 q-4-10 4-10z" fill="#6b5244"/>
+<path d="M530 760 q0-200 70-220 q70 20 70 220z" fill="#8fa3cf"/>
+<path d="M585 545 l15 40 l15-40" fill="#fff"/>
+<path d="M600 585 v170" fill="none"/>
+<!-- arms holding paper -->
+<path d="M545 600 q-30 60 15 85" fill="none" stroke-width="22" stroke="#5a4636"/>
+<path d="M545 600 q-30 60 15 85" fill="none" stroke-width="15" stroke="#8fa3cf"/>
+<path d="M655 600 q30 60 -15 85" fill="none" stroke-width="22" stroke="#5a4636"/>
+<path d="M655 600 q30 60 -15 85" fill="none" stroke-width="15" stroke="#8fa3cf"/>
+<g transform="rotate(-4 600 660)">
+<rect x="540" y="600" width="120" height="150" rx="4" fill="#fff"/>
+<circle cx="600" cy="640" r="24" fill="none" stroke="#e8737a" stroke-width="5"/>
+<path d="M560 690 h80 M560 708 h80 M560 726 h55" fill="none" stroke="#c9bdb0" stroke-width="3"/>
+</g>
+<circle cx="560" cy="688" r="13" fill="#ffe0c7"/>
+<circle cx="640" cy="688" r="13" fill="#ffe0c7"/>
+<!-- head A -->
+<circle cx="600" cy="460" r="78" fill="#ffe0c7"/>
+<path d="M522 455 q-5-90 78-92 q85 2 78 92 q-20-45-60-40 q-40 5-96 40z" fill="#4f3a2e"/>
+<path d="M565 470 q10 8 20 0 M615 470 q10 8 20 0" fill="none"/>
+<path d="M585 500 q15 14 30 0" fill="#e8737a"/>
+<ellipse cx="555" cy="492" rx="12" ry="7" fill="#f8b4b4" stroke="none"/>
+<ellipse cx="645" cy="492" rx="12" ry="7" fill="#f8b4b4" stroke="none"/>
+<path d="M672 425 q12 18 0 26 q-12-8 0-26z" fill="#bfe3f5" stroke-width="3"/>
+<path d="M505 520 q-25 5 -35 -10 M500 545 q-28 10 -42 0" fill="none" stroke-width="3"/>
+<!-- Student B (reviewing girl) -->
+<rect x="960" y="740" width="32" height="95" rx="10" fill="#ffe0c7"/>
+<rect x="1012" y="740" width="32" height="95" rx="10" fill="#ffe0c7"/>
+<path d="M950 835 h48 q8 0 8 10 h-60 q-4-10 4-10z" fill="#6b5244"/>
+<path d="M1006 835 h48 q8 0 8 10 h-60 q-4-10 4-10z" fill="#6b5244"/>
+<path d="M940 765 l20-60 h84 l20 60z" fill="#8fa3cf"/>
+<path d="M945 720 q0-170 57-180 q57 10 57 180z" fill="#b9c9e8"/>
+<path d="M985 548 l17 35 l17-35z" fill="#fff"/>
+<path d="M995 583 l7 20 l7-20z" fill="#e8737a"/>
+<!-- arm to chin -->
+<path d="M1050 600 q40 40 -5 -5" fill="none"/>
+<path d="M1052 600 q35 55 -10 -2" fill="none" stroke-width="20"/>
+<path d="M1052 600 q35 55 -10 -2" fill="none" stroke-width="13" stroke="#b9c9e8"/>
+<circle cx="1040" cy="545" r="13" fill="#ffe0c7"/>
+<!-- question sheet -->
+<path d="M955 615 q-20 30 0 70" fill="none" stroke-width="20"/>
+<path d="M955 615 q-20 30 0 70" fill="none" stroke-width="13" stroke="#b9c9e8"/>
+<g transform="rotate(10 990 680)">
+<rect x="935" y="620" width="115" height="140" rx="4" fill="#fffbe8"/>
+<path d="M950 645 h80 M950 663 h60 M950 690 h80 M950 708 h50 M950 735 h75" fill="none" stroke="#c9bdb0" stroke-width="3"/>
+<path d="M1030 660 l8 8 l14-16" fill="none" stroke="#e8737a" stroke-width="4"/>
+</g>
+<circle cx="962" cy="688" r="13" fill="#ffe0c7"/>
+<!-- head B -->
+<path d="M922 470 q-5-105 80-105 q85 0 80 105 v70 h-30 v-60 h-100 v60 h-30z" fill="#7a5340"/>
+<circle cx="1002" cy="470" r="75" fill="#ffe0c7"/>
+<path d="M927 465 q0-85 75-85 q75 0 75 85 q-30-40-75-40 q-45 0-75 40z" fill="#7a5340"/>
+<circle cx="975" cy="485" r="6" fill="#5a4636"/>
+<circle cx="1025" cy="485" r="6" fill="#5a4636"/>
+<path d="M962 466 l20 4 M1038 466 l-20 4" fill="none" stroke-width="3"/>
+<path d="M992 515 q10 -5 20 0" fill="none"/>
+<ellipse cx="958" cy="505" rx="11" ry="6" fill="#f8b4b4" stroke="none"/>
+<ellipse cx="1046" cy="505" rx="11" ry="6" fill="#f8b4b4" stroke="none"/>
+<circle cx="1095" cy="390" r="8" fill="#fff"/>
+<circle cx="1118" cy="360" r="11" fill="#fff"/>
+<circle cx="1148" cy="325" r="14" fill="#fff"/>
+<!-- prop: sakura left -->
+<g transform="translate(300 260)">
+<circle cx="0" cy="-28" r="22" fill="#fbd3dc"/><circle cx="27" cy="-8" r="22" fill="#fbd3dc"/><circle cx="17" cy="24" r="22" fill="#fbd3dc"/><circle cx="-17" cy="24" r="22" fill="#fbd3dc"/><circle cx="-27" cy="-8" r="22" fill="#fbd3dc"/>
+<circle cx="0" cy="0" r="10" fill="#fff1b8"/>
+</g>
+<g transform="translate(1310 650) scale(0.6)">
+<circle cx="0" cy="-28" r="22" fill="#fbd3dc"/><circle cx="27" cy="-8" r="22" fill="#fbd3dc"/><circle cx="17" cy="24" r="22" fill="#fbd3dc"/><circle cx="-17" cy="24" r="22" fill="#fbd3dc"/><circle cx="-27" cy="-8" r="22" fill="#fbd3dc"/>
+<circle cx="0" cy="0" r="10" fill="#fff1b8"/>
+</g>
+<!-- prop: pencil -->
+<g transform="rotate(-35 1300 300)">
+<rect x="1230" y="285" width="130" height="30" rx="4" fill="#fde7a3"/>
+<rect x="1210" y="285" width="24" height="30" rx="4" fill="#f6b3bd"/>
+<path d="M1360 285 l35 15 l-35 15z" fill="#ffe0c7"/>
+<path d="M1384 295 l11 5 l-11 5z" fill="#5a4636"/>
+</g>
+<!-- prop: alarm clock -->
+<g transform="translate(300 640)">
+<circle cx="-32" cy="-50" r="16" fill="#f6b3bd"/><circle cx="32" cy="-50" r="16" fill="#f6b3bd"/>
+<circle cx="0" cy="0" r="58" fill="#bfe3f5"/>
+<circle cx="0" cy="0" r="44" fill="#fff"/>
+<path d="M0 0 v-28 M0 0 l20 10" fill="none"/>
+<path d="M-35 55 l-10 15 M35 55 l10 15" fill="none"/>
+</g>
+<!-- sparkles near A -->
+<path d="M450 400 l6 14 l14 6 l-14 6 l-6 14 l-6-14 l-14-6 l14-6z" fill="#fff1b8" stroke-width="3"/>
+<path d="M705 370 l4 10 l10 4 l-10 4 l-4 10 l-4-10 l-10-4 l10-4z" fill="#fff1b8" stroke-width="3"/>
+</g>
+</svg>
