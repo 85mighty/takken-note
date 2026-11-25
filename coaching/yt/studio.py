@@ -75,7 +75,7 @@ def _keys(spec):
         out = []
         for s in spec["slides"]:
             import build_spec
-            out.append(G.slide_key(s.get("title", ""), s.get("sub", ""), build_spec.compose_body(spec, s), s.get("speech", "")))
+            out.append(G.slide_key(s.get("title", ""), s.get("sub", ""), build_spec.compose_body(spec, s, generate=False), s.get("speech", "")))   # 画面を開くだけでは写真を生成しない（生成は制作の作業の中で）
         return out
     except Exception:
         return [None] * len(spec["slides"])
@@ -348,6 +348,8 @@ def api_save(name):
             if s.get("illust_seed"): c["illust_seed"] = int(s["illust_seed"])
             if s.get("short_hook"): c["short_hook"] = str(s["short_hook"])
             if s.get("short_desc"): c["short_desc"] = str(s["short_desc"])
+            for k in ("photo", "short_photo"):                                   # 写真の指定は保存しても消さない
+                if s.get(k): c[k] = str(s[k])
             ov = _clean_ov(s.get("overlays"))
             if ov: c["overlays"] = ov
             if s.get("illust_off"): c["illust_off"] = True

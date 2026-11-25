@@ -232,12 +232,20 @@ PHOTO_TEMPLATE = ("実写の写真のように見えるリアルな画像。{the
 PHOTO_TEMPLATE_ANY = ("実写の写真のように見えるリアルな画像。{theme}。横長16:9。文字・ロゴ・透かしは一切入れない。"
                       "自然光、報道写真のような自然な構図。実在の人物に似せない。顔のアップは避ける。")   # 日本以外の場面（韓国など）用
 
+def _photo_base(desc):
+    return os.path.join(DIR, "photo_" + hashlib.md5(("photo", desc.strip()).__repr__().encode()).hexdigest()[:16])
+
+def photo_file(desc):
+    """作ってある写真のパス（なければ None）。生成はしない → スタジオの画面を開くだけの処理はこちらを使う"""
+    out = _photo_base(desc)
+    for ext in (".png", ".jpg", ".svg"):
+        if os.path.exists(out + ext): return out + ext
+    return None
+
 def ensure_photo(desc, force=False):
     """実写風の写真を生成（photo: "ai:説明"）。パスを返す。作れなければ None"""
-    desc = desc.strip(); key = hashlib.md5(("photo", desc).__repr__().encode()).hexdigest()[:16]
-    out = os.path.join(DIR, "photo_" + key)
-    for ext in (".png", ".jpg", ".svg"):
-        if os.path.exists(out + ext) and not force: return out + ext
+    desc = desc.strip(); out = _photo_base(desc)
+    if not force and photo_file(desc): return photo_file(desc)
     prov = provider()
     if prov not in GEN: return None
     order = [q for q in [prov] + [q for q in ("gemini", "openai", "replicate") if q != prov and providers()[q]] if q not in DOWN and q != "claude"]

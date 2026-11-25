@@ -15,12 +15,14 @@ SPECS = os.path.join(HERE, "specs")
 def load(path):
     return json.load(open(path, encoding="utf-8"))
 
-def compose_body(spec, s):
-    """描画に使う本文 = 本文 + イラスト + 自由配置の要素"""
+def compose_body(spec, s, generate=True):
+    """描画に使う本文 = 本文 + イラスト + 自由配置の要素。
+    generate=False: AI 写真を新しく作らない（すでにある物だけ使う）。スタジオの画面を開くときはこちら
+    — 画面を開いただけで写真の生成（1枚あたり数十秒〜数分）を待つことになり、ページが開かなくなるため"""
     import r8_goukaku as G, illust, imgsearch
     log = lambda m: print(m, flush=True)
     body = imgsearch.resolve_tokens(s.get("body", ""), log)   # {{img:会社名 ロゴ}} → 実際のロゴ
-    ph = photo_path(s, log)
+    ph = photo_path(s, log, generate=generate)
     if ph:                                                     # 全画面の写真 + (あれば) 見出し・本文
         head = f"<div class='photo-title'>{G.E(s.get('title', ''))}</div>" if s.get("title") else ""
         inner = f"<div class='photo-body'>{body}</div>" if body.strip() else ""
@@ -28,13 +30,14 @@ def compose_body(spec, s):
     body = body if spec.get("illust_off") else illust.inject(s, body)
     return body + G.overlays_html(s.get("overlays"))
 
-def photo_path(s, log=print):
-    """photo: "ai:説明" なら実写風に生成、それ以外は検索語（Pexels → Commons → …）。無ければ None"""
+def photo_path(s, log=print, generate=True):
+    """photo: "ai:説明" なら実写風に生成、それ以外は検索語（Pexels → Commons → …）。無ければ None。
+    generate=False なら、すでに作ってある AI 写真だけを返す（新しく作らない）"""
     q = (s.get("photo") or "").strip()
     if not q: return None
     import illust, imgsearch
     try:
-        if q.lower().startswith("ai:"): return illust.ensure_photo(q[3:])
+        if q.lower().startswith("ai:"): return illust.ensure_photo(q[3:]) if generate else illust.photo_file(q[3:])
         if os.path.exists(q): return q
         return imgsearch.resolve(q, "photo", log)
     except Exception as e:
