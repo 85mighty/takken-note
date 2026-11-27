@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+<g stroke="#5a4636" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+<ellipse cx="800" cy="850" rx="520" ry="22" fill="#f3ece4" stroke="none"/>
+<!-- Calendar -->
+<g transform="rotate(-3 290 310)">
+<rect x="150" y="160" width="300" height="300" rx="12" fill="#fffdf8"/>
+<rect x="150" y="160" width="300" height="60" rx="12" fill="#f6a9a0"/>
+<rect x="150" y="200" width="300" height="20" fill="#f6a9a0" stroke="none"/>
+<line x1="150" y1="220" x2="450" y2="220"/>
+<circle cx="220" cy="160" r="9" fill="#fff"/><circle cx="380" cy="160" r="9" fill="#fff"/>
+<g stroke="#cbbcae" stroke-width="2.5">
+<line x1="168" y1="245" x2="432" y2="245"/><line x1="168" y1="280" x2="432" y2="280"/><line x1="168" y1="315" x2="432" y2="315"/><line x1="168" y1="350" x2="432" y2="350"/><line x1="168" y1="385" x2="432" y2="385"/><line x1="168" y1="420" x2="432" y2="420"/>
+<line x1="206" y1="245" x2="206" y2="440"/><line x1="243" y1="245" x2="243" y2="440"/><line x1="281" y1="245" x2="281" y2="440"/><line x1="319" y1="245" x2="319" y2="440"/><line x1="357" y1="245" x2="357" y2="440"/><line x1="394" y1="245" x2="394" y2="440"/>
+</g>
+<ellipse cx="376" cy="402" rx="26" ry="21" fill="none" stroke="#e5534b" stroke-width="5"/>
+</g>
+<!-- Sticky note -->
+<g transform="rotate(6 1260 300)">
+<rect x="1180" y="220" width="160" height="160" fill="#fff3a6"/>
+<rect x="1225" y="205" width="70" height="26" fill="#bfe3f2" opacity="0.85"/>
+<circle cx="1220" cy="300" r="12" fill="#f39a8f"/><circle cx="1260" cy="300" r="12" fill="#f39a8f"/><circle cx="1300" cy="300" r="12" fill="#f39a8f"/>
+<path d="M1205 340 Q1260 352 1315 338" fill="none" stroke="#e0b84a"/>
+</g>
+<!-- Body -->
+<path d="M640 620 L655 505 Q800 440 945 505 L960 620 Z" fill="#a9d4ee"/>
+<path d="M770 470 L800 510 L830 470" fill="#fff"/>
+<rect x="780" y="425" width="40" height="40" fill="#ffe3cc"/>
+<!-- Head -->
+<circle cx="800" cy="330" r="115" fill="#ffe3cc"/>
+<path d="M688 335 Q680 210 800 205 Q925 205 915 335 Q890 270 830 262 Q790 290 720 285 Q700 300 688 335 Z" fill="#6b4a36"/>
+<path d="M690 300 Q800 270 910 300" fill="none" stroke="#e5534b" stroke-width="10"/>
+<path d="M750 322 L782 330" fill="none"/><path d="M850 322 L818 330" fill="none"/>
+<circle cx="765" cy="352" r="8" fill="#5a4636"/><circle cx="835" cy="352" r="8" fill="#5a4636"/>
+<ellipse cx="735" cy="385" rx="18" ry="10" fill="#f7b3b0" stroke="none" opacity="0.8"/>
+<ellipse cx="865" cy="385" rx="18" ry="10" fill="#f7b3b0" stroke="none" opacity="0.8"/>
+<path d="M785 395 Q800 408 815 395" fill="none"/>
+<path d="M920 300 Q930 318 920 328 Q910 318 920 300 Z" fill="#cfeefc"/>
+<!-- Desk -->
+<rect x="430" y="610" width="740" height="32" rx="8" fill="#e8c9a0"/>
+<rect x="470" y="642" width="30" height="200" fill="#d9b68a"/><rect x="1100" y="642" width="30" height="200" fill="#d9b68a"/>
+<!-- Book -->
+<path d="M618 612 L630 535 Q715 520 800 548 Q885 520 970 535 L982 612 Q890 595 800 615 Q710 595 618 612 Z" fill="#9ed6a5"/>
+<path d="M800 548 Q720 522 642 532 L630 600 Q715 590 800 608 Z" fill="#fffdf8"/>
+<path d="M800 548 Q880 522 958 532 L970 600 Q885 590 800 608 Z" fill="#fffdf8"/>
+<g stroke="#cbbcae" stroke-width="2.5" fill="none">
+<path d="M655 552 Q720 545 780 562"/><path d="M652 568 Q720 561 780 578"/><path d="M649 584 Q720 577 780 594"/>
+<path d="M820 562 Q880 545 945 552"/><path d="M820 578 Q880 561 948 568"/>
+</g>
+<rect x="828" y="582" width="30" height="12" fill="#fff3a6" stroke-width="2.5"/>
+<!-- Arms -->
+<path d="M660 510 Q610 560 640 590" fill="none" stroke-width="34"/>
+<path d="M660 510 Q610 560 640 590" fill="none" stroke="#a9d4ee" stroke-width="26"/>
+<path d="M940 510 Q990 560 960 590" fill="none" stroke-width="34"/>
+<path d="M940 510 Q990 560 960 590" fill="none" stroke="#a9d4ee" stroke-width="26"/>
+<circle cx="645" cy="592" r="20" fill="#ffe3cc"/><circle cx="955" cy="592" r="20" fill="#ffe3cc"/>
+<!-- Book stack with building icon -->
+<rect x="470" y="580" width="120" height="30" rx="4" fill="#f6c58f"/>
+<rect x="480" y="550" width="110" height="30" rx="4" fill="#b9a7e0"/>
+<rect x="515" y="556" width="14" height="18" fill="#fff" stroke-width="2.5"/>
+<rect x="535" y="560" width="10" height="14" fill="#fff" stroke-width="2.5"/>
+<!-- Mug & pencil -->
+<path d="M1040 545 L1045 610 L1095 610 L1100 545 Z" fill="#f6a9a0"/>
+<path d="M1100 560 Q1125 570 1098 595" fill="none"/>
+<path d="M1060 530 Q1050 515 1062 500 M1080 530 Q1070 515 1082 500" fill="none" stroke="#cbbcae" stroke-width="3"/>
+<g transform="rotate(-15 1000 600)"><rect x="990" y="596" width="70" height="12" fill="#ffd97a"/><path d="M990 596 L975 602 L990 608 Z" fill="#ffe3cc"/></g>
+</g>
+</svg>

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}통계 — 宅建 오답노트{% endblock %}
+{% block body %}
+
+<h2>細目별 누적 誤答回数</h2>
+<table class="stat">
+  <tr><th>細目</th><th>누적 誤答</th><th>문제 수</th></tr>
+  {% for name, cnt, qn in subs %}
+  <tr>
+    <td class="left"><a href="{{ url_for('index', subtopic=name if name != '（細目未入力）' else '', min_wrong=1) }}">{{ name }}</a></td>
+    <td class="bad">{{ cnt }}</td>
+    <td>{{ qn }}</td>
+  </tr>
+  {% endfor %}
+  {% if not subs %}<tr><td colspan="3">오답 기록 없음</td></tr>{% endif %}
+</table>
+
+<h2>연도 × 분야 정답수</h2>
+<div class="scrollx">
+<table class="stat">
+  <tr><th>연도</th>{% for c in cats %}<th>{{ c }}</th>{% endfor %}<th>합계</th></tr>
+  {% for y, row in year_cat.items() %}
+  <tr>
+    <th><a href="{{ url_for('index', year=y, min_wrong=1) }}">{{ y }}</a></th>
+    {% for c in cats %}
+    {% set ok, tot = row[c] %}
+    <td>{{ ok }}/{{ tot }}{% if tot - ok > 0 %}<br><span class="bad">誤{{ tot - ok }}</span>{% endif %}</td>
+    {% endfor %}
+    {% set ok, tot = row['合計'] %}
+    <td class="tot">{{ ok }}/{{ tot }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+
+<h2>오답 이유 태그 비율</h2>
+<table class="stat">
+  <tr><th>태그</th><th>문제 수</th></tr>
+  {% for t, n in tags %}
+  <tr><td class="left">{{ t }}</td><td>{{ n }}</td></tr>
+  {% endfor %}
+  {% if not tags %}<tr><td colspan="2">태그 기록 없음 — 다시 풀기에서 틀린 문제에 태그를 달아 보세요</td></tr>{% endif %}
+</table>
+<p class="mut">知識=몰라서 / 実行エラー=알았는데 실수 / 語彙=단어·표현을 잘못 읽음 / 初見=처음 보는 유형</p>
+
+{% endblock %}

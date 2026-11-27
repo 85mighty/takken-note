@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+<g stroke="#5a4636" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+<!-- ground shadow -->
+<ellipse cx="800" cy="835" rx="600" ry="18" fill="#efe9e1" stroke="none"/>
+<!-- steps -->
+<rect x="300" y="720" width="250" height="110" fill="#ffe3a8"/>
+<rect x="550" y="610" width="250" height="220" fill="#cfe8c4"/>
+<rect x="800" y="500" width="250" height="330" fill="#c6def2"/>
+<rect x="1050" y="390" width="250" height="440" fill="#f5cde0"/>
+<g stroke="none" opacity="0.6" fill="#fff">
+<rect x="304" y="724" width="242" height="12"/>
+<rect x="554" y="614" width="242" height="12"/>
+<rect x="804" y="504" width="242" height="12"/>
+<rect x="1054" y="394" width="242" height="12"/>
+</g>
+<!-- icon1: certificate -->
+<rect x="385" y="745" width="80" height="62" rx="4" fill="#fffdf6"/>
+<rect x="393" y="753" width="64" height="46" rx="2" fill="none" stroke="#e8b04f" stroke-width="3"/>
+<line x1="405" y1="768" x2="445" y2="768" stroke-width="3"/>
+<line x1="405" y1="780" x2="435" y2="780" stroke-width="3"/>
+<circle cx="448" cy="790" r="8" fill="#f08a8a"/>
+<!-- icon2: lecture book -->
+<path d="M615 700 Q645 685 675 700 L675 760 Q645 745 615 760 Z" fill="#fffdf6"/>
+<path d="M675 700 Q705 685 735 700 L735 760 Q705 745 675 760 Z" fill="#fffdf6"/>
+<path d="M630 712 Q645 705 662 712 M630 727 Q645 720 662 727 M688 712 Q705 705 722 712 M688 727 Q705 720 722 727" fill="none" stroke-width="3"/>
+<path d="M660 655 L675 645 L690 655 L675 665 Z" fill="#8fa8d8"/>
+<!-- icon3: registration form + stamp -->
+<rect x="880" y="610" width="72" height="92" rx="4" fill="#fffdf6"/>
+<line x1="892" y1="630" x2="940" y2="630" stroke-width="3"/>
+<line x1="892" y1="645" x2="940" y2="645" stroke-width="3"/>
+<line x1="892" y1="660" x2="925" y2="660" stroke-width="3"/>
+<circle cx="932" cy="684" r="10" fill="none" stroke="#e57a7a" stroke-width="4"/>
+<rect x="960" y="640" width="22" height="30" rx="5" fill="#f6b38a"/>
+<rect x="955" y="668" width="32" height="12" rx="3" fill="#e57a7a"/>
+<!-- icon4: license card -->
+<rect x="1110" y="560" width="130" height="84" rx="10" fill="#fffdf6"/>
+<rect x="1124" y="574" width="38" height="48" rx="4" fill="#c6def2"/>
+<circle cx="1143" cy="590" r="9" fill="#ffe0c6"/>
+<path d="M1129 620 Q1143 600 1157 620 Z" fill="#8fa8d8"/>
+<line x1="1174" y1="584" x2="1226" y2="584" stroke-width="3"/>
+<line x1="1174" y1="600" x2="1226" y2="600" stroke-width="3"/>
+<line x1="1174" y1="616" x2="1210" y2="616" stroke-width="3"/>
+<!-- goal flag -->
+<line x1="1240" y1="390" x2="1240" y2="270"/>
+<path d="M1240 272 L1300 292 L1240 312 Z" fill="#f7a8a8"/>
+<!-- sparkles -->
+<path d="M1150 270 l8 20 20 8 -20 8 -8 20 -8 -20 -20 -8 20 -8z" fill="#ffe08a"/>
+<path d="M480 560 l6 14 14 6 -14 6 -6 14 -6 -14 -14 -6 14 -6z" fill="#ffe08a"/>
+<path d="M960 330 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5z" fill="#cfe8c4"/>
+<!-- character -->
+<!-- back leg -->
+<path d="M712 500 L690 605" stroke-width="22" stroke="#5a4636"/>
+<path d="M712 500 L690 605" stroke-width="14" stroke="#5f6e96"/>
+<path d="M670 600 Q690 594 706 604 L706 612 L668 612 Z" fill="#7a5a44"/>
+<!-- front leg -->
+<path d="M745 500 L795 465 L830 492" fill="none" stroke-width="22" stroke="#5a4636"/>
+<path d="M745 500 L795 465 L830 492" fill="none" stroke-width="14" stroke="#5f6e96"/>
+<path d="M818 488 Q838 484 856 494 L856 502 L818 502 Z" fill="#7a5a44"/>
+<!-- back arm -->
+<path d="M700 420 L660 470" stroke-width="20" stroke="#5a4636"/>
+<path d="M700 420 L660 470" stroke-width="12" stroke="#8fa8d8"/>
+<circle cx="656" cy="475" r="11" fill="#ffe0c6"/>
+<!-- torso -->
+<path d="M690 400 Q730 385 770 400 L775 505 L688 505 Z" fill="#8fa8d8"/>
+<path d="M715 395 L730 430 L745 395" fill="#fffdf6"/>
+<path d="M726 410 L734 410 L736 445 L730 452 L724 445 Z" fill="#f08a8a" stroke-width="3"/>
+<!-- raised arm -->
+<path d="M760 415 L800 340 L812 295" fill="none" stroke-width="20" stroke="#5a4636"/>
+<path d="M760 415 L800 340 L812 295" fill="none" stroke-width="12" stroke="#8fa8d8"/>
+<!-- certificate held -->
+<g transform="rotate(-10 830 250)">
+<rect x="780" y="195" width="110" height="80" rx="4" fill="#fffdf6"/>
+<rect x="789" y="204" width="92" height="62" rx="2" fill="none" stroke="#e8b04f" stroke-width="3"/>
+<line x1="805" y1="222" x2="865" y2="222" stroke-width="3"/>
+<line x1="805" y1="236" x2="855" y2="236" stroke-width="3"/>
+<circle cx="862" cy="252" r="9" fill="#f08a8a"/>
+</g>
+<circle cx="812" cy="290" r="12" fill="#ffe0c6"/>
+<!-- head -->
+<circle cx="728" cy="330" r="64" fill="#ffe0c6"/>
+<path d="M664 330 Q660 262 728 262 Q796 262 792 330 Q775 300 745 296 Q720 310 690 305 Q672 312 664 330 Z" fill="#6b4b36"/>
+<path d="M705 338 Q712 330 719 338" fill="none" stroke-width="4"/>
+<path d="M745 338 Q752 330 759 338" fill="none" stroke-width="4"/>
+<path d="M716 358 Q732 376 748 358 Z" fill="#f08a8a"/>
+<ellipse cx="697" cy="356" rx="10" ry="6" fill="#f7b2b2" stroke="none" opacity="0.8"/>
+<ellipse cx="768" cy="356" rx="10" ry="6" fill="#f7b2b2" stroke="none" opacity="0.8"/>
+<!-- joy marks -->
+<path d="M640 280 l-18 -10 M648 262 l-12 -16 M800 262 l12 -16" fill="none" stroke-width="4"/>
+</g>
+</svg>

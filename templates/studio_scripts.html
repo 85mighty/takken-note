@@ -1,0 +1,33 @@
+{% extends "studio_base.html" %}
+{% block title %}대본｜스튜디오{% endblock %}
+{% block body %}
+<style>
+.w{max-width:1100px;margin:0 auto}
+.card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px 16px;margin:10px 0;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.card .t{font-weight:bold;font-size:16px;color:#1a3d7c;text-decoration:none}
+.small{font-size:12px;color:#666}
+.badge{font-size:11px;padding:2px 8px;border-radius:9px;background:#e8f0ff;color:#1a3d7c;margin-right:6px}
+.badge.arch{background:#eee;color:#666}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid #1a3d7c;background:#fff;color:#1a3d7c;font-weight:bold;text-decoration:none;white-space:nowrap}
+details summary{cursor:pointer;color:#1a3d7c;font-size:12px}
+pre{white-space:pre-wrap;font-size:12px;background:#f7f9fc;padding:8px;border-radius:6px}
+</style>
+<div class="w">
+<h2>대본 ({{ rows|length }}편)</h2>
+<p class="small">AI로 만든 대본은 모두 여기 남습니다. 토큰 = Claude API 입력/출력 토큰 (CLI = 서버의 Claude Code로 만든 것). 지난 영상은 「지난」 표시.</p>
+{% for r in rows %}
+<div class="card">
+  <div>
+    <span class="badge {{ 'arch' if r.arch }}">{{ '지난' if r.arch else steps.get(r.status, r.status) }}</span><a class="t" href="{{ url_for('studio.edit', name=r.name) }}">{{ r.label }}</a>
+    <div class="small">{{ r.created or '—' }}・{{ r.n }}장・읽기 {{ r.chars }}자 (약 {{ (r.chars/260)|round(1) }}분){% if r.tokens %}・토큰 {{ r.tokens }}{% endif %}{% if r.url %}・<a href="{{ r.url }}" target="_blank">YouTube</a>{% endif %}</div>
+    {% if r.topic %}<div class="small">주제: {{ r.topic }}</div>{% endif %}
+    {% if r.yt %}<div class="small">제목: {{ r.yt }}</div>{% endif %}
+    {% if r.notes %}<details><summary>AI 메모 (확인할 점·출처)</summary><pre>{{ r.notes }}</pre></details>{% endif %}
+  </div>
+  <a class="btn" href="{{ url_for('studio.edit', name=r.name) }}">열기 →</a>
+</div>
+{% else %}
+<p class="small">아직 대본이 없습니다.</p>
+{% endfor %}
+</div>
+{% endblock %}
